@@ -83,22 +83,22 @@ class RosetTrainerCallback(TrainerCallback):
     def _find_latest_checkpoint(self, output_dir: Path) -> Path | None:
         """
         Find the most recent checkpoint folder in output_dir.
-        
+
         Handles save_total_limit rotation by scanning for highest numbered checkpoint.
         """
         if not output_dir.exists():
             return None
-            
+
         checkpoints = []
         for child in output_dir.iterdir():
             if child.is_dir():
                 match = CHECKPOINT_PATTERN.match(child.name)
                 if match:
                     checkpoints.append((int(match.group(1)), child))
-        
+
         if not checkpoints:
             return None
-        
+
         # Return highest step checkpoint
         checkpoints.sort(key=lambda x: x[0], reverse=True)
         return checkpoints[0][1]
@@ -106,7 +106,7 @@ class RosetTrainerCallback(TrainerCallback):
     def _do_commit(self, folder_id: str, step: int) -> Commit | None:
         """
         Perform the actual commit + ref update.
-        
+
         Returns:
             Commit object on success, None on failure.
         """

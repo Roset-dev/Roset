@@ -131,7 +131,7 @@ class RosetClient:
                         status_code=503,
                         code="NETWORK_ERROR",
                     ) from e
-                
+
                 sleep_time = self.backoff_factor * (2 ** attempt)
                 logger.warning(
                     f"Request failed (attempt {attempt + 1}/{self.max_retries}), "
@@ -149,14 +149,14 @@ class RosetClient:
         """Get a node by ID."""
         data = self._request("GET", f"/v1/nodes/{node_id}")
         return Node.model_validate(data["node"])
-    
+
     def resolve_path(self, path: str) -> Node | None:
         """
         Resolve a path to a node.
-        
+
         Args:
             path: Absolute path (e.g. "/checkpoints/step-1")
-            
+
         Returns:
             Node if found, None otherwise
         """
