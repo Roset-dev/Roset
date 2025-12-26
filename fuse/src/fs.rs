@@ -47,8 +47,8 @@ pub struct RosetFs {
 
 // Add imports
 use std::io::{SeekFrom, Write};
-use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tempfile::NamedTempFile;
+use tokio::io::{AsyncReadExt, AsyncSeekExt};
 
 struct OpenFile {
     node_id: String,
@@ -97,11 +97,7 @@ impl RosetFs {
                     .clone()
                     .unwrap_or_else(|| PathBuf::from(".roset/staging"));
                 Some(StagingManager::new(
-                    RosetClient::new(
-                        &config.api_url,
-                        &config.api_key,
-                        config.mount_id.clone(),
-                    )?,
+                    RosetClient::new(&config.api_url, &config.api_key, config.mount_id.clone())?,
                     staging_dir,
                 ))
             } else {
