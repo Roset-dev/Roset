@@ -1,0 +1,121 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: roset-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: roset-csi
+  namespace: roset-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: roset-csi-provisioner
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: roset-csi-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: roset-csi
+    namespace: roset-system
+roleRef:
+  kind: ClusterRole
+  name: roset-csi-provisioner
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: roset-csi-node
+  namespace: roset-system
+spec:
+  selector:
+    matchLabels:
+      app: roset-csi-node
+  template:
+    metadata:
+      labels:
+        app: roset-csi-node
+    spec:
+      serviceAccountName: roset-csi
+      hostNetwork: true
+      containers:
+        - name: roset-csi
+          image: roset/csi:latest
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+          args:
+            - "--csi-endpoint=unix:///csi/csi.sock"
+            - "--node-id=$(NODE_ID)"
+          env:
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: ROSET_API_URL
+              valueFrom:
+                secretKeyRef:
+                  name: roset-credentials
+                  key: api-url
+            - name: ROSET_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: roset-credentials
+                  key: api-key
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: mountpoint-dir
+              mountPath: /var/lib/kubelet/pods
+              mountPropagation: Bidirectional
+            - name: fuse-device
+              mountPath: /dev/fuse
+        - name: csi-driver-registrar
+          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.9.0
+          args:
+            - "--v=5"
+            - "--csi-address=/csi/csi.sock"
+            - "--kubelet-registration-path=/var/lib/kubelet/plugins/csi.roset.dev/csi.sock"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: registration-dir
+              mountPath: /registration
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/csi.roset.dev
+            type: DirectoryOrCreate
+        - name: mountpoint-dir
+          hostPath:
+            path: /var/lib/kubelet/pods
+            type: Directory
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+            type: Directory
+        - name: fuse-device
+          hostPath:
+            path: /dev/fuse
+            type: CharDevice
