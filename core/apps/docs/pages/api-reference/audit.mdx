@@ -1,0 +1,232 @@
+import {
+  ApiEndpoint,
+  ParameterTable,
+  ResponseExample,
+  RequestExample,
+} from "@roset/ui";
+import { Callout } from "@roset/ui";
+
+# Audit API
+
+The Audit API provides access to the append-only operation log. Every action in Roset is recorded for compliance, debugging, and undo capabilities.
+
+<Callout type="info" title="Retention">
+  Audit logs are retained according to your plan. Enterprise plans support
+  configurable retention and SIEM integration.
+</Callout>
+
+## Query Audit Log
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/audit"
+  description="Query the audit log with filters."
+>
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "action",
+        type: "string",
+        required: false,
+        description: 'Filter by action type (e.g., "node.create")',
+      },
+      {
+        name: "principalId",
+        type: "string",
+        required: false,
+        description: "Filter by actor",
+      },
+      {
+        name: "nodeId",
+        type: "uuid",
+        required: false,
+        description: "Filter by target node",
+      },
+      {
+        name: "startTime",
+        type: "string",
+        required: false,
+        description: "ISO timestamp (inclusive)",
+      },
+      {
+        name: "endTime",
+        type: "string",
+        required: false,
+        description: "ISO timestamp (exclusive)",
+      },
+      {
+        name: "limit",
+        type: "number",
+        required: false,
+        description: "Max results",
+        default: "50",
+      },
+      {
+        name: "cursor",
+        type: "string",
+        required: false,
+        description: "Pagination cursor",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          id: "op_abc123",
+          action: "node.create",
+          principalId: "user_123",
+          principalEmail: "jane@example.com",
+          targetNodeId: "550e8400-e29b-41d4-a716-446655440000",
+          targetPath: "/documents/report.pdf",
+          metadata: {
+            name: "report.pdf",
+            type: "file",
+            parentId: "550e8400-e29b-41d4-a716-446655440001",
+          },
+          ipAddress: "192.168.1.100",
+          userAgent: "Mozilla/5.0...",
+          timestamp: "2024-01-15T10:30:00Z",
+        },
+      ],
+      nextCursor: "eyJpZCI6Im9wX2FiYzEyMyJ9",
+      hasMore: true,
+    }}
+  />
+</ApiEndpoint>
+
+## Export Audit Log
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/audit/export"
+  description="Export audit logs in bulk for compliance or backup. Returns a signed URL to download."
+>
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "startTime",
+        type: "string",
+        required: true,
+        description: "Export start (ISO timestamp)",
+      },
+      {
+        name: "endTime",
+        type: "string",
+        required: true,
+        description: "Export end (ISO timestamp)",
+      },
+      {
+        name: "format",
+        type: "string",
+        required: false,
+        description: '"json" or "csv"',
+        default: '"json"',
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      downloadUrl: "https://storage.example.com/exports/audit-2024-01.json?...",
+      expiresAt: "2024-01-15T11:30:00Z",
+      recordCount: 15234,
+      sizeBytes: 2456789,
+    }}
+  />
+</ApiEndpoint>
+
+## Get Node Audit History
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/nodes/:id/audit"
+  description="Get the complete history of operations on a specific node."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Node ID" },
+    ]}
+  />
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "limit",
+        type: "number",
+        required: false,
+        description: "Max results",
+        default: "50",
+      },
+      {
+        name: "cursor",
+        type: "string",
+        required: false,
+        description: "Pagination cursor",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          id: "op_xyz789",
+          action: "node.update",
+          principalEmail: "bob@example.com",
+          changes: {
+            name: { from: "old-name.pdf", to: "new-name.pdf" },
+          },
+          timestamp: "2024-01-15T11:00:00Z",
+        },
+        {
+          id: "op_abc123",
+          action: "node.create",
+          principalEmail: "jane@example.com",
+          timestamp: "2024-01-15T10:30:00Z",
+        },
+      ],
+      hasMore: false,
+    }}
+  />
+</ApiEndpoint>
+
+## Action Types
+
+| Action          | Description                              |
+| --------------- | ---------------------------------------- |
+| `node.create`   | File or folder created                   |
+| `node.update`   | Node renamed, moved, or metadata updated |
+| `node.delete`   | Node soft deleted                        |
+| `node.restore`  | Node restored from trash                 |
+| `node.purge`    | Node permanently deleted                 |
+| `upload.init`   | Upload initialized                       |
+| `upload.commit` | Upload finalized                         |
+| `share.create`  | Share link created                       |
+| `share.revoke`  | Share link revoked                       |
+| `lease.acquire` | Lease acquired                           |
+| `lease.release` | Lease released                           |
+| `acl.grant`     | Permission granted                       |
+| `acl.revoke`    | Permission revoked                       |
+| `mount.create`  | Mount created                            |
+| `mount.update`  | Mount updated                            |
+| `mount.delete`  | Mount deleted                            |
+
+## Example: Tracking File Changes
+
+```typescript
+import { RosetClient } from "@roset/sdk";
+
+const client = new RosetClient({ apiKey: "rsk_live_..." });
+
+// Get the last 10 operations on a file
+const history = await client.audit.getNodeHistory(fileId, { limit: 10 });
+
+for (const op of history.items) {
+  console.log(`${op.timestamp}: ${op.action} by ${op.principalEmail}`);
+}
+```

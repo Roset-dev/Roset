@@ -1,0 +1,77 @@
+---
+title: Webhooks
+description: "Subscribe to events for automation"
+---
+
+# Webhooks
+
+Roset can notify your server when events occur in your storage.
+
+## Supported Events
+
+| Event              | Description                  |
+| ------------------ | ---------------------------- |
+| `node.created`     | A file or folder was created |
+| `node.moved`       | A node was renamed or moved  |
+| `node.deleted`     | A node was soft-deleted      |
+| `upload.completed` | A file upload was finalized  |
+| `share.created`    | A share link was created     |
+| `share.revoked`    | A share link was revoked     |
+
+## Register a Webhook
+
+```bash
+curl -X POST https://api.roset.dev/v1/webhooks \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-server.com/webhook",
+    "events": ["upload.completed", "node.deleted"],
+    "secret": "your-signing-secret"
+  }'
+```
+
+## Payload Format
+
+```json
+{
+  "id": "evt_abc123",
+  "event": "upload.completed",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "data": {
+    "nodeId": "...",
+    "path": "/uploads/report.pdf",
+    "size": 1024567
+  }
+}
+```
+
+## Verifying Signatures
+
+Each webhook includes a signature header:
+
+```
+X-Roset-Signature: sha256=abc123...
+```
+
+Verify it using HMAC-SHA256:
+
+```typescript
+import { createHmac } from "crypto";
+
+const signature = createHmac("sha256", secret)
+  .update(JSON.stringify(payload))
+  .digest("hex");
+
+if (`sha256=${signature}` === headerSignature) {
+  // Valid
+}
+```
+
+## Retry Policy
+
+Failed deliveries are retried:
+
+- 3 retries with exponential backoff
+- 1 min → 5 min → 30 min
+- After 3 failures, webhook is disabled

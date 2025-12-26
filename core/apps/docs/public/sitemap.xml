@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+<url><loc>https://docs.roset.dev</loc><lastmod>2025-12-25T19:34:29.659Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/api-reference</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/api-reference/audit</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/api-reference/leases</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/api-reference/mounts</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/api-reference/nodes</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/api-reference/search</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/api-reference/shares</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/api-reference/uploads</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/concepts</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/guides/high-performance-compute</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/guides/leases</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/guides/mounts</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/guides/python-sdk</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/guides/retention</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/guides/sdk</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/guides/search</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/guides/sharing</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/guides/versioning</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/guides/webhooks</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/quickstart</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/reference/checkpoint-contract</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/reference/errors</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/reference/semantics</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/self-hosting/docker</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://docs.roset.dev/self-hosting/production</loc><lastmod>2025-12-25T19:34:29.660Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+</urlset>

@@ -1,0 +1,303 @@
+import {
+  ApiEndpoint,
+  ParameterTable,
+  ResponseExample,
+  RequestExample,
+} from "@roset/ui";
+
+# Nodes API
+
+The Nodes API provides operations for managing files and folders in the Roset filesystem.
+
+## Resolve Paths
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/resolve"
+  description="Batch resolve paths to node IDs. Returns null for paths that don't exist."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "paths",
+        type: "string[]",
+        required: true,
+        description: "Array of paths to resolve (max 100)",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      paths: ["/documents/report.pdf", "/images/logo.png", "/nonexistent"],
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      results: [
+        {
+          path: "/documents/report.pdf",
+          nodeId: "550e8400-e29b-41d4-a716-446655440000",
+        },
+        {
+          path: "/images/logo.png",
+          nodeId: "550e8400-e29b-41d4-a716-446655440001",
+        },
+        { path: "/nonexistent", nodeId: null },
+      ],
+    }}
+  />
+</ApiEndpoint>
+
+## Get Node
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/nodes/:id"
+  description="Retrieve metadata for a specific node."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Node ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      tenant_id: "tenant_abc",
+      mount_id: "mount_123",
+      parent_id: "550e8400-e29b-41d4-a716-446655440001",
+      name: "report.pdf",
+      type: "file",
+      size_bytes: 1048576,
+      content_type: "application/pdf",
+      metadata: { author: "Jane Doe" },
+      created_at: "2024-01-15T10:30:00Z",
+      updated_at: "2024-01-15T10:30:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## List Children
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/nodes/:id/children"
+  description="List child nodes of a folder with pagination."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "id",
+        type: "uuid",
+        required: true,
+        description: "Parent folder ID",
+      },
+    ]}
+  />
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "limit",
+        type: "number",
+        required: false,
+        description: "Max results to return",
+        default: "50",
+      },
+      {
+        name: "cursor",
+        type: "string",
+        required: false,
+        description: "Pagination cursor",
+      },
+      {
+        name: "type",
+        type: "string",
+        required: false,
+        description: 'Filter by type: "file" or "folder"',
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        { id: "node1", name: "document.pdf", type: "file", size_bytes: 1024 },
+        { id: "node2", name: "images", type: "folder", size_bytes: null },
+      ],
+      next_cursor: "eyJpZCI6Im5vZGUyIn0=",
+      has_more: true,
+    }}
+  />
+</ApiEndpoint>
+
+## Create Node
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/nodes"
+  description="Create a new file or folder."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "name",
+        type: "string",
+        required: true,
+        description: "Node name (max 255 chars)",
+      },
+      {
+        name: "type",
+        type: "string",
+        required: true,
+        description: '"file" or "folder"',
+      },
+      {
+        name: "parentId",
+        type: "uuid",
+        required: false,
+        description: "Parent folder ID (defaults to root)",
+      },
+      {
+        name: "parentPath",
+        type: "string",
+        required: false,
+        description: "Alternative: parent folder path",
+      },
+      {
+        name: "metadata",
+        type: "object",
+        required: false,
+        description: "Custom metadata key-value pairs",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      name: "quarterly-report.pdf",
+      type: "file",
+      parentId: "550e8400-e29b-41d4-a716-446655440001",
+      metadata: { department: "finance" },
+    }}
+  />
+  <ResponseExample
+    status={201}
+    json={{
+      id: "550e8400-e29b-41d4-a716-446655440002",
+      name: "quarterly-report.pdf",
+      type: "file",
+      parent_id: "550e8400-e29b-41d4-a716-446655440001",
+      metadata: { department: "finance" },
+      created_at: "2024-01-15T10:30:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Update Node
+
+<ApiEndpoint
+  method="PATCH"
+  path="/v1/nodes/:id"
+  description="Rename or move a node. Moving a folder moves all descendants instantly."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Node ID" },
+    ]}
+  />
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "name",
+        type: "string",
+        required: false,
+        description: "New name",
+      },
+      {
+        name: "parentId",
+        type: "uuid",
+        required: false,
+        description: "New parent folder (move operation)",
+      },
+      {
+        name: "metadata",
+        type: "object",
+        required: false,
+        description: "Metadata to merge",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      name: "annual-report-2024.pdf",
+      parentId: "550e8400-e29b-41d4-a716-446655440003",
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      id: "550e8400-e29b-41d4-a716-446655440002",
+      name: "annual-report-2024.pdf",
+      parent_id: "550e8400-e29b-41d4-a716-446655440003",
+      updated_at: "2024-01-15T11:00:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Delete Node
+
+<ApiEndpoint
+  method="DELETE"
+  path="/v1/nodes/:id"
+  description="Soft delete a node. Deleted nodes can be restored within the retention period."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "id",
+        type: "uuid",
+        required: true,
+        description: "Node ID to delete",
+      },
+    ]}
+  />
+  <ResponseExample status={204} description="No content" json={{}} />
+</ApiEndpoint>
+
+## Restore Node
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/nodes/:id/restore"
+  description="Restore a soft-deleted node from trash."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "id",
+        type: "uuid",
+        required: true,
+        description: "Deleted node ID",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      id: "550e8400-e29b-41d4-a716-446655440002",
+      name: "annual-report-2024.pdf",
+      deleted_at: null,
+      restored_at: "2024-01-15T12:00:00Z",
+    }}
+  />
+</ApiEndpoint>

@@ -1,0 +1,89 @@
+# Quickstart
+
+Get Roset running locally in 5 minutes.
+
+> **New to Roset?** Roset provides filesystem semantics (folders, atomic moves, permissions) on top of any object storage (S3, Google Cloud Storage, Azure Blob, R2, MinIO, etc.). Check out [Core Concepts](/concepts) to see how Roset's terminology maps to object storage concepts.
+
+## Prerequisites
+
+- Node.js 18+
+- Docker & Docker Compose
+- pnpm (or npm)
+
+## 1. Clone and Install
+
+```bash
+git clone https://github.com/your-org/roset.git
+cd roset/api
+pnpm install
+```
+
+## 2. Start Infrastructure
+
+```bash
+docker compose up -d
+```
+
+This starts:
+
+- PostgreSQL (port 5432)
+- Redis (port 6379)
+- MinIO (port 9000, console at 9001)
+
+## 3. Run Migrations
+
+```bash
+pnpm run migrate
+```
+
+## 4. Start the API
+
+```bash
+pnpm run dev
+```
+
+API runs at `http://localhost:3000`.
+
+## 5. Create a Tenant
+
+```bash
+# Connect to Postgres
+docker exec -it roset-postgres psql -U postgres -d roset
+
+# Insert test data
+
+INSERT INTO tenants (id, name, slug)
+VALUES ('00000000-0000-0000-0000-000000000001', 'Demo', 'demo');
+
+INSERT INTO mounts (id, tenant_id, provider, bucket, region, is_default)
+VALUES ('00000000-0000-0000-0000-000000000002',
+'00000000-0000-0000-0000-000000000001',
+'minio', 'demo-bucket', 'us-east-1', true);
+
+-- Create root node
+INSERT INTO nodes (tenant_id, mount_id, parent_id, name, type)
+VALUES ('00000000-0000-0000-0000-000000000001',
+'00000000-0000-0000-0000-000000000002',
+NULL, '', 'folder');
+```
+
+## 6. Test the API
+
+```bash
+# Create a folder
+curl -X POST http://localhost:3000/v1/nodes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{"name": "Documents", "type": "folder", "parentPath": "/"}'
+
+# List children
+
+curl http://localhost:3000/v1/nodes/ROOT_ID/children \
+-H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## Next Steps
+
+- [Concepts](/concepts) — Understand nodes, mounts, ACLs
+- [SDK Guide](/guides/sdk) — Use the TypeScript SDK
+- [API Reference](/api-reference) — All endpoints

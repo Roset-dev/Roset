@@ -1,0 +1,218 @@
+import {
+  ApiEndpoint,
+  ParameterTable,
+  ResponseExample,
+  RequestExample,
+} from "@roset/ui";
+
+# Shares API
+
+The Shares API enables creating and managing shareable links for files and folders. Share links provide controlled access without requiring authentication.
+
+## Create Share
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/shares"
+  description="Create a new share link for a node."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "nodeId",
+        type: "uuid",
+        required: true,
+        description: "Node to share",
+      },
+      {
+        name: "scope",
+        type: "string",
+        required: false,
+        description: '"read" or "write"',
+        default: '"read"',
+      },
+      {
+        name: "expiresIn",
+        type: "string",
+        required: false,
+        description: 'Expiry duration (e.g., "7d", "24h")',
+      },
+      {
+        name: "password",
+        type: "string",
+        required: false,
+        description: "Optional password protection",
+      },
+      {
+        name: "maxDownloads",
+        type: "number",
+        required: false,
+        description: "Maximum download count",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      nodeId: "550e8400-e29b-41d4-a716-446655440000",
+      scope: "read",
+      expiresIn: "7d",
+      maxDownloads: 100,
+    }}
+  />
+  <ResponseExample
+    status={201}
+    json={{
+      id: "share_abc123",
+      token: "shr_Kj8nM2pL4qR7...",
+      url: "https://share.roset.dev/shr_Kj8nM2pL4qR7...",
+      nodeId: "550e8400-e29b-41d4-a716-446655440000",
+      scope: "read",
+      expiresAt: "2024-01-22T10:30:00Z",
+      maxDownloads: 100,
+      downloadCount: 0,
+      createdAt: "2024-01-15T10:30:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## List Shares
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/shares"
+  description="List all share links for the tenant."
+>
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "nodeId",
+        type: "uuid",
+        required: false,
+        description: "Filter by node ID",
+      },
+      {
+        name: "active",
+        type: "boolean",
+        required: false,
+        description: "Only active (non-revoked) shares",
+      },
+      {
+        name: "limit",
+        type: "number",
+        required: false,
+        description: "Max results",
+        default: "50",
+      },
+      {
+        name: "cursor",
+        type: "string",
+        required: false,
+        description: "Pagination cursor",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          id: "share_abc123",
+          token: "shr_Kj8nM2pL4qR7...",
+          nodeId: "550e8400-e29b-41d4-a716-446655440000",
+          nodeName: "report.pdf",
+          scope: "read",
+          expiresAt: "2024-01-22T10:30:00Z",
+          downloadCount: 5,
+          createdAt: "2024-01-15T10:30:00Z",
+        },
+      ],
+      nextCursor: null,
+      hasMore: false,
+    }}
+  />
+</ApiEndpoint>
+
+## Get Share
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/shares/:token"
+  auth="optional"
+  description="Get share details. Public endpoint for share link access."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "token",
+        type: "string",
+        required: true,
+        description: "Share token",
+      },
+    ]}
+  />
+  <ParameterTable
+    type="header"
+    params={[
+      {
+        name: "X-Share-Password",
+        type: "string",
+        required: false,
+        description: "Password if share is protected",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      nodeId: "550e8400-e29b-41d4-a716-446655440000",
+      nodeName: "report.pdf",
+      nodeType: "file",
+      scope: "read",
+      downloadUrl: "https://storage.example.com/...",
+      expiresAt: "2024-01-22T10:30:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Revoke Share
+
+<ApiEndpoint
+  method="DELETE"
+  path="/v1/shares/:token"
+  description="Revoke a share link. The link will no longer be accessible."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "token",
+        type: "string",
+        required: true,
+        description: "Share token to revoke",
+      },
+    ]}
+  />
+  <ResponseExample status={204} description="No content" json={{}} />
+</ApiEndpoint>
+
+## Example: Creating a Password-Protected Share
+
+```typescript
+import { RosetClient } from "@roset/sdk";
+
+const client = new RosetClient({ apiKey: "rsk_live_..." });
+
+// Create a password-protected share that expires in 24 hours
+const share = await client.shares.create({
+  nodeId: file.id,
+  expiresIn: "24h",
+  password: "secret123",
+  maxDownloads: 10,
+});
+
+console.log(`Share URL: ${share.url}`);
+// Share URL: https://share.roset.dev/shr_Kj8nM2pL4qR7...
+```

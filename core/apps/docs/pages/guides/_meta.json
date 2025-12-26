@@ -1,0 +1,12 @@
+{
+  "sdk": "TypeScript SDK",
+  "python-sdk": "Python SDK",
+  "high-performance-compute": "ML Checkpointing",
+  "sharing": "Sharing",
+  "leases": "File Leases",
+  "mounts": "Multi-Mount",
+  "retention": "Trash & Retention",
+  "versioning": "Versioning",
+  "webhooks": "Webhooks",
+  "search": "Search"
+}

@@ -1,0 +1,190 @@
+import {
+  ApiEndpoint,
+  ParameterTable,
+  ResponseExample,
+  RequestExample,
+} from "@roset/ui";
+
+# Uploads API
+
+The Uploads API handles file data uploads using a two-phase commit pattern. Roset never proxies file data—clients upload directly to storage using signed URLs.
+
+## Upload Flow
+
+1. **Init** — Request a signed upload URL from Roset
+2. **Upload** — Upload file data directly to storage (S3/R2/MinIO)
+3. **Commit** — Notify Roset that upload is complete with the ETag
+
+## Initialize Upload
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/uploads/init"
+  description="Get a signed URL for uploading file data directly to storage."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "nodeId",
+        type: "uuid",
+        required: true,
+        description: "Target file node ID",
+      },
+      {
+        name: "contentType",
+        type: "string",
+        required: true,
+        description: "MIME type of the file",
+      },
+      {
+        name: "sizeBytes",
+        type: "number",
+        required: true,
+        description: "File size in bytes",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      nodeId: "550e8400-e29b-41d4-a716-446655440000",
+      contentType: "application/pdf",
+      sizeBytes: 1048576,
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      uploadUrl: "https://storage.example.com/bucket/key?X-Amz-Signature=...",
+      uploadToken: "ut_abc123...",
+      expiresAt: "2024-01-15T10:45:00Z",
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/pdf",
+        "x-amz-content-sha256": "UNSIGNED-PAYLOAD",
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## Commit Upload
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/uploads/commit"
+  description="Finalize an upload after data has been uploaded to storage."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "uploadToken",
+        type: "string",
+        required: true,
+        description: "Token from init response",
+      },
+      {
+        name: "etag",
+        type: "string",
+        required: true,
+        description: "ETag returned by storage provider",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      uploadToken: "ut_abc123...",
+      etag: '"d41d8cd98f00b204e9800998ecf8427e"',
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      nodeId: "550e8400-e29b-41d4-a716-446655440000",
+      versionId: "v_xyz789...",
+      sizeBytes: 1048576,
+      contentType: "application/pdf",
+      etag: '"d41d8cd98f00b204e9800998ecf8427e"',
+      committedAt: "2024-01-15T10:35:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Get Download URL
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/nodes/:id/download"
+  description="Get a signed URL for downloading file data."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "File node ID" },
+    ]}
+  />
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "versionId",
+        type: "string",
+        required: false,
+        description: "Specific version to download",
+      },
+      {
+        name: "expiresIn",
+        type: "number",
+        required: false,
+        description: "URL expiry in seconds",
+        default: "3600",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      downloadUrl: "https://storage.example.com/bucket/key?X-Amz-Signature=...",
+      expiresAt: "2024-01-15T11:30:00Z",
+      fileName: "report.pdf",
+      contentType: "application/pdf",
+      sizeBytes: 1048576,
+    }}
+  />
+</ApiEndpoint>
+
+## Example: Complete Upload Flow
+
+```typescript
+import { RosetClient } from "@roset/sdk";
+
+const client = new RosetClient({ apiKey: "rsk_live_..." });
+
+// 1. Create the file node
+const file = await client.nodes.create({
+  name: "document.pdf",
+  type: "file",
+  parentPath: "/documents",
+});
+
+// 2. Initialize upload
+const { uploadUrl, uploadToken, headers } = await client.uploads.init({
+  nodeId: file.id,
+  contentType: "application/pdf",
+  sizeBytes: pdfBuffer.length,
+});
+
+// 3. Upload directly to storage
+const uploadResponse = await fetch(uploadUrl, {
+  method: "PUT",
+  headers,
+  body: pdfBuffer,
+});
+const etag = uploadResponse.headers.get("ETag");
+
+// 4. Commit the upload
+await client.uploads.commit({
+  uploadToken,
+  etag,
+});
+```

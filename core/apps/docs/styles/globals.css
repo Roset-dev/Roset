@@ -1,0 +1,418 @@
+@import "tailwindcss";
+@source "../../../packages/ui/dist";
+
+/* ============================================
+   ROSET DESIGN SYSTEM
+   Dark-first with clean light mode support
+   ============================================ */
+
+:root {
+  /* Accent (Signal Blue) */
+  --accent: #4DA3FF;
+  --accent-hover: #60B0FF;
+  --accent-pressed: #2E8CFF;
+
+  /* Dark Mode (Default) */
+  --bg: #000000;
+  --surface-1: #09090B;
+  --surface-2: #121214;
+  --surface-3: #18181C;
+  --border: #27272A;
+
+  --text: #eaf0ff;
+  --text-2: #a9b4d0;
+  --text-3: #7381a6;
+
+  /* Functional */
+  --success: #2bd576;
+  --warning: #ffb020;
+  --error: #ff4d4d;
+  --info: #4da3ff;
+
+  /* Spacing */
+  --xs: 4px;
+  --sm: 8px;
+  --md: 12px;
+  --lg: 16px;
+  --xl: 24px;
+  --xxl: 32px;
+  --xxxl: 48px;
+
+  /* Radius */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-focus: 0 0 0 3px rgba(77, 163, 255, 0.35);
+
+  /* Theme colors for Tailwind */
+  --background: var(--bg);
+  --foreground: var(--text);
+
+  /* Shiki Syntax Highlighting - Dark Mode */
+  --shiki-color-text: #e1e4e8;
+  --shiki-color-background: #09090B;
+  --shiki-token-constant: #79c0ff;
+  --shiki-token-string: #a5d6ff;
+  --shiki-token-comment: #6e7681;
+  --shiki-token-keyword: #ff7b72;
+  --shiki-token-parameter: #ffa657;
+  --shiki-token-function: #d2a8ff;
+  --shiki-token-string-expression: #a5d6ff;
+  --shiki-token-punctuation: #8b949e;
+  --shiki-token-link: #a5d6ff;
+}
+
+/* Light mode overrides - support both data-theme and .light class (Nextra compatibility) */
+[data-theme="light"],
+.light,
+:root.light {
+  --bg: #ffffff;
+  --surface-1: #f8f9fb;
+  --surface-2: #ffffff;
+  --surface-3: #f1f3f8;
+  --border: #d1d5db;
+
+  --text: #111827;
+  --text-2: #374151;
+  --text-3: #6b7280;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+
+  /* Light mode shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  /* Shiki Syntax Highlighting - Light Mode */
+  --shiki-color-text: #24292f;
+  --shiki-color-background: #f8f9fb;
+  --shiki-token-constant: #0550ae;
+  --shiki-token-string: #0a3069;
+  --shiki-token-comment: #6e7781;
+  --shiki-token-keyword: #cf222e;
+  --shiki-token-parameter: #953800;
+  --shiki-token-function: #8250df;
+  --shiki-token-string-expression: #0a3069;
+  --shiki-token-punctuation: #24292f;
+  --shiki-token-link: #0550ae;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-pressed: var(--accent-pressed);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(
+    --font-sans,
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif
+  );
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus states */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Selection */
+::selection {
+  background: rgba(77, 163, 255, 0.3);
+  color: var(--text);
+}
+
+.bg-grid {
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Ensure table cells inherit proper text colors */
+table td,
+table th {
+  color: var(--text);
+}
+
+table th {
+  color: var(--text-2);
+}
+
+/* CodeBlock styling for light mode - use a slightly darker background */
+[data-theme="light"] pre,
+.light pre {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .bg-surface-1,
+.light .bg-surface-1 {
+  background: #f8fafc;
+}
+
+/* Explicit table styling to ensure borders appear */
+table {
+  border-collapse: collapse;
+}
+
+table thead {
+  border-bottom: 1px solid var(--border);
+}
+
+table tbody tr {
+  border-bottom: 1px solid var(--border);
+}
+
+table tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* Ensure table wrapper has visible border */
+.overflow-x-auto.rounded-xl.border {
+  border: 1px solid var(--border) !important;
+}
+
+/* ============================================
+   NEXTRA SIDEBAR OVERRIDES
+   Match Roset design system
+   ============================================ */
+
+/* Sidebar container */
+.nextra-menu-desktop {
+  gap: 0.25rem !important;
+}
+
+/* All sidebar links - base state */
+.nextra-menu-desktop a,
+.nextra-menu-desktop button {
+  color: var(--text-2) !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.875rem !important;
+  transition: all 0.15s ease !important;
+}
+
+/* Hover state */
+.nextra-menu-desktop a:hover,
+.nextra-menu-desktop button:hover {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+}
+
+/* Active/current page - only for actual links, not folder buttons */
+.nextra-menu-desktop li.active > a:not([class*="items-center"]) {
+  background: var(--accent) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Folder buttons should NOT get accent background even when open */
+.nextra-menu-desktop li.open > button,
+.nextra-menu-desktop li.active > button {
+  background: transparent !important;
+  color: var(--text-2) !important;
+}
+
+.nextra-menu-desktop li.open > button:hover,
+.nextra-menu-desktop li.active > button:hover {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+}
+
+/* Folder expand/collapse buttons */
+.nextra-menu-desktop button svg {
+  color: var(--text-3) !important;
+  transition: transform 0.2s ease !important;
+}
+
+.nextra-menu-desktop button:hover svg {
+  color: var(--text-2) !important;
+}
+
+/* Nested items - left border line */
+.nextra-menu-desktop ul ul::before {
+  background: var(--border) !important;
+}
+
+/* Nested items container */
+.nextra-menu-desktop ul ul {
+  margin-left: 0.75rem !important;
+  padding-left: 0.75rem !important;
+  border-left: 1px solid var(--border) !important;
+}
+
+/* Override Nextra's dark mode specific styling */
+.dark .nextra-menu-desktop a,
+.dark .nextra-menu-desktop button {
+  color: var(--text-2) !important;
+}
+
+.dark .nextra-menu-desktop a:hover,
+.dark .nextra-menu-desktop button:hover {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+}
+
+.dark .nextra-menu-desktop li.active > a {
+  background: var(--accent) !important;
+  color: white !important;
+}
+
+/* Sidebar scrollbar styling */
+.nextra-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.nextra-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nextra-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.nextra-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+/* Remove Nextra's gray/neutral colors */
+.nx-text-gray-500,
+.nx-text-neutral-400 {
+  color: var(--text-2) !important;
+}
+
+.nx-bg-gray-100,
+.nx-bg-primary-100 {
+  background: var(--surface-2) !important;
+}
+
+/* Override primary colors for active state */
+.nx-bg-primary-100,
+.dark\:nx-bg-primary-400\/10 {
+  background: var(--accent) !important;
+}
+
+.nx-text-primary-800,
+.dark\:nx-text-primary-600,
+.nx-font-semibold.nx-text-primary-800 {
+  color: white !important;
+}
+
+/* Sidebar section divider lines */
+.nextra-menu-desktop ul::before {
+  background: var(--border) !important;
+}
+
+/* ============================================
+   API DOCUMENTATION COMPONENT OVERRIDES
+   Ensure Roset UI ApiDocs components render properly in Nextra
+   ============================================ */
+
+/* API Endpoint container - force proper borders */
+.nextra-content [class*="rounded-xl"][class*="border"][class*="bg-surface-1"] {
+  border: 1px solid var(--border) !important;
+  background: var(--surface-1) !important;
+  overflow: hidden;
+}
+
+/* API Endpoint header */
+.nextra-content [class*="border-b"][class*="bg-surface-2"] {
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--surface-2) !important;
+}
+
+/* Ensure dividers work inside API components */
+.nextra-content .divide-y > * + * {
+  border-top: 1px solid var(--border);
+}
+
+/* Force pre/code inside API docs to use proper styling */
+.nextra-content [class*="bg-surface-2"] pre {
+  background: var(--surface-2) !important;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 0;
+}
+
+/* Method badges */
+/* GET method badges - use success green */
+.nextra-content [class*="bg-emerald-500\\/10"] {
+  background: rgba(43, 213, 118, 0.1) !important;
+  color: var(--success) !important;
+  border-color: rgba(43, 213, 118, 0.2) !important;
+}
+
+.nextra-content [class*="bg-blue-500\\/10"] {
+  background: rgba(59, 130, 246, 0.1) !important;
+  color: #60a5fa !important;
+  border-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.nextra-content [class*="bg-red-500\\/10"] {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+.nextra-content [class*="bg-orange-500\\/10"] {
+  background: rgba(249, 115, 22, 0.1) !important;
+  color: #fb923c !important;
+  border-color: rgba(249, 115, 22, 0.2) !important;
+}
+
+/* Parameter tables inside API docs */
+.nextra-content .px-4.py-4 table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.nextra-content .px-4.py-4 table th {
+  text-align: left;
+  padding-bottom: 0.5rem;
+  padding-right: 1rem;
+  font-weight: 500;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.nextra-content .px-4.py-4 table td {
+  padding: 0.5rem 1rem 0.5rem 0;
+}
+
+/* Code inside parameter names */
+.nextra-content .px-4.py-4 code {
+  background: var(--surface-2);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+}
+

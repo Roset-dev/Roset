@@ -1,0 +1,128 @@
+---
+title: TypeScript SDK
+description: Use the @roset/sdk package to interact with Roset
+---
+
+# TypeScript SDK
+
+Use the `@roset/sdk` package to interact with Roset.
+
+> **Note:** The SDK provides filesystem-like operations (folders, moves, permissions) on any object storage backend (S3, Google Cloud Storage, Azure Blob, R2, MinIO, etc.). Operations like `createFolder()`, `rename()`, and `move()` are metadata changes, not object copies. See [Core Concepts](/concepts) for the terminology mapping.
+
+## Installation
+
+```bash
+npm install @roset/sdk
+# or
+pnpm add @roset/sdk
+```
+
+## Quick Start
+
+```typescript
+import { RosetClient } from "@roset/sdk";
+
+const client = new RosetClient({
+  baseUrl: "https://api.roset.io",
+  apiKey: "rk_...",
+});
+
+// Resolve paths
+const nodes = await client.nodes.resolve(["/documents", "/images"]);
+
+// Create a folder
+const folder = await client.nodes.createFolder("Reports", {
+  parentPath: "/documents",
+});
+
+// Upload a file
+const file = await client.uploads.upload(
+  "/documents/Reports/q4.pdf",
+  pdfBuffer,
+  { contentType: "application/pdf" }
+);
+
+// Create a share link
+const share = await client.shares.create(file.id, { expiresIn: "7d" });
+console.log(share.url);
+```
+
+## Resources
+
+### client.nodes
+
+| Method                     | Description          |
+| -------------------------- | -------------------- |
+| `resolve(paths)`           | Batch resolve paths  |
+| `get(id)`                  | Get by ID            |
+| `listChildren(id)`         | List folder contents |
+| `create(name, type, opts)` | Create file/folder   |
+| `createFolder(name, opts)` | Create folder        |
+| `update(id, updates)`      | Rename/move          |
+| `rename(id, name)`         | Rename               |
+| `move(id, parentId)`       | Move                 |
+| `delete(id)`               | Soft delete          |
+| `restore(id)`              | Restore              |
+
+### client.uploads
+
+| Method                     | Description      |
+| -------------------------- | ---------------- |
+| `init(path, opts)`         | Get signed URL   |
+| `commit(token, etag)`      | Finalize upload  |
+| `abort(token)`             | Cancel           |
+| `upload(path, data, opts)` | Full upload flow |
+| `getDownloadUrl(id)`       | Get download URL |
+| `download(id)`             | Download file    |
+
+### client.shares
+
+| Method                 | Description           |
+| ---------------------- | --------------------- |
+| `create(nodeId, opts)` | Create share          |
+| `get(token)`           | Get info              |
+| `revoke(token)`        | Revoke                |
+| `listForNode(nodeId)`  | List shares           |
+| `access(token, opts)`  | Access shared content |
+
+### client.audit
+
+| Method            | Description    |
+| ----------------- | -------------- |
+| `query(opts)`     | Query log      |
+| `forNode(nodeId)` | Node history   |
+| `iterate(opts)`   | Async iterator |
+
+## Error Handling
+
+```typescript
+import { NotFoundError, ForbiddenError, RosetError } from "@roset/sdk";
+
+try {
+  await client.nodes.get("invalid-id");
+} catch (error) {
+  if (error instanceof NotFoundError) {
+    console.log("Not found");
+  } else if (error instanceof ForbiddenError) {
+    console.log("Access denied");
+  }
+}
+```
+
+## Retries
+
+The SDK automatically retries failed requests:
+
+- 3 retries with exponential backoff
+- Retries on 5xx errors and network failures
+- Rate limit handling with `Retry-After`
+
+## Idempotency
+
+Mutations auto-generate idempotency keys. To provide your own:
+
+```typescript
+await client.nodes.create("folder", "folder", {
+  idempotencyKey: "my-unique-key",
+});
+```

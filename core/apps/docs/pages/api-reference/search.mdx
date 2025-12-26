@@ -1,0 +1,184 @@
+import {
+  ApiEndpoint,
+  ParameterTable,
+  ResponseExample,
+  RequestExample,
+} from "@roset/ui";
+
+# Search API
+
+The Search API enables finding nodes by name, metadata, and content type across the filesystem.
+
+## Search Nodes
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/search"
+  description="Search nodes with advanced filtering. Results respect ACL permissions."
+>
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "q",
+        type: "string",
+        required: true,
+        description: "Search query",
+      },
+      {
+        name: "type",
+        type: "string",
+        required: false,
+        description: 'Filter by "file" or "folder"',
+      },
+      {
+        name: "contentType",
+        type: "string",
+        required: false,
+        description: 'Filter by MIME type (e.g., "image/*")',
+      },
+      {
+        name: "parentId",
+        type: "uuid",
+        required: false,
+        description: "Search within a specific folder",
+      },
+      {
+        name: "createdAfter",
+        type: "string",
+        required: false,
+        description: "ISO date filter",
+      },
+      {
+        name: "createdBefore",
+        type: "string",
+        required: false,
+        description: "ISO date filter",
+      },
+      {
+        name: "minSize",
+        type: "number",
+        required: false,
+        description: "Minimum file size in bytes",
+      },
+      {
+        name: "maxSize",
+        type: "number",
+        required: false,
+        description: "Maximum file size in bytes",
+      },
+      {
+        name: "limit",
+        type: "number",
+        required: false,
+        description: "Max results",
+        default: "20",
+      },
+      {
+        name: "cursor",
+        type: "string",
+        required: false,
+        description: "Pagination cursor",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          name: "quarterly-report-2024.pdf",
+          type: "file",
+          path: "/documents/reports/quarterly-report-2024.pdf",
+          sizeBytes: 1048576,
+          contentType: "application/pdf",
+          highlight: {
+            name: ["<mark>quarterly</mark>-<mark>report</mark>-2024.pdf"],
+          },
+          score: 0.95,
+        },
+      ],
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 1,
+    }}
+  />
+</ApiEndpoint>
+
+## Quick Search
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/search/quick"
+  description="Fast typeahead search for autocomplete. Returns fewer results with minimal data."
+>
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "q",
+        type: "string",
+        required: true,
+        description: "Search prefix (min 2 chars)",
+      },
+      {
+        name: "limit",
+        type: "number",
+        required: false,
+        description: "Max results",
+        default: "5",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          name: "quarterly-report-2024.pdf",
+          type: "file",
+          path: "/documents/reports/quarterly-report-2024.pdf",
+        },
+        {
+          id: "550e8400-e29b-41d4-a716-446655440001",
+          name: "quarterly-budget.xlsx",
+          type: "file",
+          path: "/finance/quarterly-budget.xlsx",
+        },
+      ],
+    }}
+  />
+</ApiEndpoint>
+
+## Search Query Syntax
+
+| Syntax       | Example            | Description                          |
+| ------------ | ------------------ | ------------------------------------ |
+| Simple text  | `report`           | Matches name containing "report"     |
+| Exact phrase | `"annual report"`  | Matches exact phrase                 |
+| Wildcard     | `*.pdf`            | Matches files ending in .pdf         |
+| Prefix       | `budget*`          | Matches names starting with "budget" |
+| Metadata     | `meta.author:jane` | Search in metadata fields            |
+
+## Example: Searching with Filters
+
+```typescript
+import { RosetClient } from "@roset/sdk";
+
+const client = new RosetClient({ apiKey: "rsk_live_..." });
+
+// Search for PDFs created this month
+const results = await client.search({
+  q: "quarterly report",
+  type: "file",
+  contentType: "application/pdf",
+  createdAfter: "2024-01-01T00:00:00Z",
+  limit: 20,
+});
+
+for (const item of results.items) {
+  console.log(`${item.name} - ${item.path}`);
+}
+```

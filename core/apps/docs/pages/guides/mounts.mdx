@@ -1,0 +1,98 @@
+---
+title: Multi-Mount
+description: "Connect multiple storage backends to one tenant"
+---
+
+import { Callout } from "@roset/ui";
+
+# Multi-Mount
+
+Roset supports multiple storage backends (mounts) per tenant. Each mount connects to a different bucket or provider.
+
+## Use Cases
+
+- **Staging vs Production** — Different buckets for each environment
+- **Multi-region** — EU bucket for EU users, US bucket for US users
+- **Multi-provider** — S3 for backups, R2 for CDN, MinIO for dev
+
+## List Mounts
+
+```typescript
+const mounts = await client.mounts.list();
+
+for (const mount of mounts) {
+  console.log(mount.name, mount.provider, mount.isDefault);
+}
+```
+
+## Create a Mount
+
+```typescript
+const mount = await client.mounts.create({
+  name: "eu-storage",
+  provider: "s3",
+  bucket: "my-app-eu",
+  region: "eu-west-1",
+  isDefault: false,
+  retentionDays: 30, // Trash retention
+});
+```
+
+## Get Mount Details
+
+```typescript
+const { mount, retention } = await client.mounts.get(mountId);
+
+console.log(mount.retentionDays);
+console.log(retention.trashCount); // Files in trash
+```
+
+## Update a Mount
+
+```typescript
+await client.mounts.update(mountId, {
+  retentionDays: 60,
+  isDefault: true, // Make this the default
+});
+```
+
+## Delete a Mount
+
+<Callout type="warning">
+  A mount can only be deleted if it contains no files or folders (empty).
+</Callout>
+
+```typescript
+await client.mounts.delete(mountId);
+```
+
+## Switch Between Mounts
+
+Use the `useMount()` helper to scope operations:
+
+```typescript
+// Default mount
+await client.nodes.list("/");
+
+// Specific mount
+const euClient = client.useMount("mount-id-eu");
+await euClient.nodes.list("/");
+```
+
+## Default Mount
+
+One mount is marked as default. New nodes are created in the default mount unless specified.
+
+```typescript
+const defaultMount = await client.mounts.getDefault();
+```
+
+## API Endpoints
+
+| Method | Endpoint         | Description                |
+| ------ | ---------------- | -------------------------- |
+| GET    | `/v1/mounts`     | List mounts                |
+| POST   | `/v1/mounts`     | Create mount               |
+| GET    | `/v1/mounts/:id` | Get mount + retention info |
+| PATCH  | `/v1/mounts/:id` | Update mount               |
+| DELETE | `/v1/mounts/:id` | Delete mount               |

@@ -1,0 +1,91 @@
+---
+title: File Versioning
+description: "Manage file versions and rollback changes"
+---
+
+# File Versioning
+
+Every file upload creates a new version. Previous versions are retained for history and rollback.
+
+## How It Works
+
+```text
+report.pdf
+├── v3 (current) ← Latest upload
+├── v2           ← Previous
+└── v1           ← Original
+```
+
+Only one version is marked `isCurrent = true` at a time.
+
+## Upload a New Version
+
+Simply upload to the same path:
+
+```typescript
+// First upload creates v1
+await client.uploads.upload("/reports/q4.pdf", file1);
+
+// Second upload creates v2 (v1 is retained)
+await client.uploads.upload("/reports/q4.pdf", file2);
+```
+
+## Get Current Version
+
+```typescript
+const node = await client.nodes.get(nodeId);
+
+console.log(node.version.id);
+console.log(node.version.size);
+console.log(node.version.createdAt);
+```
+
+## List All Versions
+
+```typescript
+// Coming soon in SDK
+const versions = await client.get(`/v1/nodes/${nodeId}/versions`);
+
+for (const v of versions) {
+  console.log(v.createdAt, v.size, v.isCurrent);
+}
+```
+
+## Download Specific Version
+
+```typescript
+const { url } = await client.uploads.download(nodeId, {
+  versionId: "version-uuid",
+});
+```
+
+## Version Metadata
+
+Each version stores:
+
+| Field         | Description                 |
+| ------------- | --------------------------- |
+| `id`          | Unique version ID           |
+| `storageKey`  | Object storage key          |
+| `etag`        | Storage ETag (checksum)     |
+| `size`        | File size in bytes          |
+| `contentType` | MIME type                   |
+| `isCurrent`   | Is this the active version? |
+| `createdAt`   | Upload timestamp            |
+| `createdBy`   | Uploader principal ID       |
+
+## Storage
+
+Each version is stored as a separate object:
+
+```text
+s3://bucket/tenant-id/mount-id/node-id/version-id
+```
+
+## Version Limits
+
+There is no default limit on versions. To manage storage:
+
+1. Configure retention policies on the mount
+2. Implement version cleanup via the API
+3. Use webhooks to track uploads and prune old versions

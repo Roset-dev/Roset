@@ -1,0 +1,80 @@
+---
+title: Production Deployment
+description: "Deploy Roset to production"
+---
+
+# Production Deployment
+
+## Infrastructure Requirements
+
+| Component          | Recommendation                    |
+| ------------------ | --------------------------------- |
+| **API**            | 2+ instances behind load balancer |
+| **PostgreSQL**     | Managed (Neon, RDS, Cloud SQL)    |
+| **Redis**          | Managed (Upstash, ElastiCache)    |
+| **Object Storage** | S3, R2, GCS, or Azure Blob        |
+
+## Environment Variables
+
+```bash
+# Database
+DATABASE_URL=postgres://user:pass@host:5432/roset
+
+# Redis
+REDIS_URL=redis://host:6379
+
+# Storage (default mount)
+S3_REGION=us-east-1
+S3_ENDPOINT=https://s3.amazonaws.com
+S3_ACCESS_KEY_ID=AKIA...
+S3_SECRET_ACCESS_KEY=...
+S3_BUCKET=your-bucket
+
+# Auth
+JWT_ISSUER=https://auth.roset.dev
+JWKS_URL=https://auth.roset.dev/.well-known/jwks.json
+
+# Signed URLs
+SIGNED_URL_EXPIRES_IN=3600
+```
+
+## Docker Image
+
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --production
+COPY dist ./dist
+CMD ["node", "dist/index.js"]
+```
+
+## Health Checks
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 3000
+```
+
+## Running Migrations
+
+```bash
+psql $DATABASE_URL < src/db/migrations/001_schema.sql
+```
+
+## Purge Worker
+
+Start the background purge worker:
+
+```bash
+node dist/workers/purge.js
+```
+
+Or run as a cron job hourly.

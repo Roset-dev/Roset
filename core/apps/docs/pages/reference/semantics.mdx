@@ -1,0 +1,169 @@
+# Roset Semantics
+
+This document defines the explicit behavioral contract for Roset — what it does and doesn't support.
+
+## Core Model
+
+### Nodes
+
+Every file and folder in Roset is a **node** with a unique UUID. Nodes form a tree structure via `parent_id` references.
+
+| Property   | Description                                |
+| ---------- | ------------------------------------------ |
+| **ID**     | Immutable UUID, primary identity           |
+| **Name**   | Mutable, unique within parent              |
+| **Type**   | `file` or `folder`, immutable              |
+| **Parent** | Reference to parent folder (NULL for root) |
+
+### Paths
+
+Paths are **derived** from the node hierarchy, not stored. The path `/a/b/c.txt` resolves to a node by walking the tree from root.
+
+**Path resolution is cached** with a 5-minute TTL. After rename/move, cached paths may be stale briefly.
+
+---
+
+## Supported Operations
+
+### Efficient Rename/Move
+
+Renaming a file or folder is **O(1)**. Moving a folder updates the path for all its descendants (Materialized Path pattern). This trade-off enables blazing fast O(1) path resolution and subtree querying.
+
+```http
+PATCH /v1/nodes/:id { name: "new-name", parentId: "new-parent-id" }
+```
+
+### O(1) Hierarchical Queries
+
+Thanks to materialized paths, querying ancestors or all descendants of a folder is **O(1)** (index scan), without requiring recursive database operations.
+
+### Soft Delete with Trash
+
+Deleted nodes are marked with `deleted_at` timestamp. They remain in the database until:
+
+- Retention period passes (configurable per mount)
+- Explicitly purged by retention worker
+
+### Versioning
+
+Every upload creates a new file version. Only one version can be `is_current = true` at a time. Previous versions are retained.
+
+### Share Links
+
+Share links provide scoped access to a node (and its children if a folder). Features:
+
+- Expiration dates
+- Password protection (bcrypt hashed)
+- Download limits
+- Revocation
+
+### Leases (Locks)
+
+Clients can acquire leases on files for concurrent access control:
+
+- **Exclusive**: Single writer, blocks all other leases
+- **Shared**: Multiple readers, blocked by exclusive lease
+
+Leases expire automatically after a configurable duration.
+
+### Multi-Mount
+
+A tenant can have multiple mounts (storage backends). Each mount has its own root node and namespace.
+
+---
+
+## NOT Supported (By Design)
+
+### Hard Links
+
+A node has exactly one parent. No hard links or multiple parents.
+
+### Symbolic Links
+
+No symlinks. Use share links for cross-namespace access.
+
+### Extended Attributes (xattr)
+
+Use the `metadata` JSONB column for custom key-value data.
+
+### POSIX Permissions
+
+Roset uses an ACL model (read/write/admin grants to principals/groups), not POSIX mode bits.
+
+### Partial File Updates
+
+Files are immutable blobs. To "update" a file, upload a new version. There is no byte-range PATCH.
+
+### Directory Size Aggregation
+
+`size_bytes` is only set on files, not aggregated on folders.
+
+### Real-Time Subscriptions
+
+No WebSocket/SSE for live updates. Use webhooks for async notifications.
+
+---
+
+## Consistency Model
+
+### Single-Writer Semantics
+
+Roset assumes collaborative (not concurrent) editing:
+
+- Uploads use optimistic locking via `If-Match` (ETag)
+- Leases provide advisory locking for cooperation
+
+### Path Cache Consistency
+
+- Path → Node resolution is cached with 5-minute TTL
+- Invalidation happens on move/rename
+- Brief staleness is possible after renames
+
+### Manifest Caching (Immutable)
+
+- For folders marked `committed`, the entire subtree is cached indefinitely.
+- Directory listings (`readdir`) and lookups are served from memory (0ms latency).
+- Requires a remount or explicit refresh to see changes (designed for immutable datasets).
+
+### Database Transactions
+
+All node mutations use `SERIALIZABLE` isolation or `FOR UPDATE` locks to prevent races.
+
+---
+
+## Error Codes
+
+| Code                | Meaning                                    |
+| ------------------- | ------------------------------------------ |
+| `NODE_NOT_FOUND`    | Node does not exist or is deleted          |
+| `NAME_CONFLICT`     | A node with that name already exists       |
+| `PARENT_NOT_FOLDER` | Cannot create child under a file           |
+| `CYCLE_DETECTED`    | Move would create circular reference       |
+| `PERMISSION_DENIED` | Insufficient ACL permissions               |
+| `LEASE_CONFLICT`    | Cannot acquire lease due to existing lease |
+| `RETENTION_BLOCKED` | Cannot delete due to retention policy      |
+
+---
+
+## Limits
+
+| Resource             | Default Limit                     |
+| -------------------- | --------------------------------- |
+| Path depth           | 100 levels                        |
+| Name length          | 255 characters                    |
+| Metadata size        | 64 KB                             |
+| File size            | Unlimited (storage backend limit) |
+| Versions per file    | Unlimited                         |
+| Share links per node | 1000                              |
+
+---
+
+## API Contract
+
+The Roset API follows these principles:
+
+1. **Node IDs are stable** — use them for bookmarks, not paths
+2. **Paths are for humans** — use resolution API, expect cache lag
+3. **All writes are idempotent** — use `Idempotency-Key` header
+4. **Errors are structured** — machine-readable `code` + human-readable `message`
+5. **Pagination is cursor-based** — use `?cursor=` for large lists

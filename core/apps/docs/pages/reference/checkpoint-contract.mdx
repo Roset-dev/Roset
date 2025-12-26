@@ -1,0 +1,296 @@
+# Checkpoint Safety Contract
+
+> **The core promise:** "Resume always works. Checkpoints are never corrupt."
+
+This document defines the **Checkpoint Safety Contract** — a provable guarantee for ML training reliability that Roset provides out of the box.
+
+## Executive Summary
+
+Roset provides a **Checkpoint-Safe Volume** that eliminates the "did my checkpoint save correctly?" anxiety that plagues ML training at scale.
+
+**What we guarantee:**
+
+1. Atomic publish of checkpoint directories
+2. Immutable committed checkpoints (WORM)
+3. Atomic "latest pointer" updates
+4. Safe resume after any failure
+5. Built-in retention and rollback
+
+---
+
+## Contract Semantics
+
+### Checkpoint Lifecycle
+
+```mermaid
+graph LR
+    A[STAGING<br/>(mutable)] -->|Seal| B[SEALING<br/>(locking)]
+    B -->|Commit| C[COMMITTED<br/>(immutable)]
+```
+
+### 1. Staging (Active Writes)
+
+**State:** Checkpoint directory exists with `commit_status = 'active'`
+
+**Guarantees:**
+
+- Files can be created, modified, deleted
+- Writes are buffered to temp storage, then uploaded via multipart
+- No durability guarantee until commit
+- Lease-based exclusive write access (optional)
+
+**Failure Mode:**
+
+- Pod dies mid-write → partial files cleaned up on mount reconnect
+- No corrupt state exposed to readers
+
+### 2. Sealing (Commit In Progress)
+
+**State:** `commit_status = 'committing'`
+
+**Guarantees:**
+
+- **Write barrier active:** All new writes to this subtree blocked
+- Manifest generation in progress
+- SHA256 checksums computed for all files
+- Atomic: either all files seal or none
+- **Async Processing:** API returns `202 Accepted` immediately (~50ms)
+
+**Failure Mode:**
+
+- API crash during seal → status rolls back to `active`
+- No partial commits ever visible
+
+### 3. Committed (Immutable)
+
+**State:** `commit_status = 'committed'`
+
+**Guarantees:**
+
+- **WORM (Write Once Read Many):** No modifications, no deletes
+- Manifest stored key/value
+- Files addressable by manifest hash
+- FUSE client caches forever (no TTL)
+- "Latest" pointer atomically updated
+
+**Failure Mode:**
+
+- None. Committed = permanent.
+
+---
+
+## The "Latest" Pointer
+
+Every checkpoint folder supports a **latest** pointer concept:
+
+```
+/checkpoints/
+├── step-1000/     (committed)
+├── step-2000/     (committed)
+├── step-3000/     (committed, latest)
+└── step-4000/     (active, staging)
+```
+
+**Semantics:**
+
+- `latest` always points to the most recently committed checkpoint
+- Update is **atomic** (single metadata operation)
+- Readers never see intermediate state
+- Rollback = point `latest` to older commit
+
+---
+
+## Failure Mode Matrix
+
+| Scenario                              | What Happens                                  | User Experience                        |
+| ------------------------------------- | --------------------------------------------- | -------------------------------------- |
+| Pod killed mid-write                  | Staging files orphaned, cleaned on next mount | Invisible. Resume from last committed. |
+| Node crash during seal                | Commit rolls back to `active`                 | Retry commit. No corruption.           |
+| Network partition during upload       | Multipart aborted after TTL                   | Retry. Partial data cleaned.           |
+| S3 returns 500 during commit          | Retry with exponential backoff                | Transparent to user.                   |
+| Concurrent writers to same checkpoint | Lease conflict error                          | Clear error, no silent corruption.     |
+| "latest" update during read           | Readers see consistent snapshot               | Atomic pointer update.                 |
+| Spot termination mid-training         | Resume from `latest`                          | Always works.                          |
+
+---
+
+## Capabilities & Limitations
+
+### ✅ Guaranteed
+
+| Promise                             | Implementation                                  |
+| ----------------------------------- | ----------------------------------------------- |
+| Committed checkpoints are immutable | `commit_status = 'committed'` blocks all writes |
+| partial checkpoints never visible   | Write barrier during `committing` state         |
+| Resume always finds valid state     | `latest` always points to committed folder      |
+| Checksums verified                  | SHA256 stored per-file                          |
+| **Sub-second commit latency**       | Async Two-Phase Commit (~50ms)                  |
+
+### ❌ Explicit Limitations
+
+| Limitation               | Reason                                      |
+| ------------------------ | ------------------------------------------- |
+| Byte-range modifications | Append-only; full file replacement required |
+| Sync across regions      | Single-region consistency only (for now)    |
+
+---
+
+## Framework Adapters
+
+Roset provides first-class integrations for popular ML frameworks. Install the Python SDK:
+
+```bash
+pip install roset[all]  # All frameworks
+# or
+pip install roset[pytorch]       # PyTorch Lightning
+pip install roset[huggingface]   # Hugging Face
+pip install roset[ray]           # Ray Train
+```
+
+### PyTorch Lightning
+
+```python
+from pytorch_lightning import Trainer
+from roset import Client
+from roset.integrations.pytorch import RosetCheckpointIO
+
+client = Client(api_url="https://api.roset.dev", api_key="rsk_...")
+
+trainer = Trainer(
+    plugins=[RosetCheckpointIO(
+        client=client,
+        mount_path="/mnt/roset",
+        checkpoint_dir="/checkpoints",
+        update_ref="latest",  # Atomic pointer update after each save
+    )],
+)
+
+# Resume from latest (always works!)
+trainer.fit(model, ckpt_path="latest")
+```
+
+### Hugging Face Trainer
+
+```python
+from transformers import Trainer
+from roset import Client
+from roset.integrations.huggingface import RosetTrainerCallback
+
+client = Client(api_url="https://api.roset.dev", api_key="rsk_...")
+
+trainer = Trainer(
+    model=model,
+    args=TrainingArguments(
+        output_dir="/mnt/roset/checkpoints/bert-finetune",
+        save_steps=1000,
+    ),
+    callbacks=[
+        RosetTrainerCallback(
+            client=client,
+            update_ref="latest",
+            async_commit=True,  # Non-blocking for large checkpoints
+        )
+    ],
+)
+
+trainer.train()
+```
+
+### Ray Train
+
+```python
+from roset import Client
+from roset.integrations.ray import RosetRayTrainCallback
+
+client = Client(api_url="https://api.roset.dev", api_key="rsk_...")
+roset_callback = RosetRayTrainCallback(client=client, update_ref="latest")
+
+# In your Ray Train loop, after saving checkpoint:
+checkpoint_path = "/mnt/roset/checkpoints/step-1000"
+# ... save your checkpoint files ...
+
+commit = roset_callback.process_checkpoint(checkpoint_path, step=1000)
+if commit:
+    print(f"Committed: {commit.id}")
+```
+
+### Raw API
+
+```python
+import roset
+
+client = roset.Client(api_url="...", api_key="...")
+
+# 1. Create checkpoint folder
+folder = client.create_folder("/checkpoints", f"step-{step}")
+
+# 2. Write files (via FUSE mount)
+# ... training code writes to /mnt/roset/checkpoints/step-{step}/
+
+# 3. Commit atomically
+commit = client.commit(folder.id, message=f"Step {step}")
+commit = client.wait_for_commit(commit.id)
+
+# 4. Update "latest" pointer
+client.update_ref("latest", commit.id)
+```
+
+---
+
+## Commit Groups API
+
+For cross-folder atomic checkpoints (e.g., committing model + optimizer together):
+
+```python
+# 1. Create a commit group
+group = client.create_commit_group(message="Epoch 10 checkpoint")
+
+# 2. Stage individual folders
+model_dir = client.create_folder("/checkpoints", "model-epoch-10")
+optim_dir = client.create_folder("/checkpoints", "optim-epoch-10")
+
+# 3. Write files via FUSE mount...
+
+# 4. Commit each folder with the group ID
+client.commit(model_dir.id, group_id=group.id)
+client.commit(optim_dir.id, group_id=group.id)
+
+# 5. Seal the group atomically (all-or-nothing)
+client.seal_commit_group(group.id)
+```
+
+**API Endpoints:**
+
+| Method | Endpoint                     | Description                   |
+| ------ | ---------------------------- | ----------------------------- |
+| POST   | `/v1/commit-groups`          | Create a new commit group     |
+| GET    | `/v1/commit-groups/:id`      | Get group status and commits  |
+| POST   | `/v1/commit-groups/:id/seal` | Finalize the group atomically |
+
+---
+
+## Release Pointers (Refs) API
+
+Named pointers to commits for "resume from latest" workflows:
+
+```python
+# Get current "latest" pointer
+latest = client.get_ref("latest")
+if latest:
+    print(f"Latest commit: {latest.commit_id}")
+
+# Update pointer atomically
+client.update_ref("latest", commit.id)
+
+# Compare-and-swap (CAS) for safe concurrent updates
+client.update_ref("latest", commit.id, expected_commit_id=old_commit_id)
+```
+
+**API Endpoints:**
+
+| Method | Endpoint         | Description                 |
+| ------ | ---------------- | --------------------------- |
+| GET    | `/v1/refs`       | List all refs for mount     |
+| GET    | `/v1/refs/:name` | Get ref with commit details |
+| PUT    | `/v1/refs/:name` | Create or update ref (CAS)  |
+| DELETE | `/v1/refs/:name` | Delete ref                  |

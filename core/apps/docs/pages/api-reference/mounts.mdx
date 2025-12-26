@@ -1,0 +1,274 @@
+import {
+  ApiEndpoint,
+  ParameterTable,
+  ResponseExample,
+  RequestExample,
+} from "@roset/ui";
+
+# Mounts API
+
+Mounts connect Roset to storage backends. Each mount represents a connection to a bucket (S3, R2, MinIO, etc.) with its own credentials and configuration.
+
+## List Mounts
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/mounts"
+  description="List all mounts for the current tenant."
+>
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          id: "mount_abc123",
+          name: "Production S3",
+          provider: "s3",
+          bucket: "my-company-files",
+          region: "us-east-1",
+          basePrefix: "roset/",
+          isDefault: true,
+          createdAt: "2024-01-01T00:00:00Z",
+        },
+        {
+          id: "mount_def456",
+          name: "Archive R2",
+          provider: "r2",
+          bucket: "archive-bucket",
+          region: null,
+          basePrefix: "",
+          isDefault: false,
+          createdAt: "2024-01-10T00:00:00Z",
+        },
+      ],
+    }}
+  />
+</ApiEndpoint>
+
+## Get Mount
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/mounts/:id"
+  description="Get details for a specific mount."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Mount ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      id: "mount_abc123",
+      name: "Production S3",
+      provider: "s3",
+      bucket: "my-company-files",
+      region: "us-east-1",
+      basePrefix: "roset/",
+      endpoint: null,
+      isDefault: true,
+      retentionDays: 30,
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-01T00:00:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Create Mount
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/mounts"
+  description="Create a new storage mount."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "name",
+        type: "string",
+        required: true,
+        description: "Human-readable mount name",
+      },
+      {
+        name: "provider",
+        type: "string",
+        required: true,
+        description: '"s3", "r2", "minio", "gcs", or "azure"',
+      },
+      {
+        name: "bucket",
+        type: "string",
+        required: true,
+        description: "Bucket/container name",
+      },
+      {
+        name: "region",
+        type: "string",
+        required: false,
+        description: "AWS region (for S3/R2)",
+      },
+      {
+        name: "basePrefix",
+        type: "string",
+        required: false,
+        description: "Key prefix for all objects",
+        default: '""',
+      },
+      {
+        name: "endpoint",
+        type: "string",
+        required: false,
+        description: "Custom endpoint (for MinIO/S3-compatible)",
+      },
+      {
+        name: "accessKeyId",
+        type: "string",
+        required: true,
+        description: "Access key ID",
+      },
+      {
+        name: "secretAccessKey",
+        type: "string",
+        required: true,
+        description: "Secret access key",
+      },
+      {
+        name: "isDefault",
+        type: "boolean",
+        required: false,
+        description: "Set as default mount",
+        default: "false",
+      },
+      {
+        name: "retentionDays",
+        type: "number",
+        required: false,
+        description: "Trash retention period in days",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      name: "Production S3",
+      provider: "s3",
+      bucket: "my-company-files",
+      region: "us-east-1",
+      basePrefix: "roset/",
+      accessKeyId: "AKIAIOSFODNN7EXAMPLE",
+      secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      isDefault: true,
+      retentionDays: 30,
+    }}
+  />
+  <ResponseExample
+    status={201}
+    json={{
+      id: "mount_abc123",
+      name: "Production S3",
+      provider: "s3",
+      bucket: "my-company-files",
+      region: "us-east-1",
+      isDefault: true,
+      createdAt: "2024-01-01T00:00:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Update Mount
+
+<ApiEndpoint
+  method="PATCH"
+  path="/v1/mounts/:id"
+  description="Update mount configuration. Credentials can be rotated without downtime."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Mount ID" },
+    ]}
+  />
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "name",
+        type: "string",
+        required: false,
+        description: "New name",
+      },
+      {
+        name: "accessKeyId",
+        type: "string",
+        required: false,
+        description: "New access key",
+      },
+      {
+        name: "secretAccessKey",
+        type: "string",
+        required: false,
+        description: "New secret key",
+      },
+      {
+        name: "isDefault",
+        type: "boolean",
+        required: false,
+        description: "Set as default",
+      },
+      {
+        name: "retentionDays",
+        type: "number",
+        required: false,
+        description: "Update retention period",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      name: "Primary S3 Storage",
+      retentionDays: 60,
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      id: "mount_abc123",
+      name: "Primary S3 Storage",
+      retentionDays: 60,
+      updatedAt: "2024-01-15T10:30:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Delete Mount
+
+<ApiEndpoint
+  method="DELETE"
+  path="/v1/mounts/:id"
+  description="Delete a mount. All nodes in this mount must be deleted first."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "id",
+        type: "uuid",
+        required: true,
+        description: "Mount ID to delete",
+      },
+    ]}
+  />
+  <ResponseExample status={204} description="No content" json={{}} />
+</ApiEndpoint>
+
+## Supported Providers
+
+| Provider             | Value   | Notes                            |
+| -------------------- | ------- | -------------------------------- |
+| Amazon S3            | `s3`    | Standard AWS S3                  |
+| Cloudflare R2        | `r2`    | S3-compatible, no egress fees    |
+| MinIO                | `minio` | Self-hosted, requires `endpoint` |
+| Google Cloud Storage | `gcs`   | Interoperability mode            |
+| Azure Blob Storage   | `azure` | Coming soon                      |

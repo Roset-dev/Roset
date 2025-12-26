@@ -1,0 +1,88 @@
+# Welcome to Roset
+
+Roset promotes your object storage buckets (S3, R2, MinIO) to a **multi-tenant virtual filesystem** with real folder semantics, instant move/rename, fine-grained permissions, and complete audit trails.
+
+import { Cards, Card } from "nextra/components";
+
+<Cards>
+  <Card title="Quickstart" href="/quickstart" />
+  <Card title="Concepts" href="/concepts" />
+  <Card title="SDK Guide" href="/guides/sdk" />
+  <Card title="API Reference" href="/api-reference" />
+</Cards>
+
+import {
+  Button,
+  Card as UiCard,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Badge,
+  Alert,
+} from "@roset/ui";
+
+## Why Roset?
+
+| Raw Object Storage            | With Roset                         |
+| ----------------------------- | ---------------------------------- |
+| Key prefixes simulate folders | Real folder hierarchy in metadata  |
+| Rename = copy + delete (slow) | Instant O(1) rename/move           |
+| No permissions beyond IAM     | Fine-grained ACLs with inheritance |
+| No audit trail                | Complete operation log             |
+| No sharing                    | Token-based share links            |
+
+## Data Never Flows Through Roset
+
+Roset is a **control plane** — it manages namespace, policies, and coordination. Your files upload and download directly to/from your object storage via signed URLs.
+
+```text
+Client → Roset (auth + resolve) → signed URL → Client → S3/R2/MinIO
+```
+
+## Key Features
+
+- **Atomic Move/Rename** — Move or rename a folder with millions of files in O(1)
+- **Versioning** — Every upload creates a new version with rollback support
+- **Share Links** — Password-protected, expiring share links with download limits
+- **File Leases** — Exclusive or shared leases for concurrent access control
+- **Metadata Search** — Search files by name, type, size, date, or custom metadata
+- **Webhooks** — Subscribe to events for automation
+
+## UI Components
+
+This documentation is built using the same design system as the Roset control plane.
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
+  <UiCard>
+    <CardHeader>
+      <CardTitle>Unified Design System</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="mb-4 text-text-2">
+        Shared components across likely all apps.
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm">Primary Action</Button>
+        <Button variant="secondary" size="sm">
+          Secondary
+        </Button>
+      </div>
+    </CardContent>
+  </UiCard>
+
+  <UiCard>
+    <CardHeader>
+      <CardTitle>Status Indicators</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="flex gap-2">
+        <Badge variant="success">Online</Badge>
+        <Badge variant="warning">Syncing</Badge>
+        <Badge variant="error">Error</Badge>
+      </div>
+      <Alert variant="info" title="Note">
+        This alert component is imported directly from @roset/ui.
+      </Alert>
+    </CardContent>
+  </UiCard>
+</div>

@@ -1,0 +1,50 @@
+---
+title: Error Codes
+description: "Complete list of Roset error codes"
+---
+
+# Error Codes
+
+All errors include a machine-readable `code` and human-readable `message`.
+
+## Client Errors (4xx)
+
+| Code                      | HTTP | Description                                |
+| ------------------------- | ---- | ------------------------------------------ |
+| `NODE_NOT_FOUND`          | 404  | Node does not exist or is deleted          |
+| `NAME_CONFLICT`           | 409  | A node with that name already exists       |
+| `PARENT_NOT_FOLDER`       | 400  | Cannot create child under a file           |
+| `CYCLE_DETECTED`          | 400  | Move would create circular reference       |
+| `PERMISSION_DENIED`       | 403  | Insufficient ACL permissions               |
+| `LEASE_CONFLICT`          | 409  | Cannot acquire lease due to existing lease |
+| `RETENTION_BLOCKED`       | 409  | Cannot delete due to retention policy      |
+| `UPLOAD_NOT_FOUND`        | 404  | Upload token not found or expired          |
+| `SHARE_NOT_FOUND`         | 404  | Share token not found or revoked           |
+| `SHARE_EXPIRED`           | 410  | Share link has expired                     |
+| `SHARE_PASSWORD_REQUIRED` | 401  | Password required for this share           |
+| `SHARE_PASSWORD_INVALID`  | 401  | Incorrect share password                   |
+| `SHARE_LIMIT_EXCEEDED`    | 410  | Download limit reached                     |
+| `MOUNT_NOT_FOUND`         | 404  | Mount does not exist                       |
+| `MOUNT_NOT_EMPTY`         | 409  | Cannot delete mount with files             |
+| `INVALID_REQUEST`         | 400  | Request body failed validation             |
+
+## Server Errors (5xx)
+
+| Code             | HTTP | Description                     |
+| ---------------- | ---- | ------------------------------- |
+| `INTERNAL_ERROR` | 500  | Unexpected server error         |
+| `DATABASE_ERROR` | 500  | Database operation failed       |
+| `STORAGE_ERROR`  | 502  | Object storage operation failed |
+
+## Error Response Format
+
+```json
+{
+  "error": "A node with that name already exists",
+  "code": "NAME_CONFLICT",
+  "details": {
+    "existingNodeId": "abc123...",
+    "name": "report.pdf"
+  }
+}
+```

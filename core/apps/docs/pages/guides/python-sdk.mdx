@@ -1,0 +1,157 @@
+---
+title: Python SDK
+description: Use the roset Python package for ML checkpointing
+---
+
+# Python SDK
+
+The `roset` Python package provides first-class integrations for ML frameworks including PyTorch Lightning, Hugging Face, and Ray Train.
+
+## Installation
+
+```bash
+pip install roset              # Core client
+pip install roset[pytorch]     # + PyTorch Lightning
+pip install roset[huggingface] # + Hugging Face
+pip install roset[ray]         # + Ray Train
+pip install roset[all]         # All integrations
+```
+
+## Quick Start
+
+```python
+import roset
+
+client = roset.Client(
+    api_url="https://api.roset.dev",
+    api_key="rsk_...",
+)
+
+# Create a folder
+folder = client.create_folder("/checkpoints", "step-1000")
+
+# Commit atomically
+commit = client.commit(folder.id, message="Training step 1000")
+commit = client.wait_for_commit(commit.id)
+
+# Update "latest" pointer
+client.update_ref("latest", commit.id)
+```
+
+---
+
+## Framework Integrations
+
+### PyTorch Lightning
+
+```python
+from pytorch_lightning import Trainer
+from roset import Client
+from roset.integrations.pytorch import RosetCheckpointIO
+
+client = Client(api_url="...", api_key="...")
+
+trainer = Trainer(
+    plugins=[RosetCheckpointIO(
+        client=client,
+        mount_path="/mnt/roset",
+        update_ref="latest",
+    )],
+)
+
+# Resume from latest (always works!)
+trainer.fit(model, ckpt_path="latest")
+```
+
+### Hugging Face Trainer
+
+```python
+from transformers import Trainer, TrainingArguments
+from roset import Client
+from roset.integrations.huggingface import RosetTrainerCallback
+
+client = Client(api_url="...", api_key="...")
+
+trainer = Trainer(
+    model=model,
+    args=TrainingArguments(
+        output_dir="/mnt/roset/checkpoints/bert-finetune",
+        save_steps=1000,
+    ),
+    callbacks=[
+        RosetTrainerCallback(
+            client=client,
+            update_ref="latest",
+            async_commit=True,  # Non-blocking
+        )
+    ],
+)
+```
+
+### Ray Train
+
+```python
+from roset import Client
+from roset.integrations.ray import RosetRayTrainCallback
+
+client = Client(api_url="...", api_key="...")
+roset_callback = RosetRayTrainCallback(client=client)
+
+# After saving checkpoint:
+commit = roset_callback.process_checkpoint("/mnt/roset/checkpoints/step-1000", step=1000)
+```
+
+---
+
+## API Reference
+
+### RosetClient
+
+| Method                               | Description                      |
+| ------------------------------------ | -------------------------------- |
+| `create_folder(parent, name)`        | Create a folder                  |
+| `get_node(id)`                       | Get node by ID                   |
+| `resolve_path(path)`                 | Resolve path to node             |
+| `delete_node(id)`                    | Soft delete node                 |
+| `commit(node_id, message, group_id)` | Commit folder atomically         |
+| `get_commit(id)`                     | Get commit status                |
+| `wait_for_commit(id, timeout)`       | Wait for commit to complete      |
+| `create_commit_group(message)`       | Create cross-folder commit group |
+| `seal_commit_group(id)`              | Finalize commit group            |
+| `get_ref(name)`                      | Get ref by name                  |
+| `update_ref(name, commit_id)`        | Update ref atomically (CAS)      |
+| `delete_ref(name)`                   | Delete ref                       |
+
+---
+
+## Error Handling
+
+```python
+from roset.exceptions import RosetAPIError, RosetNotFoundError
+
+try:
+    node = client.get_node("invalid-id")
+except RosetNotFoundError:
+    print("Node not found")
+except RosetAPIError as e:
+    print(f"[{e.status_code}] {e.code}: {e.message}")
+```
+
+---
+
+## Retries
+
+The client automatically retries on transient errors:
+
+- 3 retries with exponential backoff
+- Retries on 5xx errors and network failures
+- Configurable via `max_retries` and `backoff_factor`
+
+```python
+client = roset.Client(
+    api_url="...",
+    api_key="...",
+    max_retries=5,
+    backoff_factor=1.0,
+)
+```

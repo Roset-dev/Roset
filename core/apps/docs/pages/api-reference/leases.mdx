@@ -1,0 +1,254 @@
+import {
+  ApiEndpoint,
+  ParameterTable,
+  ResponseExample,
+  RequestExample,
+} from "@roset/ui";
+import { Callout } from "@roset/ui";
+
+# Leases API
+
+Leases provide distributed locking for nodes. They prevent concurrent modifications by ensuring only one client can hold a write lease at a time.
+
+<Callout type="info" title="When to use leases">
+  Use leases when multiple clients might modify the same file simultaneously,
+  such as collaborative editing or background processing jobs.
+</Callout>
+
+## Acquire Lease
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/nodes/:id/lease"
+  description="Acquire a lease on a node. Blocks other writers until released."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Node ID" },
+    ]}
+  />
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "ttlSeconds",
+        type: "number",
+        required: false,
+        description: "Lease duration",
+        default: "300",
+      },
+      {
+        name: "mode",
+        type: "string",
+        required: false,
+        description: '"read" or "write"',
+        default: '"write"',
+      },
+      {
+        name: "waitSeconds",
+        type: "number",
+        required: false,
+        description: "Max time to wait if locked",
+        default: "0",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      ttlSeconds: 600,
+      mode: "write",
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      leaseId: "lease_abc123",
+      nodeId: "550e8400-e29b-41d4-a716-446655440000",
+      mode: "write",
+      expiresAt: "2024-01-15T10:40:00Z",
+      acquiredAt: "2024-01-15T10:30:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Renew Lease
+
+<ApiEndpoint
+  method="PATCH"
+  path="/v1/nodes/:id/lease"
+  description="Extend the TTL of an existing lease."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Node ID" },
+    ]}
+  />
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "leaseId",
+        type: "string",
+        required: true,
+        description: "Lease ID from acquire response",
+      },
+      {
+        name: "ttlSeconds",
+        type: "number",
+        required: false,
+        description: "New TTL from now",
+        default: "300",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      leaseId: "lease_abc123",
+      ttlSeconds: 600,
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      leaseId: "lease_abc123",
+      expiresAt: "2024-01-15T10:50:00Z",
+      renewedAt: "2024-01-15T10:40:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Release Lease
+
+<ApiEndpoint
+  method="DELETE"
+  path="/v1/nodes/:id/lease"
+  description="Release a lease before it expires."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Node ID" },
+    ]}
+  />
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "leaseId",
+        type: "string",
+        required: true,
+        description: "Lease ID to release",
+      },
+    ]}
+  />
+  <ResponseExample status={204} description="No content" json={{}} />
+</ApiEndpoint>
+
+## List Leases for Node
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/nodes/:id/leases"
+  description="List all active leases on a node."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Node ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          leaseId: "lease_abc123",
+          principalId: "user_123",
+          mode: "write",
+          expiresAt: "2024-01-15T10:40:00Z",
+          acquiredAt: "2024-01-15T10:30:00Z",
+        },
+      ],
+    }}
+  />
+</ApiEndpoint>
+
+## List All Leases
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/leases"
+  description="List all active leases in the tenant."
+>
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "principalId",
+        type: "string",
+        required: false,
+        description: "Filter by lease holder",
+      },
+      {
+        name: "mode",
+        type: "string",
+        required: false,
+        description: "Filter by lease mode",
+      },
+      {
+        name: "limit",
+        type: "number",
+        required: false,
+        description: "Max results",
+        default: "50",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          leaseId: "lease_abc123",
+          nodeId: "550e8400-e29b-41d4-a716-446655440000",
+          nodeName: "report.pdf",
+          principalId: "user_123",
+          mode: "write",
+          expiresAt: "2024-01-15T10:40:00Z",
+        },
+      ],
+      hasMore: false,
+    }}
+  />
+</ApiEndpoint>
+
+## Example: Safe File Update
+
+```typescript
+import { RosetClient } from "@roset/sdk";
+
+const client = new RosetClient({ apiKey: "rsk_live_..." });
+
+// Acquire a lease before modifying
+const lease = await client.leases.acquire(fileId, {
+  ttlSeconds: 300,
+  mode: "write",
+});
+
+try {
+  // Perform modifications
+  const { uploadUrl, uploadToken } = await client.uploads.init({
+    nodeId: fileId,
+    contentType: "application/pdf",
+    sizeBytes: newContent.length,
+  });
+
+  await fetch(uploadUrl, { method: "PUT", body: newContent });
+  await client.uploads.commit({ uploadToken, etag });
+} finally {
+  // Always release the lease
+  await client.leases.release(fileId, lease.leaseId);
+}
+```

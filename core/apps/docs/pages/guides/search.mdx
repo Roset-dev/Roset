@@ -1,0 +1,69 @@
+---
+title: Search
+description: "Find files by name, metadata, and more"
+---
+
+# Metadata Search
+
+Roset provides powerful search across your files using PostgreSQL trigram indexes.
+
+## Basic Search
+
+```typescript
+const results = await client.search("/v1/search", {
+  q: "report", // Search query
+  type: "file", // 'file' or 'folder'
+  pageSize: 20,
+});
+```
+
+## Filter Options
+
+| Parameter       | Description                                |
+| --------------- | ------------------------------------------ |
+| `q`             | Text search (name matching)                |
+| `type`          | `file` or `folder`                         |
+| `minSize`       | Minimum file size in bytes                 |
+| `maxSize`       | Maximum file size in bytes                 |
+| `contentType`   | MIME type filter (e.g., `application/pdf`) |
+| `createdAfter`  | ISO timestamp                              |
+| `createdBefore` | ISO timestamp                              |
+| `parentId`      | Search within a folder                     |
+| `recursive`     | Include subfolders (with `parentId`)       |
+| `metadata`      | JSON object for metadata containment       |
+
+## Metadata Search
+
+Search by custom metadata:
+
+```typescript
+const results = await client.search("/v1/search", {
+  metadata: {
+    project: "alpha",
+    status: "published",
+  },
+});
+```
+
+## Quick Search (Autocomplete)
+
+For fast autocomplete:
+
+```typescript
+const suggestions = await client.search("/v1/search/quick", {
+  q: "rep",
+  limit: 5,
+});
+```
+
+Returns just `id`, `name`, and `type` for speed.
+
+## Sorting
+
+```typescript
+const results = await client.search("/v1/search", {
+  q: "report",
+  sortBy: "relevance", // 'name', 'size', 'created_at', 'relevance'
+  sortOrder: "desc",
+});
+```

@@ -1,0 +1,65 @@
+---
+title: High Performance Compute (AI/ML)
+description: Running Roset with FUSE and CSI for training workloads
+---
+
+# High Performance Compute
+
+Roset is designed to bridge the gap between object storage and high-performance computing (HPC) workloads, such as AI/ML model training.
+
+## The Challenge
+
+Training jobs often expect a POSIX filesystem. Using a standard S3 FUSE adapter often results in poor performance due to:
+
+1.  **Latency**: Every `stat()` or `readdir()` call hits the remote API.
+2.  **Throughput**: Metadata operations block data loading.
+3.  **Consistency**: Eventual consistency of specific object stores causes errors.
+
+## The Roset Solution
+
+Roset optimizes this path using a purpose-built FUSE client and CSI driver.
+
+### 1. Immutable Manifest Caching
+
+For training datasets (which are typically "committed" and immutable), Roset allows the FUSE client to pre-load the entire directory structure into memory.
+
+- **Zero Latency**: `readdir`, `lookup`, and `getattr` are served instantly from RAM.
+- **Manifest-Based**: When a folder is marked as `committed`, the client fetches a compressed manifest of all descendants in a single HTTP call.
+- **Offline Capable**: Once the manifest is loaded, metadata operations require no network access.
+
+### 2. Direct Data Path
+
+While metadata is cached, file data is streamed directly from the underlying object storage (S3/R2) using signed URLs. Roset's control plane is **not** on the data path, ensuring maximum throughput limited only by your network bandwidth.
+
+### 3. Kubernetes Integration (CSI)
+
+Roset provides a Container Storage Interface (CSI) driver for seamless integration with Kubernetes.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: training-job
+spec:
+  containers:
+    - name: pytorch
+      image: pytorch/pytorch
+      volumeMounts:
+        - mountPath: /data
+          name: training-data
+  volumes:
+    - name: training-data
+      csi:
+        driver: io.roset.csi
+        volumeAttributes:
+          volumeId: "dataset-uuid"
+          apiUrl: "https://api.roset.io"
+        nodePublishSecretRef:
+          name: roset-api-key
+```
+
+## Best Practices for AI/ML
+
+1.  **Commit your Datasets**: Ensure your training data folders are marked as "committed" (or use a committed Snapshot) to enable manifest caching.
+2.  **Use Read-Only Mounts**: For training, mount volumes as `readOnly: true` to allow aggressive client-side caching.
+3.  **Colocate Compute**: Run your compute in the same region as your object storage bucket to minimize data retrieval costs and latency.

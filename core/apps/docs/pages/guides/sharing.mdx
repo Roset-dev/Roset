@@ -1,0 +1,57 @@
+---
+title: Sharing Files
+description: "Create password-protected share links with expiration"
+---
+
+# Sharing Files & Folders
+
+Roset lets you create secure share links for any file or folder.
+
+## Create a Share Link
+
+```typescript
+const share = await client.shares.create(nodeId, {
+  expiresIn: "7d", // Expires in 7 days
+  password: "secret", // Optional password
+  maxDownloads: 100, // Optional download limit
+  scope: "read", // 'read' or 'write'
+});
+
+console.log(share.url);
+// https://api.roset.dev/v1/s/abc123...
+```
+
+## Access a Share
+
+```typescript
+// Without password
+const content = await client.shares.access(token);
+
+// With password
+const content = await client.shares.access(token, { password: "secret" });
+```
+
+## Folder Shares
+
+When you share a folder, recipients can:
+
+- List all children
+- Download any file in the folder
+- Access nested subfolders
+
+## Revoke a Share
+
+```typescript
+await client.shares.revoke(token);
+```
+
+The share is immediately invalidated.
+
+## Share Properties
+
+| Property       | Description                                        |
+| -------------- | -------------------------------------------------- |
+| `expiresAt`    | ISO timestamp when share expires                   |
+| `maxDownloads` | Download limit (null = unlimited)                  |
+| `scope`        | `read` (download only) or `write` (upload allowed) |
+| `password`     | Bcrypt-hashed password protection                  |
