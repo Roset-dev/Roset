@@ -1,22 +1,16 @@
 
-use tonic::{Request, Response, Status};
 use crate::csi::{
-    controller_server::Controller,
-    CreateVolumeRequest, CreateVolumeResponse,
-    DeleteVolumeRequest, DeleteVolumeResponse,
+    controller_server::Controller, controller_service_capability, ControllerExpandVolumeRequest,
+    ControllerExpandVolumeResponse, ControllerGetCapabilitiesRequest,
+    ControllerGetCapabilitiesResponse, ControllerGetVolumeRequest, ControllerGetVolumeResponse,
     ControllerPublishVolumeRequest, ControllerPublishVolumeResponse,
-    ControllerUnpublishVolumeRequest, ControllerUnpublishVolumeResponse,
-    ValidateVolumeCapabilitiesRequest, ValidateVolumeCapabilitiesResponse,
-    ListVolumesRequest, ListVolumesResponse,
-    GetCapacityRequest, GetCapacityResponse,
-    ControllerGetCapabilitiesRequest, ControllerGetCapabilitiesResponse,
-    CreateSnapshotRequest, CreateSnapshotResponse,
-    DeleteSnapshotRequest, DeleteSnapshotResponse,
-    ListSnapshotsRequest, ListSnapshotsResponse,
-    ControllerExpandVolumeRequest, ControllerExpandVolumeResponse,
-    ControllerGetVolumeRequest, ControllerGetVolumeResponse,
-    controller_service_capability,
+    ControllerUnpublishVolumeRequest, ControllerUnpublishVolumeResponse, CreateSnapshotRequest,
+    CreateSnapshotResponse, CreateVolumeRequest, CreateVolumeResponse, DeleteSnapshotRequest,
+    DeleteSnapshotResponse, DeleteVolumeRequest, DeleteVolumeResponse, GetCapacityRequest,
+    GetCapacityResponse, ListSnapshotsRequest, ListSnapshotsResponse, ListVolumesRequest,
+    ListVolumesResponse, ValidateVolumeCapabilitiesRequest, ValidateVolumeCapabilitiesResponse,
 };
+use tonic::{Request, Response, Status};
 
 pub struct ControllerService {}
 
@@ -37,15 +31,18 @@ impl Controller for ControllerService {
             controller_service_capability::Rpc::PublishUnpublishVolume,
         ];
 
-        let capabilities = caps.into_iter().map(|c| crate::csi::ControllerServiceCapability {
-            type_: Some(crate::csi::controller_service_capability::Type::Rpc(
-                crate::csi::controller_service_capability::Rpc {
-                    type_: c as i32,
-                },
-            )),
-        }).collect();
+        let capabilities = caps
+            .into_iter()
+            .map(|c| crate::csi::ControllerServiceCapability {
+                type_: Some(crate::csi::controller_service_capability::Type::Rpc(
+                    crate::csi::controller_service_capability::Rpc { type_: c as i32 },
+                )),
+            })
+            .collect();
 
-        Ok(Response::new(ControllerGetCapabilitiesResponse { capabilities }))
+        Ok(Response::new(ControllerGetCapabilitiesResponse {
+            capabilities,
+        }))
     }
 
     async fn create_volume(
@@ -54,7 +51,7 @@ impl Controller for ControllerService {
     ) -> Result<Response<CreateVolumeResponse>, Status> {
         let req = request.into_inner();
         let name = req.name.clone();
-        
+
         if name.is_empty() {
             return Err(Status::invalid_argument("Volume name is missing"));
         }
@@ -62,7 +59,7 @@ impl Controller for ControllerService {
         // 1. Get secrets (API Key)
         let secrets = req.secrets;
         let api_key = secrets.get("apiKey").ok_or_else(|| {
-             Status::invalid_argument("Missing 'apiKey' in CreateVolumeRequest secrets")
+            Status::invalid_argument("Missing 'apiKey' in CreateVolumeRequest secrets")
         })?;
 
         // 2. Get parameters (API URL and Base Path)
@@ -72,7 +69,10 @@ impl Controller for ControllerService {
         })?;
         
         // Default to "/volumes" to avoid root pollution
-        let base_path = params.get("basePath").map(|s| s.as_str()).unwrap_or("/volumes");
+        let base_path = params
+            .get("basePath")
+            .map(|s| s.as_str())
+            .unwrap_or("/volumes");
 
         // 3. Setup Client
         let client = reqwest::Client::new();
@@ -81,7 +81,7 @@ impl Controller for ControllerService {
         // 4. Ensure Base Path exists
         // We attempt to create it at the root. If it works or conflicts (already exists), we proceed.
         if base_path != "/" {
-            let base_name = base_path.trim_start_matches('/'); 
+            let base_name = base_path.trim_start_matches('/');
             // Note: This naive check only supports top-level folders as base_path for now
             // e.g. "/volumes" works, "/my/deep/path" would fail if "/my" doesn't exist
             let base_body = serde_json::json!({
@@ -89,8 +89,9 @@ impl Controller for ControllerService {
                 "type": "folder",
                 "parentPath": "/"
             });
-            
-            let _ = client.post(&create_node_url)
+
+            let _ = client
+                .post(&create_node_url)
                 .header("Authorization", format!("Bearer {}", api_key))
                 .json(&base_body)
                 .send()
@@ -104,7 +105,8 @@ impl Controller for ControllerService {
             "parentPath": base_path
         });
 
-        let resp = client.post(&create_node_url)
+        let resp = client
+            .post(&create_node_url)
             .header("Authorization", format!("Bearer {}", api_key))
             .json(&body)
             .send()
@@ -112,47 +114,63 @@ impl Controller for ControllerService {
             .map_err(|e| Status::internal(format!("Failed to contact Roset API: {}", e)))?;
 
         let node_id = if resp.status().is_success() {
-            let node: serde_json::Value = resp.json().await
+            let node: serde_json::Value = resp
+                .json()
+                .await
                 .map_err(|e| Status::internal(format!("Failed to parse response: {}", e)))?;
-            node["id"].as_str().ok_or_else(|| Status::internal("Missing id in response"))?.to_string()
+            node["id"]
+                .as_str()
+                .ok_or_else(|| Status::internal("Missing id in response"))?
+                .to_string()
         } else if resp.status().as_u16() == 409 {
-             // 6. Handle Conflict: Verify it is a folder
-             // Resolve path: base_path + "/" + name
-             let full_path = if base_path == "/" {
-                 format!("/{}", name)
-             } else {
-                 format!("{}/{}", base_path.trim_end_matches('/'), name)
-             };
+            // 6. Handle Conflict: Verify it is a folder
+            // Resolve path: base_path + "/" + name
+            let full_path = if base_path == "/" {
+                format!("/{}", name)
+            } else {
+                format!("{}/{}", base_path.trim_end_matches('/'), name)
+            };
 
-             let resolve_url = format!("{}/v1/resolve", api_url.trim_end_matches('/'));
-             let resolve_resp = client.post(&resolve_url)
+            let resolve_url = format!("{}/v1/resolve", api_url.trim_end_matches('/'));
+            let resolve_resp = client
+                .post(&resolve_url)
                 .header("Authorization", format!("Bearer {}", api_key))
                 .json(&serde_json::json!({ "paths": [full_path] }))
                 .send()
                 .await
-                 .map_err(|e| Status::internal(format!("Failed to resolve existing volume: {}", e)))?;
-             
-             if !resolve_resp.status().is_success() {
-                 return Err(Status::internal("Failed to resolve existing volume node"));
-             }
+                .map_err(|e| {
+                    Status::internal(format!("Failed to resolve existing volume: {}", e))
+                })?;
 
-             let resolved: serde_json::Value = resolve_resp.json().await
-                 .map_err(|e| Status::internal(format!("Failed to parse resolve response: {}", e)))?;
-             
-             let node = &resolved[&full_path];
-             if node.is_null() {
-                 return Err(Status::internal(format!("Volume path {} resolved to null", full_path)));
-             }
+            if !resolve_resp.status().is_success() {
+                return Err(Status::internal("Failed to resolve existing volume node"));
+            }
 
-             // Critical Check: Is it a folder?
-             let node_type = node["type"].as_str().unwrap_or("unknown");
-             if node_type != "folder" {
-                 return Err(Status::already_exists(format!("Path {} exists but is a {}, not a folder", full_path, node_type)));
-             }
+            let resolved: serde_json::Value = resolve_resp.json().await.map_err(|e| {
+                Status::internal(format!("Failed to parse resolve response: {}", e))
+            })?;
 
-             node["id"].as_str()
-                 .ok_or_else(|| Status::internal("Failed to get ID of existing volume"))?
-                 .to_string()
+            let node = &resolved[&full_path];
+            if node.is_null() {
+                return Err(Status::internal(format!(
+                    "Volume path {} resolved to null",
+                    full_path
+                )));
+            }
+
+            // Critical Check: Is it a folder?
+            let node_type = node["type"].as_str().unwrap_or("unknown");
+            if node_type != "folder" {
+                return Err(Status::already_exists(format!(
+                    "Path {} exists but is a {}, not a folder",
+                    full_path, node_type
+                )));
+            }
+
+            node["id"]
+                .as_str()
+                .ok_or_else(|| Status::internal("Failed to get ID of existing volume"))?
+                .to_string()
         } else {
             let text = resp.text().await.unwrap_or_default();
             return Err(Status::internal(format!("Roset API error: {}", text)));
@@ -207,8 +225,8 @@ impl Controller for ControllerService {
         _request: Request<ListVolumesRequest>,
     ) -> Result<Response<ListVolumesResponse>, Status> {
         Ok(Response::new(ListVolumesResponse {
-             entries: vec![],
-             next_token: "".to_string(),
+            entries: vec![],
+            next_token: "".to_string(),
         }))
     }
 

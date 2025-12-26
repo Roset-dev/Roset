@@ -1,19 +1,15 @@
 
-use tonic::{Request, Response, Status};
 use crate::csi::{
-    node_server::Node,
-    NodePublishVolumeRequest, NodePublishVolumeResponse,
-    NodeUnpublishVolumeRequest, NodeUnpublishVolumeResponse,
-    NodeGetCapabilitiesRequest, NodeGetCapabilitiesResponse,
-    NodeGetInfoRequest, NodeGetInfoResponse,
-    NodeStageVolumeRequest, NodeStageVolumeResponse,
+    node_server::Node, node_service_capability, NodeExpandVolumeRequest, NodeExpandVolumeResponse,
+    NodeGetCapabilitiesRequest, NodeGetCapabilitiesResponse, NodeGetInfoRequest,
+    NodeGetInfoResponse, NodeGetVolumeStatsRequest, NodeGetVolumeStatsResponse,
+    NodePublishVolumeRequest, NodePublishVolumeResponse, NodeStageVolumeRequest,
+    NodeStageVolumeResponse, NodeUnpublishVolumeRequest, NodeUnpublishVolumeResponse,
     NodeUnstageVolumeRequest, NodeUnstageVolumeResponse,
-    NodeGetVolumeStatsRequest, NodeGetVolumeStatsResponse,
-    NodeExpandVolumeRequest, NodeExpandVolumeResponse,
-    node_service_capability,
 };
 use std::process::Command;
-use tracing::{info, error};
+use tonic::{Request, Response, Status};
+use tracing::{error, info};
 
 pub struct NodeService {
     node_id: String,
@@ -31,17 +27,16 @@ impl Node for NodeService {
         &self,
         _request: Request<NodeGetCapabilitiesRequest>,
     ) -> Result<Response<NodeGetCapabilitiesResponse>, Status> {
-        let caps = vec![
-            node_service_capability::Rpc::StageUnstageVolume,
-        ];
+        let caps = vec![node_service_capability::Rpc::StageUnstageVolume];
 
-        let capabilities = caps.into_iter().map(|c| crate::csi::NodeServiceCapability {
-            type_: Some(crate::csi::node_service_capability::Type::Rpc(
-                crate::csi::node_service_capability::Rpc {
-                    type_: c as i32,
-                },
-            )),
-        }).collect();
+        let capabilities = caps
+            .into_iter()
+            .map(|c| crate::csi::NodeServiceCapability {
+                type_: Some(crate::csi::node_service_capability::Type::Rpc(
+                    crate::csi::node_service_capability::Rpc { type_: c as i32 },
+                )),
+            })
+            .collect();
 
         Ok(Response::new(NodeGetCapabilitiesResponse { capabilities }))
     }
@@ -83,31 +78,37 @@ impl Node for NodeService {
         let volume_context = req.volume_context;
 
         if target_path.is_empty() {
-             return Err(Status::invalid_argument("Target path missing"));
+            return Err(Status::invalid_argument("Target path missing"));
         }
         if volume_id.is_empty() {
-             return Err(Status::invalid_argument("Volume ID missing"));
+            return Err(Status::invalid_argument("Volume ID missing"));
         }
 
         // Extract API Key from secrets
         let api_key = secrets.get("apiKey").cloned().unwrap_or_default();
         if api_key.is_empty() {
-             return Err(Status::invalid_argument("Missing apiKey in secrets"));
+            return Err(Status::invalid_argument("Missing apiKey in secrets"));
         }
 
         // Get API URL from context or default
-        let api_url = volume_context.get("apiUrl").cloned().unwrap_or_else(|| "https://api.roset.dev".to_string());
+        let api_url = volume_context
+            .get("apiUrl")
+            .cloned()
+            .unwrap_or_else(|| "https://api.roset.dev".to_string());
 
         info!("Publishing volume {} to {}", volume_id, target_path);
 
         // Ensure target directory exists
         if let Err(e) = std::fs::create_dir_all(&target_path) {
             error!("Failed to create target path {}: {}", target_path, e);
-            return Err(Status::internal(format!("Failed to create target path: {}", e)));
+            return Err(Status::internal(format!(
+                "Failed to create target path: {}",
+                e
+            )));
         }
 
         // Spawn roset-fuse
-        // We run it as a detached process. 
+        // We run it as a detached process.
         // In a real K8s CSI DaemonSet, this binary needs to be present in the container image.
         let child = Command::new("roset-fuse")
             .arg("--mountpoint")
@@ -128,7 +129,10 @@ impl Node for NodeService {
             }
             Err(e) => {
                 error!("Failed to spawn roset-fuse: {}", e);
-                Err(Status::internal(format!("Failed to spawn fuse mount: {}", e)))
+                Err(Status::internal(format!(
+                    "Failed to spawn fuse mount: {}",
+                    e
+                )))
             }
         }
     }
@@ -161,23 +165,32 @@ impl Node for NodeService {
                 
                 let stderr = String::from_utf8_lossy(&o.stderr);
                 // If it's not mounted (entry not found), that's success (idempotency)
+                // If it's not mounted (entry not found), that's success (idempotency)
                 if stderr.contains("not found") || stderr.contains("Invalid argument") {
-                     info!("Volume already unmounted or path not found: {}", target_path);
-                     return Ok(Response::new(NodeUnpublishVolumeResponse {}));
+                    info!(
+                        "Volume already unmounted or path not found: {}",
+                        target_path
+                    );
+                    return Ok(Response::new(NodeUnpublishVolumeResponse {}));
                 }
-                
+
                 // Log the failure reasoning
                 warn!("Standard unmount failed for {}: {}", target_path, stderr);
             }
             Err(e) => {
-                 warn!("Failed to execute standard unmount command: {}", e);
+                warn!("Failed to execute standard unmount command: {}", e);
             }
         }
 
         // Attempt 2: Lazy Unmount (fusermount -uz)
         // This is crucial for avoiding "zombie" mount points when the pod is dead but file handles are held
-        info!("Attempting lazy unmount (fusermount -uz) for {}", target_path);
-        
+        // Attempt 2: Lazy Unmount (fusermount -uz)
+        // This is crucial for avoiding "zombie" mount points when the pod is dead but file handles are held
+        info!(
+            "Attempting lazy unmount (fusermount -uz) for {}",
+            target_path
+        );
+
         let lazy_output = Command::new("fusermount")
             .arg("-u")
             .arg("-z") // Lazy unmount
@@ -195,14 +208,20 @@ impl Node for NodeService {
                     if stderr.contains("not found") || stderr.contains("Invalid argument") {
                         return Ok(Response::new(NodeUnpublishVolumeResponse {}));
                     }
-                    
+
                     error!("Lazy unmount failed for {}: {}", target_path, stderr);
-                    Err(Status::internal(format!("Failed to unmount volume {}: {}", target_path, stderr)))
+                    Err(Status::internal(format!(
+                        "Failed to unmount volume {}: {}",
+                        target_path, stderr
+                    )))
                 }
             }
             Err(e) => {
-                 error!("Failed to execute lazy unmount command: {}", e);
-                 Err(Status::internal(format!("Failed to execute lazy unmount command: {}", e)))
+                error!("Failed to execute lazy unmount command: {}", e);
+                Err(Status::internal(format!(
+                    "Failed to execute lazy unmount command: {}",
+                    e
+                )))
             }
         }
     }
@@ -212,8 +231,8 @@ impl Node for NodeService {
         _request: Request<NodeGetVolumeStatsRequest>,
     ) -> Result<Response<NodeGetVolumeStatsResponse>, Status> {
         Ok(Response::new(NodeGetVolumeStatsResponse {
-             usage: vec![],
-             volume_condition: None,
+            usage: vec![],
+            volume_condition: None,
         }))
     }
 

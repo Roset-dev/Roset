@@ -1,12 +1,10 @@
 
-use tonic::{Request, Response, Status};
 use crate::csi::{
-    identity_server::Identity,
-    GetPluginInfoRequest, GetPluginInfoResponse,
-    GetPluginCapabilitiesRequest, GetPluginCapabilitiesResponse,
-    ProbeRequest, ProbeResponse,
-    plugin_capability,
+    identity_server::Identity, plugin_capability, GetPluginCapabilitiesRequest,
+    GetPluginCapabilitiesResponse, GetPluginInfoRequest, GetPluginInfoResponse, ProbeRequest,
+    ProbeResponse,
 };
+use tonic::{Request, Response, Status};
 
 pub struct IdentityService {
     name: String,
@@ -37,15 +35,13 @@ impl Identity for IdentityService {
         _request: Request<GetPluginCapabilitiesRequest>,
     ) -> Result<Response<GetPluginCapabilitiesResponse>, Status> {
         Ok(Response::new(GetPluginCapabilitiesResponse {
-            capabilities: vec![
-                crate::csi::PluginCapability {
-                    type_: Some(plugin_capability::Type::Service(
-                        plugin_capability::Service {
-                            type_: plugin_capability::service::Type::ControllerService as i32,
-                        },
-                    )),
-                },
-            ],
+            capabilities: vec![crate::csi::PluginCapability {
+                type_: Some(plugin_capability::Type::Service(
+                    plugin_capability::Service {
+                        type_: plugin_capability::service::Type::ControllerService as i32,
+                    },
+                )),
+            }],
         }))
     }
 
@@ -53,8 +49,6 @@ impl Identity for IdentityService {
         &self,
         _request: Request<ProbeRequest>,
     ) -> Result<Response<ProbeResponse>, Status> {
-        Ok(Response::new(ProbeResponse {
-            ready: Some(true),
-        }))
+        Ok(Response::new(ProbeResponse { ready: Some(true) }))
     }
 }

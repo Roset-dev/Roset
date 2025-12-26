@@ -1,25 +1,25 @@
 
 use clap::Parser;
-use tonic::transport::Server;
-use tracing::info;
 use tokio::net::UnixListener;
 use tokio_stream::wrappers::UnixListenerStream;
+use tonic::transport::Server;
+use tracing::info;
 
 // Include generated proto code
 pub mod csi {
     tonic::include_proto!("csi.v1");
 }
 
+mod controller;
 mod identity;
 mod node;
-mod controller;
 
-use identity::IdentityService;
-use node::NodeService;
 use controller::ControllerService;
+use csi::controller_server::ControllerServer;
 use csi::identity_server::IdentityServer;
 use csi::node_server::NodeServer;
-use csi::controller_server::ControllerServer;
+use identity::IdentityService;
+use node::NodeService;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -34,7 +34,7 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
-    
+
     let args = Args::parse();
     info!("Starting Roset CSI Driver");
     info!("Endpoint: {}", args.endpoint);
@@ -44,15 +44,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Ensure directory exists
     if let Some(parent) = std::path::Path::new(socket_path).parent() {
-        std::fs::create_dir_all(parent).map_err(|e| format!("Failed to create directory: {}", e))?;
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create directory: {}", e))?;
     }
 
     // Remove old socket if exists
     if std::path::Path::new(socket_path).exists() {
-        std::fs::remove_file(socket_path).map_err(|e| format!("Failed to remove old socket: {}", e))?;
+        std::fs::remove_file(socket_path)
+            .map_err(|e| format!("Failed to remove old socket: {}", e))?;
     }
 
-    let listener = UnixListener::bind(socket_path).map_err(|e| format!("Failed to bind socket: {}", e))?;
+    let listener =
+        UnixListener::bind(socket_path).map_err(|e| format!("Failed to bind socket: {}", e))?;
     let stream = UnixListenerStream::new(listener);
 
     let identity = IdentityService::new("io.roset.csi".to_string(), "0.1.0".to_string());
