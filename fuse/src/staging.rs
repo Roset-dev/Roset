@@ -5,11 +5,11 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::fs;
-use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
+use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, warn};
 
-use futures::{StreamExt, TryStreamExt};
+use futures::StreamExt;
 
 /// Message sent to the staging worker
 #[derive(Debug, Serialize, Deserialize)]
@@ -187,15 +187,11 @@ impl StagingManager {
         let dest_path = self.staging_root.join(&file_name);
 
         debug!("Moving {:?} to staging area {:?}", source_path, dest_path);
-        fs::rename(source_path, &dest_path).await.or_else(|_| {
-            async {
-                // If rename fails (cross-device), copy and delete
-                fs::copy(source_path, &dest_path).await?;
-                fs::remove_file(source_path).await?;
-                Ok::<_, std::io::Error>(())
-            }
-            .await
-        })?;
+        if let Err(_) = fs::rename(source_path, &dest_path).await {
+            // If rename fails (cross-device), copy and delete
+            fs::copy(source_path, &dest_path).await?;
+            fs::remove_file(source_path).await?;
+        }
 
         let job = UploadJob {
             file_path: dest_path.clone(),

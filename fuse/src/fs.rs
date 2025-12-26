@@ -1,13 +1,12 @@
 //! FUSE Filesystem Implementation
 
 use crate::cache::Cache;
-use crate::client::{
-    ApiError, CreateNodeInput, InitUploadInput, Node, NodeType, Part, RosetClient,
-};
+use crate::client::{Node, NodeType, RosetClient};
 use crate::config::Config;
-use crate::inode::{InodeMap, ROOT_INO};
+use crate::inode::InodeMap;
 use crate::staging::StagingManager;
-use futures::{StreamExt, TryStreamExt};
+use futures::StreamExt;
+use std::path::PathBuf;
 
 use anyhow::Result;
 use fuser::{
@@ -19,7 +18,7 @@ use std::ffi::OsStr;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::runtime::Runtime;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 /// FUSE filesystem for Roset
 pub struct RosetFs {
@@ -47,7 +46,8 @@ pub struct RosetFs {
 }
 
 // Add imports
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{SeekFrom, Write};
+use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tempfile::NamedTempFile;
 
 struct OpenFile {
@@ -97,11 +97,11 @@ impl RosetFs {
                     .clone()
                     .unwrap_or_else(|| PathBuf::from(".roset/staging"));
                 Some(StagingManager::new(
-                    Arc::new(RosetClient::new(
+                    RosetClient::new(
                         &config.api_url,
                         &config.api_key,
                         config.mount_id.clone(),
-                    )?),
+                    )?,
                     staging_dir,
                 ))
             } else {
@@ -522,9 +522,10 @@ impl Filesystem for RosetFs {
 
         let target_id = target_node.id;
         let client = self.client.clone();
+        let target_id_clone = target_id.clone();
         match self
             .rt
-            .block_on(async move { client.delete_node(&target_id).await })
+            .block_on(async move { client.delete_node(&target_id_clone).await })
         {
             Ok(_) => {
                 self.cache.invalidate_children(&parent_id);

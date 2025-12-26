@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -52,12 +52,11 @@ pub struct Node {
     #[serde(rename = "createdAt")]
     pub created_at: String,
     #[serde(rename = "updatedAt")]
-    #[serde(rename = "updatedAt")]
     pub updated_at: String,
     pub metadata: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum NodeType {
     File,
@@ -531,7 +530,7 @@ pub struct CommitUploadResponse {
     pub node: Node,
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, Deserialize, Clone)]
 pub struct Part {
     #[serde(rename = "PartNumber")]
     pub part_number: u32,
