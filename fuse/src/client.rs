@@ -37,9 +37,10 @@ pub struct RosetClient {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Node {
     pub id: String,
-    #[serde(rename = "tenantId")]
+    #[allow(dead_code)]
     pub tenant_id: String,
     #[serde(rename = "mountId")]
+    #[allow(dead_code)]
     pub mount_id: String,
     #[serde(rename = "parentId")]
     pub parent_id: Option<String>,
@@ -48,6 +49,7 @@ pub struct Node {
     pub node_type: NodeType,
     pub size: Option<u64>,
     #[serde(rename = "contentType")]
+    #[allow(dead_code)]
     pub content_type: Option<String>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
@@ -71,6 +73,7 @@ pub struct ResolveResponse {
 #[derive(Debug, Deserialize)]
 pub struct ChildrenResponse {
     pub children: Vec<Node>,
+    #[allow(dead_code)]
     pub total: u64,
     #[serde(rename = "hasMore")]
     pub has_more: bool,
@@ -80,18 +83,22 @@ pub struct ChildrenResponse {
 pub struct DownloadResponse {
     pub url: String,
     #[serde(rename = "contentType")]
+    #[allow(dead_code)]
     pub content_type: Option<String>,
     pub size: u64,
     #[serde(rename = "expiresIn")]
+    #[allow(dead_code)]
     pub expires_in: u64,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct LeaseResponse {
     pub lease: Lease,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct Lease {
     pub id: String,
     #[serde(rename = "nodeId")]
@@ -291,6 +298,7 @@ impl RosetClient {
     }
 
     /// Acquire a lease on a node
+    #[allow(dead_code)]
     pub async fn acquire_lease(
         &self,
         node_id: &str,
@@ -316,6 +324,7 @@ impl RosetClient {
     }
 
     /// Release a lease
+    #[allow(dead_code)]
     pub async fn release_lease(&self, node_id: &str) -> Result<(), ApiError> {
         let url = format!("{}/v1/nodes/{}/lease", self.base_url, node_id);
         let resp = self.http.delete(&url).send().await?;
@@ -460,6 +469,7 @@ impl RosetClient {
     }
 
     /// Commit an upload session
+    #[allow(dead_code)]
     pub async fn commit_upload(
         &self,
         upload_token: &str,
@@ -522,11 +532,13 @@ pub struct InitUploadResponse {
     #[serde(rename = "nodeId")]
     pub node_id: String,
     #[serde(rename = "expiresIn")]
+    #[allow(dead_code)]
     pub expires_in: u64,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct CommitUploadResponse {
+    #[allow(dead_code)]
     pub node: Node,
 }
 

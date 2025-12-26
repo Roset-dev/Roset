@@ -187,7 +187,7 @@ impl StagingManager {
         let dest_path = self.staging_root.join(&file_name);
 
         debug!("Moving {:?} to staging area {:?}", source_path, dest_path);
-        if let Err(_) = fs::rename(source_path, &dest_path).await {
+        if fs::rename(source_path, &dest_path).await.is_err() {
             // If rename fails (cross-device), copy and delete
             fs::copy(source_path, &dest_path).await?;
             fs::remove_file(source_path).await?;
@@ -227,7 +227,7 @@ async fn process_upload(client: &RosetClient, job: &mut UploadJob) -> Result<()>
     }
 
     let iterations = if job.total_size > 0 {
-        (job.total_size + PART_SIZE - 1) / PART_SIZE
+        job.total_size.div_ceil(PART_SIZE)
     } else {
         1
     };

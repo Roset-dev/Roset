@@ -158,7 +158,7 @@ impl RosetFs {
         FileAttr {
             ino,
             size,
-            blocks: (size + 511) / 512,
+            blocks: size.div_ceil(512),
             atime: mtime,
             mtime,
             ctime,
@@ -837,7 +837,7 @@ impl Filesystem for RosetFs {
                             const PART_SIZE: u64 = 20 * 1024 * 1024;
 
                             let iterations = if total_size > 0 {
-                                (total_size + PART_SIZE - 1) / PART_SIZE
+                                total_size.div_ceil(PART_SIZE)
                             } else {
                                 1
                             };
@@ -1082,8 +1082,7 @@ impl Filesystem for RosetFs {
         if let Some(metadata) = &node.metadata {
             if let Some(obj) = metadata.as_object() {
                 for key in obj.keys() {
-                    if key.starts_with("xattr.") {
-                        let xattr_name = &key[6..]; // Strip "xattr." prefix
+                    if let Some(xattr_name) = key.strip_prefix("xattr.") {
                         names.extend_from_slice(xattr_name.as_bytes());
                         names.push(0); // Null separator
                     }

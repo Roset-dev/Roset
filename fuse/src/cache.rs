@@ -34,8 +34,6 @@ pub struct Cache {
     nodes: Mutex<LruCache<String, CachedNode>>,
     /// Directory listing cache (parent_id → Vec<Node>)
     children: Mutex<LruCache<String, CachedChildren>>,
-    /// Path resolution cache (path → node_id)
-    paths: Mutex<LruCache<String, (String, Instant)>>,
     /// Parents cache (node_id → parent_id) for reverse lookups
     parents: Mutex<LruCache<String, String>>,
     /// Cache TTL
@@ -48,7 +46,6 @@ impl Cache {
         Self {
             nodes: Mutex::new(LruCache::new(size)),
             children: Mutex::new(LruCache::new(NonZeroUsize::new(1000).unwrap())),
-            paths: Mutex::new(LruCache::new(size)),
             parents: Mutex::new(LruCache::new(size)),
             ttl: Duration::from_secs(ttl_secs),
         }
@@ -148,25 +145,7 @@ impl Cache {
         None
     }
 
-    /// Cache a path resolution
-    pub fn put_path(&self, path: &str, node_id: &str) {
-        let expires_at = Instant::now() + self.ttl;
-        self.paths
-            .lock()
-            .put(path.to_string(), (node_id.to_string(), expires_at));
-    }
 
-    /// Get cached path resolution
-    pub fn get_path(&self, path: &str) -> Option<String> {
-        let mut cache = self.paths.lock();
-        if let Some((node_id, expires_at)) = cache.get(path) {
-            if *expires_at > Instant::now() {
-                return Some(node_id.clone());
-            }
-            cache.pop(path);
-        }
-        None
-    }
 
     /// Invalidate cache for a node and its parent listing
     pub fn invalidate_node(&self, node_id: &str) {

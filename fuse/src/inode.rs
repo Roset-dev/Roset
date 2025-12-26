@@ -88,11 +88,7 @@ impl InodeMap {
         i2n.get(&ino).cloned()
     }
 
-    /// Get inode for a node ID (if it exists)
-    pub fn get_ino(&self, node_id: &str) -> Option<u64> {
-        let n2i = self.node_to_ino.read();
-        n2i.get(node_id).copied()
-    }
+
 
     /// Forget an inode (decrement refcount)
     pub fn forget(&self, ino: u64, nlookup: u64) {
