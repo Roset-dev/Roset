@@ -7,11 +7,9 @@ import { generateIdempotencyKey } from "../http.js";
 import type {
   RosetClientConfig,
   RequestOptions,
-  PaginatedResult,
   Share,
   CreateShareOptions,
   ShareAccessResult,
-  Node,
 } from "../types.js";
 
 export class SharesResource {
