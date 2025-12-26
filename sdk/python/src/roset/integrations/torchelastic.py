@@ -6,11 +6,10 @@ Provides utilities for resume-on-eviction resilience with TorchElastic.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from typing import Any, Optional
 
 from roset.client import RosetClient
+
 
 class RosetElastic:
     """
@@ -40,7 +39,7 @@ class RosetElastic:
         self.checkpoint_dir = checkpoint_dir.strip("/")
         self.ref_name = ref_name
 
-    def get_latest_checkpoint_path(self) -> Optional[Path]:
+    def get_latest_checkpoint_path(self) -> Path | None:
         """
         Resolve the 'latest' ref to a local filesystem path.
         

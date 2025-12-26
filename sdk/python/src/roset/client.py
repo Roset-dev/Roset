@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Optional, Union
+from typing import Any
 
 import httpx
 
@@ -35,7 +35,7 @@ class RosetClient:
         self,
         api_url: str,
         api_key: str,
-        mount_id: Optional[str] = None,
+        mount_id: str | None = None,
         timeout: float = 30.0,
         max_retries: int = 3,
         backoff_factor: float = 0.5,
@@ -69,7 +69,7 @@ class RosetClient:
         """Close the HTTP client."""
         self._client.close()
 
-    def __enter__(self) -> "RosetClient":
+    def __enter__(self) -> RosetClient:
         return self
 
     def __exit__(self, *args: Any) -> None:
@@ -83,8 +83,8 @@ class RosetClient:
         self,
         method: str,
         path: str,
-        json: Optional[dict[str, Any]] = None,
-        params: Optional[dict[str, Any]] = None,
+        json: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Make an API request and handle errors with retries."""
         for attempt in range(self.max_retries + 1):
@@ -127,14 +127,15 @@ class RosetClient:
                         except Exception:
                             pass
                     raise RosetAPIError(
-                        message=f"Request failed after {self.max_retries} retries: {str(e)}",
+                        message=f"Request failed after {self.max_retries} retries: {e!s}",
                         status_code=503,
                         code="NETWORK_ERROR",
                     ) from e
                 
                 sleep_time = self.backoff_factor * (2 ** attempt)
                 logger.warning(
-                    f"Request failed (attempt {attempt + 1}/{self.max_retries}), retrying in {sleep_time:.2f}s: {e}"
+                    f"Request failed (attempt {attempt + 1}/{self.max_retries}), "
+                    f"retrying in {sleep_time:.2f}s: {e}"
                 )
                 time.sleep(sleep_time)
 
@@ -149,7 +150,7 @@ class RosetClient:
         data = self._request("GET", f"/v1/nodes/{node_id}")
         return Node.model_validate(data["node"])
     
-    def resolve_path(self, path: str) -> Optional[Node]:
+    def resolve_path(self, path: str) -> Node | None:
         """
         Resolve a path to a node.
         
@@ -194,8 +195,8 @@ class RosetClient:
     def commit(
         self,
         node_id: str,
-        message: Optional[str] = None,
-        group_id: Optional[str] = None,
+        message: str | None = None,
+        group_id: str | None = None,
     ) -> Commit:
         """
         Commit a folder atomically.
@@ -266,7 +267,7 @@ class RosetClient:
     # Commit Groups
     # =========================================================================
 
-    def create_commit_group(self, message: Optional[str] = None) -> CommitGroup:
+    def create_commit_group(self, message: str | None = None) -> CommitGroup:
         """Create a commit group for cross-folder atomicity."""
         data = self._request(
             "POST",
@@ -284,7 +285,7 @@ class RosetClient:
     # Refs
     # =========================================================================
 
-    def get_ref(self, name: str) -> Optional[Ref]:
+    def get_ref(self, name: str) -> Ref | None:
         """
         Get a ref by name.
 
@@ -304,7 +305,7 @@ class RosetClient:
         self,
         name: str,
         commit_id: str,
-        expected_commit_id: Optional[str] = None,
+        expected_commit_id: str | None = None,
     ) -> Ref:
         """
         Update a ref atomically.

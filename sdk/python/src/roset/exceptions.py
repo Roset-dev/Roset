@@ -6,7 +6,7 @@ Standard exception hierarchy for the SDK.
 
 from __future__ import annotations
 
-from typing import Any, Optional, Union
+from typing import Any
 
 
 class RosetError(Exception):
@@ -22,8 +22,8 @@ class RosetAPIError(RosetError):
         self,
         message: str,
         status_code: int,
-        code: Optional[str] = None,
-        details: Optional[dict[str, Any]] = None,
+        code: str | None = None,
+        details: dict[str, Any] | None = None,
     ):
         super().__init__(message)
         self.status_code = status_code
