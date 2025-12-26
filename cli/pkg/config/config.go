@@ -62,5 +62,11 @@ func Save(url, key string) error {
 		return err
 	}
 
-	return viper.WriteConfigAs(filepath.Join(configDir, "config.yaml"))
+	configFile := filepath.Join(configDir, "config.yaml")
+	if err := viper.WriteConfigAs(configFile); err != nil {
+		return err
+	}
+
+	// Harden permissions to 0600 (owner read/write only)
+	return os.Chmod(configFile, 0600)
 }

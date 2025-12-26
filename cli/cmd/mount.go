@@ -94,5 +94,7 @@ func runMount(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Mounting %s...\n", mountpoint)
 
 	// Execute roset-fuse (replaces current process)
+	// Execute roset-fuse (replaces current process)
+	// TODO: syscall.Exec is not supported on Windows. Use exec.Command + wait for Windows support.
 	return syscall.Exec(fusePath, fuseArgs, os.Environ())
 }

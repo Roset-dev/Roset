@@ -274,7 +274,8 @@ async fn process_upload(client: &RosetClient, job: &mut UploadJob) -> Result<()>
                 part_number,
                 etag,
             })
-        })
+        }
+    })
         .buffer_unordered(CONCURRENCY);
 
     // Collect results incrementally to persist state

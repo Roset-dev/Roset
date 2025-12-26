@@ -96,7 +96,7 @@ impl Node for NodeService {
             .unwrap_or_else(|| "https://api.roset.dev".to_string());
 
         info!("Publishing volume {} to {}", volume_id, target_path);
-        
+
         // 0. Check if already mounted (Idempotency)
         // Uses `mountpoint -q <path>` which is standard on Linux/Container OS
         let mount_check = Command::new("mountpoint")
