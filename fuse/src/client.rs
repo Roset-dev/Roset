@@ -172,9 +172,13 @@ impl RosetClient {
     }
 
     /// Resolve a path to a node, optionally relative to a base_id
-    pub async fn resolve(&self, path: &str, base_id: Option<&str>) -> Result<Option<Node>, ApiError> {
+    pub async fn resolve(
+        &self,
+        path: &str,
+        base_id: Option<&str>,
+    ) -> Result<Option<Node>, ApiError> {
         let url = format!("{}/v1/resolve", self.base_url);
-        
+
         let mut body = serde_json::json!({ "paths": [path] });
         if let Some(bid) = base_id {
             body["baseId"] = serde_json::json!(bid);
@@ -184,7 +188,7 @@ impl RosetClient {
         }
 
         let resp = self.http.post(&url).json(&body).send().await?;
-        
+
         if !resp.status().is_success() {
             let status = resp.status();
             let text = resp.text().await.unwrap_or_default();
@@ -207,13 +211,20 @@ impl RosetClient {
         }
 
         #[derive(Deserialize)]
-        struct Wrapper { node: Node }
+        struct Wrapper {
+            node: Node,
+        }
         let data: Wrapper = resp.json().await?;
         Ok(data.node)
     }
 
     /// List children of a folder with pagination
-    pub async fn list_children(&self, node_id: &str, page: u32, page_size: u32) -> Result<ChildrenResponse, ApiError> {
+    pub async fn list_children(
+        &self,
+        node_id: &str,
+        page: u32,
+        page_size: u32,
+    ) -> Result<ChildrenResponse, ApiError> {
         let url = format!(
             "{}/v1/nodes/{}/children?page={}&pageSize={}",
             self.base_url, node_id, page, page_size
@@ -230,7 +241,11 @@ impl RosetClient {
     }
 
     /// List all children (handles pagination)
-    pub async fn list_all_children(&self, node_id: &str, max_items: u32) -> Result<Vec<Node>, ApiError> {
+    pub async fn list_all_children(
+        &self,
+        node_id: &str,
+        max_items: u32,
+    ) -> Result<Vec<Node>, ApiError> {
         let mut all_children = Vec::new();
         let mut page = 1;
         let page_size = 500; // Reasonable page size
@@ -268,16 +283,21 @@ impl RosetClient {
         let resp = self.http.get(&url).send().await?;
 
         if !resp.status().is_success() {
-             let status = resp.status();
-             let text = resp.text().await.unwrap_or_default();
-             return Err(self.handle_status(status, &text));
+            let status = resp.status();
+            let text = resp.text().await.unwrap_or_default();
+            return Err(self.handle_status(status, &text));
         }
 
         Ok(resp.json().await?)
     }
 
     /// Acquire a lease on a node
-    pub async fn acquire_lease(&self, node_id: &str, mode: &str, duration_secs: u32) -> Result<Lease, ApiError> {
+    pub async fn acquire_lease(
+        &self,
+        node_id: &str,
+        mode: &str,
+        duration_secs: u32,
+    ) -> Result<Lease, ApiError> {
         let url = format!("{}/v1/nodes/{}/lease", self.base_url, node_id);
         let body = serde_json::json!({
             "mode": mode,
@@ -312,9 +332,14 @@ impl RosetClient {
     }
 
     /// Download file content via signed URL with range (with retry)
-    pub async fn download_range(&self, url: &str, offset: u64, size: u32) -> Result<Vec<u8>, ApiError> {
+    pub async fn download_range(
+        &self,
+        url: &str,
+        offset: u64,
+        size: u32,
+    ) -> Result<Vec<u8>, ApiError> {
         let range = format!("bytes={}-{}", offset, offset + size as u64 - 1);
-        
+
         // Retry with exponential backoff
         let max_retries = 3;
         let mut attempt = 0;
@@ -322,7 +347,7 @@ impl RosetClient {
 
         loop {
             attempt += 1;
-            
+
             let resp = reqwest::Client::new()
                 .get(url)
                 .header("Range", &range)
@@ -335,15 +360,22 @@ impl RosetClient {
                     if r.status().is_success() || r.status() == 206 {
                         return Ok(r.bytes().await?.to_vec());
                     }
-                    
+
                     // Non-retryable error
                     if r.status().as_u16() == 404 || r.status().as_u16() == 403 {
-                        return Err(ApiError::ServerError(format!("Download error: {}", r.status())));
+                        return Err(ApiError::ServerError(format!(
+                            "Download error: {}",
+                            r.status()
+                        )));
                     }
-                    
+
                     // Retryable server error
                     if attempt >= max_retries {
-                        return Err(ApiError::ServerError(format!("Download error after {} retries: {}", max_retries, r.status())));
+                        return Err(ApiError::ServerError(format!(
+                            "Download error after {} retries: {}",
+                            max_retries,
+                            r.status()
+                        )));
                     }
                 }
                 Err(e) => {
@@ -363,7 +395,7 @@ impl RosetClient {
     /// Create a new node (file or folder)
     pub async fn create_node(&self, mut input: CreateNodeInput) -> Result<Node, ApiError> {
         let url = format!("{}/v1/nodes", self.base_url);
-        
+
         // Use client's mount_id if not specified in input
         if input.mount_id.is_none() {
             input.mount_id = self.mount_id.clone();
@@ -383,7 +415,9 @@ impl RosetClient {
         }
 
         #[derive(Deserialize)]
-        struct Wrapper { node: Node }
+        struct Wrapper {
+            node: Node,
+        }
         let data: Wrapper = resp.json().await?;
         Ok(data.node)
     }
@@ -404,9 +438,12 @@ impl RosetClient {
 
     /// Initialize an upload session
     /// Initialize an upload session
-    pub async fn init_upload(&self, mut input: InitUploadInput) -> Result<InitUploadResponse, ApiError> {
+    pub async fn init_upload(
+        &self,
+        mut input: InitUploadInput,
+    ) -> Result<InitUploadResponse, ApiError> {
         let url = format!("{}/v1/uploads/init", self.base_url);
-        
+
         // Use client's mount_id if not specified in input
         if input.mount_id.is_none() {
             input.mount_id = self.mount_id.clone();
@@ -424,9 +461,14 @@ impl RosetClient {
     }
 
     /// Commit an upload session
-    pub async fn commit_upload(&self, upload_token: &str, etag: Option<String>, size: u64) -> Result<CommitUploadResponse, ApiError> {
+    pub async fn commit_upload(
+        &self,
+        upload_token: &str,
+        etag: Option<String>,
+        size: u64,
+    ) -> Result<CommitUploadResponse, ApiError> {
         let url = format!("{}/v1/uploads/commit", self.base_url);
-        
+
         let body = serde_json::json!({
             "uploadToken": upload_token,
             "etag": etag,
@@ -445,7 +487,11 @@ impl RosetClient {
     }
 
     /// Update node metadata (for xattr support)
-    pub async fn update_node_metadata(&self, node_id: &str, metadata: serde_json::Value) -> Result<Node, ApiError> {
+    pub async fn update_node_metadata(
+        &self,
+        node_id: &str,
+        metadata: serde_json::Value,
+    ) -> Result<Node, ApiError> {
         let url = format!("{}/v1/nodes/{}", self.base_url, node_id);
         let body = serde_json::json!({
             "metadata": metadata
@@ -460,7 +506,9 @@ impl RosetClient {
         }
 
         #[derive(Deserialize)]
-        struct Wrapper { node: Node }
+        struct Wrapper {
+            node: Node,
+        }
         let data: Wrapper = resp.json().await?;
         Ok(data.node)
     }
@@ -495,8 +543,15 @@ impl RosetClient {
     // ... existing methods ...
 
     /// Get signed URL for an upload part
-    pub async fn get_upload_part_url(&self, upload_token: &str, part_number: u32) -> Result<String, ApiError> {
-        let url = format!("{}/v1/uploads/{}/part?partNumber={}", self.base_url, upload_token, part_number);
+    pub async fn get_upload_part_url(
+        &self,
+        upload_token: &str,
+        part_number: u32,
+    ) -> Result<String, ApiError> {
+        let url = format!(
+            "{}/v1/uploads/{}/part?partNumber={}",
+            self.base_url, upload_token, part_number
+        );
         let resp = self.http.post(&url).send().await?;
 
         if !resp.status().is_success() {
@@ -506,16 +561,22 @@ impl RosetClient {
         }
 
         #[derive(Deserialize)]
-        struct PartResponse { url: String }
+        struct PartResponse {
+            url: String,
+        }
         let data: PartResponse = resp.json().await?;
         Ok(data.url)
     }
 
     /// Complete multipart upload
-    pub async fn complete_multipart_upload(&self, upload_token: &str, parts: Vec<Part>) -> Result<CommitUploadResponse, ApiError> {
+    pub async fn complete_multipart_upload(
+        &self,
+        upload_token: &str,
+        parts: Vec<Part>,
+    ) -> Result<CommitUploadResponse, ApiError> {
         let url = format!("{}/v1/uploads/{}/complete", self.base_url, upload_token);
         let body = serde_json::json!({ "parts": parts });
-        
+
         let resp = self.http.post(&url).json(&body).send().await?;
 
         if !resp.status().is_success() {

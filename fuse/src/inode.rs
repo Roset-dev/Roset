@@ -61,11 +61,11 @@ impl InodeMap {
 
         // Allocate new
         let ino = self.next_ino.fetch_add(1, Ordering::SeqCst);
-        
+
         let mut n2i = self.node_to_ino.write();
         let mut i2n = self.ino_to_node.write();
         let mut refs = self.refcounts.write();
-        
+
         // Double-check after acquiring write lock
         if let Some(&existing) = n2i.get(node_id) {
             if let Some(r) = refs.get_mut(&existing) {
@@ -104,7 +104,7 @@ impl InodeMap {
         let should_remove = {
             let mut refs = self.refcounts.write();
             let count = refs.get(&ino).copied().unwrap_or(0);
-            
+
             if count > nlookup {
                 refs.insert(ino, count - nlookup);
                 false

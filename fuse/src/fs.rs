@@ -1,11 +1,13 @@
 //! FUSE Filesystem Implementation
 
 use crate::cache::Cache;
-use futures::{StreamExt, TryStreamExt};
-use crate::client::{ApiError, CreateNodeInput, InitUploadInput, Node, NodeType, Part, RosetClient};
+use crate::client::{
+    ApiError, CreateNodeInput, InitUploadInput, Node, NodeType, Part, RosetClient,
+};
 use crate::config::Config;
 use crate::inode::{InodeMap, ROOT_INO};
 use crate::staging::StagingManager;
+use futures::{StreamExt, TryStreamExt};
 
 use anyhow::Result;
 use fuser::{
@@ -61,8 +63,6 @@ struct OpenFile {
     dirty: bool,
 }
 
-
-
 /// TTL for FUSE responses
 const TTL: Duration = Duration::from_secs(60);
 
@@ -92,8 +92,18 @@ impl RosetFs {
             gid,
             max_dir_entries: 10000,
             staging_manager: if config.write_back_cache {
-                let staging_dir = config.staging_dir.clone().unwrap_or_else(|| PathBuf::from(".roset/staging"));
-                Some(StagingManager::new(Arc::new(RosetClient::new(&config.api_url, &config.api_key, config.mount_id.clone())?), staging_dir))
+                let staging_dir = config
+                    .staging_dir
+                    .clone()
+                    .unwrap_or_else(|| PathBuf::from(".roset/staging"));
+                Some(StagingManager::new(
+                    Arc::new(RosetClient::new(
+                        &config.api_url,
+                        &config.api_key,
+                        config.mount_id.clone(),
+                    )?),
+                    staging_dir,
+                ))
             } else {
                 None
             },
@@ -103,9 +113,10 @@ impl RosetFs {
     /// Initialize the filesystem (resolve root)
     pub fn init_root(&self) -> Result<()> {
         let client = self.client.clone();
-        let node = self.rt.block_on(async move {
-            client.resolve("/", None).await
-        }).map_err(|e| anyhow::anyhow!("Failed to resolve root: {}", e))?;
+        let node = self
+            .rt
+            .block_on(async move { client.resolve("/", None).await })
+            .map_err(|e| anyhow::anyhow!("Failed to resolve root: {}", e))?;
 
         if let Some(root) = node {
             self.inodes.set_root(&root.id);
@@ -157,7 +168,11 @@ impl RosetFs {
             ctime,
             crtime: ctime,
             kind,
-            perm: if kind == FileType::Directory { 0o755 } else { 0o644 },
+            perm: if kind == FileType::Directory {
+                0o755
+            } else {
+                0o644
+            },
             nlink: 1,
             uid: self.uid,
             gid: self.gid,
@@ -191,18 +206,19 @@ impl RosetFs {
         let client = self.client.clone();
         let pid = parent_id.to_string();
         let n = name.to_string();
-        
-        match self.rt.block_on(async move {
-            client.resolve(&n, Some(&pid)).await
-        })? {
+
+        match self
+            .rt
+            .block_on(async move { client.resolve(&n, Some(&pid)).await })?
+        {
             Some(node) => {
-                // Node found, but we don't put it in children cache here 
+                // Node found, but we don't put it in children cache here
                 // because it's a single node, not a full listing.
                 // We do put it in nodes cache.
                 self.cache.put_node(node.clone());
                 Ok(Some(node))
             }
-            None => Ok(None)
+            None => Ok(None),
         }
     }
 }
@@ -301,11 +317,12 @@ impl Filesystem for RosetFs {
                 let client = self.client.clone();
                 let id = node_id.clone();
                 let max_entries = self.max_dir_entries;
-                
+
                 // Accessing cache inside async block would be tricky due to lifetime,
                 // so we fetch the node from cache here if possible to check metadata
                 let is_committed = if let Some(node) = self.cache.get_node(&id) {
-                    node.metadata.as_ref()
+                    node.metadata
+                        .as_ref()
                         .and_then(|m| m.get("committed"))
                         .and_then(|v| v.as_bool())
                         .unwrap_or(false)
@@ -325,7 +342,7 @@ impl Filesystem for RosetFs {
                             }
                         }
                     } else {
-                        client.list_all_children(&id, max_entries).await 
+                        client.list_all_children(&id, max_entries).await
                     }
                 };
 
@@ -386,19 +403,27 @@ impl Filesystem for RosetFs {
         // Get download URL
         let client = self.client.clone();
         let id = node_id.clone();
-        match self.rt.block_on(async move { client.get_download_url(&id).await }) {
+        match self
+            .rt
+            .block_on(async move { client.get_download_url(&id).await })
+        {
             Ok(resp) => {
-                let fh = self.next_fh.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                self.handles.lock().insert(fh, OpenFile {
-                    node_id,
-                    download_url: Some(resp.url),
-                    size: resp.size,
-                    write_mode: false,
-                    upload_token: None,
-                    upload_url: None,
-                    temp_file: None,
-                    dirty: false,
-                });
+                let fh = self
+                    .next_fh
+                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                self.handles.lock().insert(
+                    fh,
+                    OpenFile {
+                        node_id,
+                        download_url: Some(resp.url),
+                        size: resp.size,
+                        write_mode: false,
+                        upload_token: None,
+                        upload_url: None,
+                        temp_file: None,
+                        dirty: false,
+                    },
+                );
                 reply.opened(fh, 0);
             }
             Err(e) => {
@@ -408,13 +433,21 @@ impl Filesystem for RosetFs {
         }
     }
 
-    fn mkdir(&mut self, _req: &Request, parent: u64, name: &OsStr, _mode: u32, _umask: u32, reply: ReplyEntry) {
+    fn mkdir(
+        &mut self,
+        _req: &Request,
+        parent: u64,
+        name: &OsStr,
+        _mode: u32,
+        _umask: u32,
+        reply: ReplyEntry,
+    ) {
         let name_str = name.to_string_lossy();
         debug!("mkdir: parent={}, name={}", parent, name_str);
 
         if self.read_only {
-             reply.error(libc::EROFS);
-             return;
+            reply.error(libc::EROFS);
+            return;
         }
 
         let parent_id = match self.inodes.get_node_id(parent) {
@@ -438,7 +471,10 @@ impl Filesystem for RosetFs {
             mount_id: None, // Will use default from client
         };
 
-        match self.rt.block_on(async move { client.create_node(create_input).await }) {
+        match self
+            .rt
+            .block_on(async move { client.create_node(create_input).await })
+        {
             Ok(node) => {
                 self.cache.invalidate_children(&parent_id);
                 let ino = self.inodes.get_or_create(&node.id);
@@ -447,8 +483,8 @@ impl Filesystem for RosetFs {
                 reply.entry(&TTL, &attr, 0);
             }
             Err(e) => {
-                 error!("API error in mkdir: {}", e);
-                 reply.error(Self::api_error_to_errno(&e));
+                error!("API error in mkdir: {}", e);
+                reply.error(Self::api_error_to_errno(&e));
             }
         }
     }
@@ -458,16 +494,16 @@ impl Filesystem for RosetFs {
         debug!("rmdir: parent={}, name={}", parent, name_str);
 
         if self.read_only {
-             reply.error(libc::EROFS);
-             return;
+            reply.error(libc::EROFS);
+            return;
         }
 
         let parent_id = match self.inodes.get_node_id(parent) {
-             Some(id) => id,
-             None => {
-                 reply.error(libc::ENOENT);
-                 return;
-             }
+            Some(id) => id,
+            None => {
+                reply.error(libc::ENOENT);
+                return;
+            }
         };
 
         // Resolve name to ID
@@ -483,19 +519,22 @@ impl Filesystem for RosetFs {
                 return;
             }
         };
-        
+
         let target_id = target_node.id;
         let client = self.client.clone();
-        match self.rt.block_on(async move { client.delete_node(&target_id).await }) {
-             Ok(_) => {
-                 self.cache.invalidate_children(&parent_id);
-                 self.cache.invalidate_node(&target_id);
-                 reply.ok();
-             }
-             Err(e) => {
-                  error!("API error in rmdir: {}", e);
-                   reply.error(Self::api_error_to_errno(&e));
-             }
+        match self
+            .rt
+            .block_on(async move { client.delete_node(&target_id).await })
+        {
+            Ok(_) => {
+                self.cache.invalidate_children(&parent_id);
+                self.cache.invalidate_node(&target_id);
+                reply.ok();
+            }
+            Err(e) => {
+                error!("API error in rmdir: {}", e);
+                reply.error(Self::api_error_to_errno(&e));
+            }
         }
     }
 
@@ -503,22 +542,31 @@ impl Filesystem for RosetFs {
         // Unlink is same as rmdir for us (delete_node)
         self.rmdir(_req, parent, name, reply);
     }
-    
-    fn create(&mut self, _req: &Request, parent: u64, name: &OsStr, _mode: u32, _umask: u32, _flags: i32, reply: fuser::ReplyCreate) {
+
+    fn create(
+        &mut self,
+        _req: &Request,
+        parent: u64,
+        name: &OsStr,
+        _mode: u32,
+        _umask: u32,
+        _flags: i32,
+        reply: fuser::ReplyCreate,
+    ) {
         let name_str = name.to_string_lossy();
         debug!("create: parent={}, name={}", parent, name_str);
 
         if self.read_only {
-             reply.error(libc::EROFS);
-             return;
+            reply.error(libc::EROFS);
+            return;
         }
 
         let parent_id = match self.inodes.get_node_id(parent) {
-             Some(id) => id,
-             None => {
-                 reply.error(libc::ENOENT);
-                 return;
-             }
+            Some(id) => id,
+            None => {
+                reply.error(libc::ENOENT);
+                return;
+            }
         };
 
         let client = self.client.clone();
@@ -538,103 +586,121 @@ impl Filesystem for RosetFs {
         };
 
         // Initialize upload (force multipart for robustness)
-        match self.rt.block_on(async move { client.init_upload(init_input).await }) {
-             Ok(resp) => {
-                 // Create a placeholder Node struct for the reply
-                 let node = Node {
-                     id: resp.node_id.clone(),
-                     tenant_id: "".to_string(), // Unknown context here but not needed for attr
-                     mount_id: "".to_string(),
-                     parent_id: Some(parent_id.clone()),
-                     name: n,
-                     node_type: NodeType::File,
-                     size: Some(0),
-                     content_type: None,
-                     created_at: chrono::Utc::now().to_rfc3339(),
-                     updated_at: chrono::Utc::now().to_rfc3339(),
-                     metadata: None,
-                 };
+        match self
+            .rt
+            .block_on(async move { client.init_upload(init_input).await })
+        {
+            Ok(resp) => {
+                // Create a placeholder Node struct for the reply
+                let node = Node {
+                    id: resp.node_id.clone(),
+                    tenant_id: "".to_string(), // Unknown context here but not needed for attr
+                    mount_id: "".to_string(),
+                    parent_id: Some(parent_id.clone()),
+                    name: n,
+                    node_type: NodeType::File,
+                    size: Some(0),
+                    content_type: None,
+                    created_at: chrono::Utc::now().to_rfc3339(),
+                    updated_at: chrono::Utc::now().to_rfc3339(),
+                    metadata: None,
+                };
 
-                 let ino = self.inodes.get_or_create(&resp.node_id);
-                 let fh = self.next_fh.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                 
-                 // Create temp file
-                 let temp_file = match NamedTempFile::new() {
-                     Ok(f) => f,
-                     Err(e) => {
-                         error!("Failed to create temp file: {}", e);
-                         reply.error(libc::EIO);
-                         return;
-                     }
-                 };
+                let ino = self.inodes.get_or_create(&resp.node_id);
+                let fh = self
+                    .next_fh
+                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
-                 self.handles.lock().insert(fh, OpenFile {
-                     node_id: resp.node_id,
-                     download_url: None,
-                     size: 0,
-                     write_mode: true,
-                     upload_token: Some(resp.upload_token),
-                     upload_url: Some(resp.upload_url), // Might be None for multipart
-                     temp_file: Some(temp_file),
-                     dirty: false,
-                 });
+                // Create temp file
+                let temp_file = match NamedTempFile::new() {
+                    Ok(f) => f,
+                    Err(e) => {
+                        error!("Failed to create temp file: {}", e);
+                        reply.error(libc::EIO);
+                        return;
+                    }
+                };
 
-                 let attr = self.node_to_attr(&node, ino);
-                 reply.created(&TTL, &attr, 0, fh, 0);
-             }
-             Err(e) => {
-                  error!("API error in create: {}", e);
-                  reply.error(Self::api_error_to_errno(&e));
-             }
+                self.handles.lock().insert(
+                    fh,
+                    OpenFile {
+                        node_id: resp.node_id,
+                        download_url: None,
+                        size: 0,
+                        write_mode: true,
+                        upload_token: Some(resp.upload_token),
+                        upload_url: Some(resp.upload_url), // Might be None for multipart
+                        temp_file: Some(temp_file),
+                        dirty: false,
+                    },
+                );
+
+                let attr = self.node_to_attr(&node, ino);
+                reply.created(&TTL, &attr, 0, fh, 0);
+            }
+            Err(e) => {
+                error!("API error in create: {}", e);
+                reply.error(Self::api_error_to_errno(&e));
+            }
         }
     }
 
-    fn write(&mut self, _req: &Request, _ino: u64, fh: u64, offset: i64, data: &[u8], _write_flags: u32, _flags: i32, _lock_owner: Option<u64>, reply: fuser::ReplyWrite) {
+    fn write(
+        &mut self,
+        _req: &Request,
+        _ino: u64,
+        fh: u64,
+        offset: i64,
+        data: &[u8],
+        _write_flags: u32,
+        _flags: i32,
+        _lock_owner: Option<u64>,
+        reply: fuser::ReplyWrite,
+    ) {
         debug!("write: fh={}, offset={}, len={}", fh, offset, data.len());
 
         let mut handles = self.handles.lock();
         if let Some(handle) = handles.get_mut(&fh) {
-             if !handle.write_mode {
-                 reply.error(libc::EBADF);
-                 return;
-             }
-             
-             let file = match handle.temp_file.as_mut() {
-                 Some(f) => f,
-                 None => {
-                     reply.error(libc::EBADF);
-                     return;
-                 }
-             };
+            if !handle.write_mode {
+                reply.error(libc::EBADF);
+                return;
+            }
 
-             // Seek to offset
-             if let Err(e) = file.seek(SeekFrom::Start(offset as u64)) {
-                 error!("Seek error: {}", e);
-                 reply.error(libc::EIO);
-                 return;
-             }
+            let file = match handle.temp_file.as_mut() {
+                Some(f) => f,
+                None => {
+                    reply.error(libc::EBADF);
+                    return;
+                }
+            };
 
-             // Write data
-             if let Err(e) = file.write_all(data) {
-                 error!("Write error: {}", e);
-                 reply.error(libc::EIO);
-                 return;
-             }
-             
-             handle.dirty = true;
-             
-             // Update size if we extended the file
-             let end_pos = offset as u64 + data.len() as u64;
-             if end_pos > handle.size {
-                 handle.size = end_pos;
-             }
-             
-             reply.written(data.len() as u32);
+            // Seek to offset
+            if let Err(e) = file.seek(SeekFrom::Start(offset as u64)) {
+                error!("Seek error: {}", e);
+                reply.error(libc::EIO);
+                return;
+            }
+
+            // Write data
+            if let Err(e) = file.write_all(data) {
+                error!("Write error: {}", e);
+                reply.error(libc::EIO);
+                return;
+            }
+
+            handle.dirty = true;
+
+            // Update size if we extended the file
+            let end_pos = offset as u64 + data.len() as u64;
+            if end_pos > handle.size {
+                handle.size = end_pos;
+            }
+
+            reply.written(data.len() as u32);
         } else {
-             reply.error(libc::EBADF);
+            reply.error(libc::EBADF);
         }
     }
-
 
     fn read(
         &mut self,
@@ -647,7 +713,10 @@ impl Filesystem for RosetFs {
         _lock_owner: Option<u64>,
         reply: ReplyData,
     ) {
-        debug!("read: ino={}, fh={}, offset={}, size={}", ino, fh, offset, size);
+        debug!(
+            "read: ino={}, fh={}, offset={}, size={}",
+            ino, fh, offset, size
+        );
 
         let handle = {
             let handles = self.handles.lock();
@@ -680,15 +749,19 @@ impl Filesystem for RosetFs {
         // Download the range
         let client = self.client.clone();
         let url = match handle.download_url {
-             Some(u) => u,
-             None => {
-                 // If no download URL, it might be a new file being written
-                 // Return zeros or error
-                 reply.error(libc::EIO);
-                 return;
-             }
-        };        
-        match self.rt.block_on(async move { client.download_range(&url, offset as u64, actual_size).await }) {
+            Some(u) => u,
+            None => {
+                // If no download URL, it might be a new file being written
+                // Return zeros or error
+                reply.error(libc::EIO);
+                return;
+            }
+        };
+        match self.rt.block_on(async move {
+            client
+                .download_range(&url, offset as u64, actual_size)
+                .await
+        }) {
             Ok(data) => {
                 reply.data(&data);
             }
@@ -710,137 +783,147 @@ impl Filesystem for RosetFs {
         reply: fuser::ReplyEmpty,
     ) {
         debug!("release: ino={}, fh={}", ino, fh);
-        
+
         let handle = {
-             let mut map = self.handles.lock();
-             map.remove(&fh)
+            let mut map = self.handles.lock();
+            map.remove(&fh)
         };
 
         if let Some(mut handle) = handle {
             if handle.write_mode && handle.dirty {
-                 if let (Some(token), Some(temp_file)) = (handle.upload_token, handle.temp_file) {
-                      info!("Flushing temp file ({} bytes) for node {}", handle.size, handle.node_id);
-                      
-                      let client = self.client.clone();
-                      let nid = handle.node_id.clone();
-                      let total_size = handle.size;
-                      
-                      // Persist temp file
-                      let (_file, path) = match temp_file.keep() {
-                          Ok(p) => p,
-                          Err(e) => {
-                              error!("Failed to persist temp file: {}", e);
-                              reply.ok(); 
-                              return;
-                          }
-                      };
+                if let (Some(token), Some(temp_file)) = (handle.upload_token, handle.temp_file) {
+                    info!(
+                        "Flushing temp file ({} bytes) for node {}",
+                        handle.size, handle.node_id
+                    );
 
-                      // 1. Try Write-Back Staging
-                      let mut staged = false;
-                      if let Some(staging) = &self.staging_manager {
-                          info!("Staging background upload for node {}", nid);
-                          match self.rt.block_on(async { staging.stage_file(&path, nid.clone(), token.clone(), total_size).await }) {
-                              Ok(_) => {
-                                  staged = true;
-                                  self.cache.invalidate_node(&nid);
-                              }
-                              Err(e) => {
-                                  error!("Staging failed (falling back to sync): {}", e);
-                              }
-                          }
-                      }
+                    let client = self.client.clone();
+                    let nid = handle.node_id.clone();
+                    let total_size = handle.size;
 
-                      // 2. Fallback to Synchronous Upload if not staged
-                      if !staged {
-                          // Run multipart upload in background (blocking FUSE thread)
-                          let res = self.rt.block_on(async move {
-                              // Define Part Size (e.g., 20MB)
-                              const CONCURRENCY: usize = 5;
-                              const PART_SIZE: u64 = 20 * 1024 * 1024; 
-                              
-                              let iterations = if total_size > 0 {
-                                  (total_size + PART_SIZE - 1) / PART_SIZE
-                              } else {
-                                  1
-                              };
+                    // Persist temp file
+                    let (_file, path) = match temp_file.keep() {
+                        Ok(p) => p,
+                        Err(e) => {
+                            error!("Failed to persist temp file: {}", e);
+                            reply.ok();
+                            return;
+                        }
+                    };
 
-                              let mut pending_parts = Vec::new();
-                              let mut offset = 0;
-                              for part_number in 1..=iterations {
-                                  let current_part_size = if total_size > 0 {
-                                      std::cmp::min(PART_SIZE, total_size - offset)
-                                  } else {
-                                      0
-                                  };
-                                  pending_parts.push((part_number as u32, offset, current_part_size));
-                                  offset += current_part_size;
-                              }
+                    // 1. Try Write-Back Staging
+                    let mut staged = false;
+                    if let Some(staging) = &self.staging_manager {
+                        info!("Staging background upload for node {}", nid);
+                        match self.rt.block_on(async {
+                            staging
+                                .stage_file(&path, nid.clone(), token.clone(), total_size)
+                                .await
+                        }) {
+                            Ok(_) => {
+                                staged = true;
+                                self.cache.invalidate_node(&nid);
+                            }
+                            Err(e) => {
+                                error!("Staging failed (falling back to sync): {}", e);
+                            }
+                        }
+                    }
 
-                              let client_ref = &client;
-                              let path_ref = &path;
-                              let token_ref = &token;
+                    // 2. Fallback to Synchronous Upload if not staged
+                    if !staged {
+                        // Run multipart upload in background (blocking FUSE thread)
+                        let res = self.rt.block_on(async move {
+                            // Define Part Size (e.g., 20MB)
+                            const CONCURRENCY: usize = 5;
+                            const PART_SIZE: u64 = 20 * 1024 * 1024;
 
-                              let bodies = futures::stream::iter(pending_parts)
-                                  .map(|(part_number, off, size)| async move {
-                                      // 1. Get Signed URL
-                                      let url = client_ref.get_upload_part_url(token_ref, part_number).await?;
+                            let iterations = if total_size > 0 {
+                                (total_size + PART_SIZE - 1) / PART_SIZE
+                            } else {
+                                1
+                            };
 
-                                      // 2. Read Chunk
-                                      let mut file = tokio::fs::File::open(path_ref).await?;
-                                      file.seek(SeekFrom::Start(off)).await?;
-                                      let chunk = file.take(size);
-                                      
-                                      // 3. Upload Chunk
-                                      let stream = tokio_util::io::ReaderStream::new(chunk);
-                                      let body = reqwest::Body::wrap_stream(stream);
+                            let mut pending_parts = Vec::new();
+                            let mut offset = 0;
+                            for part_number in 1..=iterations {
+                                let current_part_size = if total_size > 0 {
+                                    std::cmp::min(PART_SIZE, total_size - offset)
+                                } else {
+                                    0
+                                };
+                                pending_parts.push((part_number as u32, offset, current_part_size));
+                                offset += current_part_size;
+                            }
 
-                                      let put_client = reqwest::Client::new();
-                                      let resp = put_client.put(&url)
-                                          .body(body)
-                                          .send()
-                                          .await
-                                          .map_err(|e| anyhow::anyhow!("Part Upload failed: {}", e))?;
-                                      
-                                      if !resp.status().is_success() {
-                                           return Err(anyhow::anyhow!("Part Upload returned {}", resp.status()));
-                                      }
+                            let client_ref = &client;
+                            let path_ref = &path;
+                            let token_ref = &token;
 
-                                      let etag = resp.headers().get("ETag")
-                                          .and_then(|h| h.to_str().ok())
-                                          .map(|s| s.trim_matches('"').to_string())
-                                          .ok_or_else(|| anyhow::anyhow!("No ETag in response"))?;
+                            let bodies = futures::stream::iter(pending_parts)
+                                .map(|(part_number, off, size)| async move {
+                                    // 1. Get Signed URL
+                                    let url = client_ref
+                                        .get_upload_part_url(token_ref, part_number)
+                                        .await?;
 
-                                      Ok::<Part, anyhow::Error>(Part {
-                                          part_number,
-                                          etag,
-                                      })
-                                  })
-                                  .buffer_unordered(CONCURRENCY);
+                                    // 2. Read Chunk
+                                    let mut file = tokio::fs::File::open(path_ref).await?;
+                                    file.seek(SeekFrom::Start(off)).await?;
+                                    let chunk = file.take(size);
 
-                              // Collect results
-                              let mut parts_vec = bodies.try_collect::<Vec<Part>>().await?;
-                              parts_vec.sort_by_key(|p| p.part_number);
+                                    // 3. Upload Chunk
+                                    let stream = tokio_util::io::ReaderStream::new(chunk);
+                                    let body = reqwest::Body::wrap_stream(stream);
 
-                              // 2. Complete Multipart
-                              client.complete_multipart_upload(&token, parts_vec).await?;
-                              
-                              // Cleanup temp file
-                              let _ = tokio::fs::remove_file(&path).await;
-                              
-                              Ok(())
-                          });
+                                    let put_client = reqwest::Client::new();
+                                    let resp =
+                                        put_client.put(&url).body(body).send().await.map_err(
+                                            |e| anyhow::anyhow!("Part Upload failed: {}", e),
+                                        )?;
 
-                          if let Err(e) = res {
-                               error!("Failed to flush file {}: {}", nid, e);
-                               let _ = std::fs::remove_file(&path);
-                          } else {
-                               self.cache.invalidate_node(&nid);
-                          }
-                      }
-                 }
+                                    if !resp.status().is_success() {
+                                        return Err(anyhow::anyhow!(
+                                            "Part Upload returned {}",
+                                            resp.status()
+                                        ));
+                                    }
+
+                                    let etag = resp
+                                        .headers()
+                                        .get("ETag")
+                                        .and_then(|h| h.to_str().ok())
+                                        .map(|s| s.trim_matches('"').to_string())
+                                        .ok_or_else(|| anyhow::anyhow!("No ETag in response"))?;
+
+                                    Ok::<Part, anyhow::Error>(Part { part_number, etag })
+                                })
+                                .buffer_unordered(CONCURRENCY);
+
+                            // Collect results
+                            let mut parts_vec = bodies.try_collect::<Vec<Part>>().await?;
+                            parts_vec.sort_by_key(|p| p.part_number);
+
+                            // 2. Complete Multipart
+                            client.complete_multipart_upload(&token, parts_vec).await?;
+
+                            // Cleanup temp file
+                            let _ = tokio::fs::remove_file(&path).await;
+
+                            Ok(())
+                        });
+
+                        if let Err(e) = res {
+                            error!("Failed to flush file {}: {}", nid, e);
+                            let _ = std::fs::remove_file(&path);
+                        } else {
+                            self.cache.invalidate_node(&nid);
+                        }
+                    }
+                }
             }
         }
-        
+
         reply.ok();
     }
 
@@ -884,10 +967,10 @@ impl Filesystem for RosetFs {
             // Fetch current metadata
             let node = client.get_node(&id).await?;
             let mut metadata = node.metadata.unwrap_or_else(|| serde_json::json!({}));
-            
+
             // Set xattr
             metadata[&xattr_name] = serde_json::json!(xattr_value);
-            
+
             // Update via API
             client.update_node_metadata(&id, metadata).await
         }) {
@@ -943,7 +1026,9 @@ impl Filesystem for RosetFs {
         };
 
         let xattr_name = format!("xattr.{}", name_str);
-        let value = node.metadata.as_ref()
+        let value = node
+            .metadata
+            .as_ref()
             .and_then(|m| m.get(&xattr_name))
             .and_then(|v| v.as_str())
             .map(|s| s.as_bytes().to_vec());
@@ -1041,11 +1126,11 @@ impl Filesystem for RosetFs {
         match self.rt.block_on(async move {
             let node = client.get_node(&id).await?;
             let mut metadata = node.metadata.unwrap_or_else(|| serde_json::json!({}));
-            
+
             if let Some(obj) = metadata.as_object_mut() {
                 obj.remove(&xattr_name);
             }
-            
+
             client.update_node_metadata(&id, metadata).await
         }) {
             Ok(updated_node) => {

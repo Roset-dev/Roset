@@ -65,16 +65,19 @@ impl Cache {
             CachePolicy::Mutable(ttl) => Some(Instant::now() + ttl),
             CachePolicy::Immutable => None,
         };
-        
+
         let id = node.id.clone();
         if let Some(ref parent_id) = node.parent_id {
             self.parents.lock().put(id.clone(), parent_id.clone());
         }
 
-        self.nodes.lock().put(id, CachedNode { 
-            node: Arc::new(node), 
-            expires_at 
-        });
+        self.nodes.lock().put(
+            id,
+            CachedNode {
+                node: Arc::new(node),
+                expires_at,
+            },
+        );
     }
 
     /// Get a cached node (returns Arc to avoid clone)
@@ -100,7 +103,12 @@ impl Cache {
     }
 
     /// Cache directory children with policy
-    pub fn put_children_with_policy(&self, parent_id: &str, children: Vec<Node>, policy: CachePolicy) {
+    pub fn put_children_with_policy(
+        &self,
+        parent_id: &str,
+        children: Vec<Node>,
+        policy: CachePolicy,
+    ) {
         let expires_at = match policy {
             CachePolicy::Mutable(ttl) => Some(Instant::now() + ttl),
             CachePolicy::Immutable => None,
@@ -108,16 +116,18 @@ impl Cache {
 
         // Also cache each child node with the same policy
         for child in &children {
-            self.parents.lock().put(child.id.clone(), parent_id.to_string());
+            self.parents
+                .lock()
+                .put(child.id.clone(), parent_id.to_string());
             self.put_node_with_policy(child.clone(), policy);
         }
-        
+
         self.children.lock().put(
-            parent_id.to_string(), 
+            parent_id.to_string(),
             CachedChildren {
                 children: Arc::new(children),
                 expires_at,
-            }
+            },
         );
     }
 
@@ -141,7 +151,9 @@ impl Cache {
     /// Cache a path resolution
     pub fn put_path(&self, path: &str, node_id: &str) {
         let expires_at = Instant::now() + self.ttl;
-        self.paths.lock().put(path.to_string(), (node_id.to_string(), expires_at));
+        self.paths
+            .lock()
+            .put(path.to_string(), (node_id.to_string(), expires_at));
     }
 
     /// Get cached path resolution
@@ -166,7 +178,7 @@ impl Cache {
 
         // 2. Invalidate node itself
         self.nodes.lock().pop(node_id);
-        
+
         // 3. Invalidate node's own children (it might be a folder)
         self.children.lock().pop(node_id);
     }

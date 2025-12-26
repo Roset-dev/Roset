@@ -25,9 +25,7 @@ fn main() {
         EnvFilter::new("info")
     };
 
-    tracing_subscriber::fmt()
-        .with_env_filter(filter)
-        .init();
+    tracing_subscriber::fmt().with_env_filter(filter).init();
 
     info!("Roset FUSE client v{}", env!("CARGO_PKG_VERSION"));
     info!("API URL: {}", config.api_url);
@@ -36,11 +34,12 @@ fn main() {
     // Set up graceful shutdown
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
-    
+
     ctrlc::set_handler(move || {
         warn!("Received shutdown signal, unmounting...");
         r.store(false, Ordering::SeqCst);
-    }).expect("Error setting signal handler");
+    })
+    .expect("Error setting signal handler");
 
     // Create filesystem
     let roset_fs = match RosetFs::new(&config) {
