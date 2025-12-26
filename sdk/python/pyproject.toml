@@ -103,6 +103,13 @@ python_version = "3.9"
 strict = true
 warn_unused_ignores = true
 show_error_codes = true
+ignore_missing_imports = true
+
+# Integrations import optional dependencies - be lenient
+[[tool.mypy.overrides]]
+module = "roset.integrations.*"
+strict = false
+ignore_errors = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

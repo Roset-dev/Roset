@@ -110,7 +110,8 @@ class RosetClient:
                 if response.status_code == 204:
                     return {}
 
-                return response.json()
+                result: dict[str, Any] = response.json()
+                return result
 
             except (httpx.TransportError, httpx.HTTPStatusError) as e:
                 # Retry on transport errors or 5xx/429
