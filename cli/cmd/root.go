@@ -30,7 +30,7 @@ var rootCmd = &cobra.Command{
 	Long:  `Roset CLI is a specialized tool for developers and SREs to manage, debug, and automate Roset environments.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		printBanner()
-		cmd.Help()
+		_ = cmd.Help()
 	},
 }
 

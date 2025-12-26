@@ -132,7 +132,10 @@ func getMountInfo() map[string]interface{} {
 
 func collectLogs(tmpDir string) {
 	logDir := filepath.Join(tmpDir, "logs")
-	os.Mkdir(logDir, 0755)
+	if err := os.Mkdir(logDir, 0755); err != nil {
+		fmt.Printf("Warning: failed to create log dir: %v\n", err)
+		return
+	}
 
 	sources := []string{
 		"/var/log/syslog",
@@ -155,14 +158,18 @@ func collectLogs(tmpDir string) {
 				data = redact.String(data)
 			}
 
-			os.WriteFile(filepath.Join(logDir, filepath.Base(src)), []byte(data), 0644)
+			if err := os.WriteFile(filepath.Join(logDir, filepath.Base(src)), []byte(data), 0644); err != nil {
+				fmt.Printf("Warning: failed to write log file %s: %v\n", src, err)
+			}
 		}
 	}
 }
 
 func writeJSON(path string, data interface{}) {
 	b, _ := json.MarshalIndent(data, "", "  ")
-	os.WriteFile(path, b, 0644)
+	if err := os.WriteFile(path, b, 0644); err != nil {
+		fmt.Printf("Warning: failed to write JSON to %s: %v\n", path, err)
+	}
 }
 
 func createArchive(src, dest string) error {
