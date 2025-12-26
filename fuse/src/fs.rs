@@ -1,11 +1,11 @@
 //! FUSE Filesystem Implementation
 
 use crate::cache::Cache;
-use crate::client::{Node, NodeType, RosetClient};
+use crate::client::{ApiError, Node, NodeType, Part, RosetClient};
 use crate::config::Config;
 use crate::inode::InodeMap;
 use crate::staging::StagingManager;
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt};
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -46,7 +46,7 @@ pub struct RosetFs {
 }
 
 // Add imports
-use std::io::{SeekFrom, Write};
+use std::io::{Seek, SeekFrom, Write};
 use tempfile::NamedTempFile;
 use tokio::io::{AsyncReadExt, AsyncSeekExt};
 
@@ -786,7 +786,7 @@ impl Filesystem for RosetFs {
             map.remove(&fh)
         };
 
-        if let Some(mut handle) = handle {
+        if let Some(handle) = handle {
             if handle.write_mode && handle.dirty {
                 if let (Some(token), Some(temp_file)) = (handle.upload_token, handle.temp_file) {
                     info!(
@@ -830,7 +830,8 @@ impl Filesystem for RosetFs {
                     // 2. Fallback to Synchronous Upload if not staged
                     if !staged {
                         // Run multipart upload in background (blocking FUSE thread)
-                        let res = self.rt.block_on(async move {
+                        let path_clone = path.clone();
+                        let res: anyhow::Result<()> = self.rt.block_on(async move {
                             // Define Part Size (e.g., 20MB)
                             const CONCURRENCY: usize = 5;
                             const PART_SIZE: u64 = 20 * 1024 * 1024;
@@ -854,7 +855,7 @@ impl Filesystem for RosetFs {
                             }
 
                             let client_ref = &client;
-                            let path_ref = &path;
+                            let path_ref = &path_clone;
                             let token_ref = &token;
 
                             let bodies = futures::stream::iter(pending_parts)
@@ -905,7 +906,7 @@ impl Filesystem for RosetFs {
                             client.complete_multipart_upload(&token, parts_vec).await?;
 
                             // Cleanup temp file
-                            let _ = tokio::fs::remove_file(&path).await;
+                            let _ = tokio::fs::remove_file(&path_clone).await;
 
                             Ok(())
                         });
