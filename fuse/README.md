@@ -2,6 +2,14 @@
 
 Mount Roset-managed object storage as a local filesystem using FUSE.
 
+## Features
+
+- **Full Read-Write Support**: Create, write, delete files and directories.
+- **Multipart Uploads**: Large files are uploaded using S3 multipart for reliability.
+- **Extended Attributes**: Store custom metadata via xattrs.
+- **Metadata Caching**: Configurable TTL for directory listings and file stats.
+- **Graceful Shutdown**: Clean unmount on SIGINT/SIGTERM.
+
 ## Requirements
 
 - Linux with FUSE support (or macOS with macFUSE)
@@ -32,7 +40,7 @@ cargo build --release
 # With debug logging
 roset-fuse /mnt/roset --api-key $ROSET_API_KEY --debug
 
-# Read-only mode
+# Read-only mode (optional)
 roset-fuse /mnt/roset --api-key $ROSET_API_KEY --read-only
 
 # Specific mount
@@ -65,18 +73,32 @@ umount /mnt/roset          # macOS
 --read-only     Mount as read-only
 ```
 
-## Current Limitations
+## Supported Operations
 
-- Phase 1: **Read-only** mode only
-- No write support yet (coming in Phase 2)
-- Linux-first (macOS requires macFUSE)
+| Operation | Status |
+|-----------|--------|
+| `lookup` | ✅ |
+| `getattr` | ✅ |
+| `readdir` | ✅ |
+| `open` | ✅ |
+| `read` | ✅ |
+| `create` | ✅ |
+| `write` | ✅ |
+| `mkdir` | ✅ |
+| `rmdir` | ✅ |
+| `unlink` | ✅ |
+| `release` (flush + upload) | ✅ |
+| `setxattr` | ✅ |
+| `getxattr` | ✅ |
+| `listxattr` | ✅ |
+| `removexattr` | ✅ |
 
 ## Architecture
 
 ```
 ┌──────────────────────────────────────┐
 │        ML Training Script            │
-│     (open, read, readdir, stat)      │
+│   (open, read, write, readdir, ...)  │
 └────────────────┬─────────────────────┘
                  │ POSIX
                  ▼
@@ -85,6 +107,11 @@ umount /mnt/roset          # macOS
 │  ┌─────────┐  ┌─────┐  ┌──────────┐  │
 │  │  FUSE   │  │Cache│  │API Client│  │
 │  └─────────┘  └─────┘  └──────────┘  │
+│        │         │                   │
+│  ┌─────────────────────────────────┐ │
+│  │       Staging Manager           │ │
+│  │  (buffered writes → multipart)  │ │
+│  └─────────────────────────────────┘ │
 └────────────────┬─────────────────────┘
                  │ HTTPS
                  ▼
