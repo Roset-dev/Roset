@@ -96,7 +96,7 @@ impl Node for NodeService {
         }
 
         // Get API URL from context or default
-        let api_url = volume_context.get("apiUrl").cloned().unwrap_or_else(|| "https://api.roset.io".to_string());
+        let api_url = volume_context.get("apiUrl").cloned().unwrap_or_else(|| "https://api.roset.dev".to_string());
 
         info!("Publishing volume {} to {}", volume_id, target_path);
 

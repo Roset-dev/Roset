@@ -30,7 +30,7 @@ pnpm build --filter @roset/ui
 
 ## Documentation
 
-Visit our [documentation site](https://docs.roset.io) (coming soon) for:
+Visit our [documentation site](https://docs.roset.dev) (coming soon) for:
 - **Quickstart guides**
 - **API reference**
 - **SDK documentation**
@@ -56,7 +56,7 @@ TypeScript SDK for interacting with the Roset API.
 import { RosetClient } from '@roset/sdk';
 
 const client = new RosetClient({
-  baseUrl: 'https://api.roset.io',
+  baseUrl: 'https://api.roset.dev',
   apiKey: 'rk_...'
 });
 
@@ -81,6 +81,6 @@ We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md)
 
 ## Links
 
-- **Website**: [roset.io](https://roset.io) (coming soon)
-- **Documentation**: [docs.roset.io](https://docs.roset.io) (coming soon)
+- **Website**: [roset.dev](https://roset.dev) (coming soon)
+- **Documentation**: [docs.roset.dev](https://docs.roset.dev) (coming soon)
 - **Issues**: [GitHub Issues](https://github.com/your-org/roset/issues)

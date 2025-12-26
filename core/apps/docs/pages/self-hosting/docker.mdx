@@ -28,12 +28,12 @@ pnpm run dev
 
 ## Services
 
-| Service | Port | Credentials |
-|---------|------|-------------|
-| API | 3000 | - |
-| PostgreSQL | 5432 | postgres/postgres |
-| Redis | 6379 | - |
-| MinIO | 9000 | minioadmin/minioadmin |
+| Service       | Port | Credentials           |
+| ------------- | ---- | --------------------- |
+| API           | 3000 | -                     |
+| PostgreSQL    | 5432 | postgres/postgres     |
+| Redis         | 6379 | -                     |
+| MinIO         | 9000 | minioadmin/minioadmin |
 | MinIO Console | 9001 | minioadmin/minioadmin |
 
 ## Environment Variables
@@ -65,7 +65,7 @@ S3_REGION=us-east-1
 S3_FORCE_PATH_STYLE=true
 
 # JWT
-JWT_ISSUER=https://roset.io
+JWT_ISSUER=https://roset.dev
 JWKS_URL=https://your-auth-provider/.well-known/jwks.json
 
 # Signed URLs
@@ -78,17 +78,17 @@ SIGNED_URL_EXPIRES_IN=3600
 -- Connect: docker exec -it roset-postgres psql -U postgres -d roset
 
 -- Create tenant
-INSERT INTO tenants (id, name, slug) VALUES 
+INSERT INTO tenants (id, name, slug) VALUES
   ('00000000-0000-0000-0000-000000000001', 'Demo', 'demo');
 
 -- Create mount
-INSERT INTO mounts (id, tenant_id, provider, bucket, region, is_default) VALUES 
-  ('00000000-0000-0000-0000-000000000002', 
+INSERT INTO mounts (id, tenant_id, provider, bucket, region, is_default) VALUES
+  ('00000000-0000-0000-0000-000000000002',
    '00000000-0000-0000-0000-000000000001',
    'minio', 'demo-bucket', 'us-east-1', true);
 
 -- Create root node
-INSERT INTO nodes (tenant_id, mount_id, parent_id, name, type) VALUES 
+INSERT INTO nodes (tenant_id, mount_id, parent_id, name, type) VALUES
   ('00000000-0000-0000-0000-000000000001',
    '00000000-0000-0000-0000-000000000002',
    NULL, '', 'folder');

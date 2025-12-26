@@ -2469,7 +2469,7 @@ function ShareDialog({
     });
   };
   const copyLink = () => {
-    const mockUrl = `https://cdn.roset.io/s/${Math.random().toString(36).slice(2, 10)}`;
+    const mockUrl = `https://cdn.roset.dev/s/${Math.random().toString(36).slice(2, 10)}`;
     navigator.clipboard.writeText(mockUrl);
     addToast({
       title: "Signed URL copied",
