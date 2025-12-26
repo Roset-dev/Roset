@@ -9,7 +9,6 @@ from __future__ import annotations
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
 
 try:
     import ray  # noqa: F401 - import for availability check only
@@ -123,7 +122,7 @@ class RosetRayTrainCallback:
 
         # Commit (async or sync)
         if self.async_commit and self._executor:
-            future = self._executor.submit(self._do_commit, folder.id, step)
+            self._executor.submit(self._do_commit, folder.id, step)
             return None  # Async mode returns None immediately
         else:
             return self._do_commit(folder.id, step)

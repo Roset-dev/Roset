@@ -120,9 +120,6 @@ class RosetCheckpointIO(CheckpointIO):
         """
         local_path, roset_path = self._resolve_path(path)
 
-        # Use filename from path, not hardcoded checkpoint.ckpt
-        filename = local_path.name
-
         # Roset folder is the *parent* of the file (checkpoints/step-1000/model.ckpt)
         # OR usually PyTorch Lightning saves as a *file*.
         # For Roset atomic commits, we usually want to commit a *folder*.
@@ -161,9 +158,6 @@ class RosetCheckpointIO(CheckpointIO):
         # Let's assume the simpler case:
         # The user configured PL to save to `.../folder_name/checkpoint.ckpt`.
         # So `parent_path` is the folder we want to commit.
-
-        folder_name = Path(roset_path).name # This is likely the filename e.g. "epoch=0.ckpt"
-        parent_dir = str(Path(roset_path).parent) # This is likely "/checkpoints"
 
         # We will create a folder for this checkpoint to ensure atomicity and isolation.
         # If we just write to /checkpoints/ and commit /checkpoints/, we commit ALL checkpoints. Bad.
