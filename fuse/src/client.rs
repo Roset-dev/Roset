@@ -359,7 +359,7 @@ impl RosetClient {
             delay_ms *= 2;
         }
     }
-}
+
     /// Create a new node (file or folder)
     pub async fn create_node(&self, mut input: CreateNodeInput) -> Result<Node, ApiError> {
         let url = format!("{}/v1/nodes", self.base_url);

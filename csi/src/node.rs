@@ -96,6 +96,20 @@ impl Node for NodeService {
             .unwrap_or_else(|| "https://api.roset.dev".to_string());
 
         info!("Publishing volume {} to {}", volume_id, target_path);
+        
+        // 0. Check if already mounted (Idempotency)
+        // Uses `mountpoint -q <path>` which is standard on Linux/Container OS
+        let mount_check = Command::new("mountpoint")
+            .arg("-q")
+            .arg(&target_path)
+            .status();
+
+        if let Ok(status) = mount_check {
+            if status.success() {
+                info!("Volume {} is already mounted at {}", volume_id, target_path);
+                return Ok(Response::new(NodePublishVolumeResponse {}));
+            }
+        }
 
         // Ensure target directory exists
         if let Err(e) = std::fs::create_dir_all(&target_path) {
