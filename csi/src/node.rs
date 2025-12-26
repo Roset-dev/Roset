@@ -8,7 +8,7 @@ use crate::csi::{
 };
 use std::process::Command;
 use tonic::{Request, Response, Status};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 pub struct NodeService {
     node_id: String,
@@ -26,13 +26,13 @@ impl Node for NodeService {
         &self,
         _request: Request<NodeGetCapabilitiesRequest>,
     ) -> Result<Response<NodeGetCapabilitiesResponse>, Status> {
-        let caps = vec![node_service_capability::Rpc::StageUnstageVolume];
+        let caps = vec![node_service_capability::rpc::Type::StageUnstageVolume];
 
         let capabilities = caps
             .into_iter()
             .map(|c| crate::csi::NodeServiceCapability {
-                type_: Some(crate::csi::node_service_capability::Type::Rpc(
-                    crate::csi::node_service_capability::Rpc { type_: c as i32 },
+                r#type: Some(crate::csi::node_service_capability::Type::Rpc(
+                    crate::csi::node_service_capability::Rpc { r#type: c as i32 },
                 )),
             })
             .collect();
@@ -163,8 +163,6 @@ impl Node for NodeService {
                 }
 
                 let stderr = String::from_utf8_lossy(&o.stderr);
-                // If it's not mounted (entry not found), that's success (idempotency)
-                // If it's not mounted (entry not found), that's success (idempotency)
                 if stderr.contains("not found") || stderr.contains("Invalid argument") {
                     info!(
                         "Volume already unmounted or path not found: {}",
@@ -183,8 +181,6 @@ impl Node for NodeService {
 
         // Attempt 2: Lazy Unmount (fusermount -uz)
         // This is crucial for avoiding "zombie" mount points when the pod is dead but file handles are held
-        // Attempt 2: Lazy Unmount (fusermount -uz)
-        // This is crucial for avoiding "zombie" mount points when the pod is dead but file handles are held
         info!(
             "Attempting lazy unmount (fusermount -uz) for {}",
             target_path
@@ -200,7 +196,7 @@ impl Node for NodeService {
             Ok(o) => {
                 if o.status.success() {
                     info!("Successfully lazy unmounted {}", target_path);
-                    Ok(Response::new(NodeUnpublishVolumeResponse {}));
+                    Ok(Response::new(NodeUnpublishVolumeResponse {}))
                 } else {
                     let stderr = String::from_utf8_lossy(&o.stderr);
                     // Check for idempotency again just in case

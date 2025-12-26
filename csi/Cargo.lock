@@ -1153,6 +1153,7 @@ dependencies = [
  "clap",
  "futures",
  "prost",
+ "prost-types",
  "reqwest",
  "serde",
  "serde_json",

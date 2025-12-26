@@ -6,6 +6,7 @@ use tracing::info;
 
 // Include generated proto code
 pub mod csi {
+    #![allow(clippy::all)]
     tonic::include_proto!("csi.v1");
 }
 

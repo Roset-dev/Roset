@@ -35,9 +35,9 @@ impl Identity for IdentityService {
     ) -> Result<Response<GetPluginCapabilitiesResponse>, Status> {
         Ok(Response::new(GetPluginCapabilitiesResponse {
             capabilities: vec![crate::csi::PluginCapability {
-                type_: Some(plugin_capability::Type::Service(
+                r#type: Some(plugin_capability::Type::Service(
                     plugin_capability::Service {
-                        type_: plugin_capability::service::Type::ControllerService as i32,
+                        r#type: plugin_capability::service::Type::ControllerService as i32,
                     },
                 )),
             }],

@@ -1,13 +1,13 @@
 use crate::csi::{
-    controller_server::Controller, controller_service_capability, ControllerExpandVolumeRequest,
-    ControllerExpandVolumeResponse, ControllerGetCapabilitiesRequest,
+    controller_server::Controller, controller_service_capability, ControllerGetCapabilitiesRequest,
     ControllerGetCapabilitiesResponse, ControllerGetVolumeRequest, ControllerGetVolumeResponse,
-    ControllerPublishVolumeRequest, ControllerPublishVolumeResponse,
-    ControllerUnpublishVolumeRequest, ControllerUnpublishVolumeResponse, CreateSnapshotRequest,
-    CreateSnapshotResponse, CreateVolumeRequest, CreateVolumeResponse, DeleteSnapshotRequest,
-    DeleteSnapshotResponse, DeleteVolumeRequest, DeleteVolumeResponse, GetCapacityRequest,
-    GetCapacityResponse, ListSnapshotsRequest, ListSnapshotsResponse, ListVolumesRequest,
+    ControllerPublishVolumeRequest, ControllerPublishVolumeResponse, ControllerUnpublishVolumeRequest,
+    ControllerUnpublishVolumeResponse, CreateVolumeRequest, CreateVolumeResponse, DeleteVolumeRequest,
+    DeleteVolumeResponse, GetCapacityRequest, GetCapacityResponse, ListVolumesRequest,
     ListVolumesResponse, ValidateVolumeCapabilitiesRequest, ValidateVolumeCapabilitiesResponse,
+    GetSnapshotRequest, GetSnapshotResponse, ControllerModifyVolumeRequest, ControllerModifyVolumeResponse,
+    ListSnapshotsRequest, ListSnapshotsResponse, ControllerExpandVolumeRequest, ControllerExpandVolumeResponse,
+    CreateSnapshotRequest, CreateSnapshotResponse, DeleteSnapshotRequest, DeleteSnapshotResponse,
 };
 use tonic::{Request, Response, Status};
 
@@ -26,15 +26,15 @@ impl Controller for ControllerService {
         _request: Request<ControllerGetCapabilitiesRequest>,
     ) -> Result<Response<ControllerGetCapabilitiesResponse>, Status> {
         let caps = vec![
-            controller_service_capability::Rpc::CreateDeleteVolume,
-            controller_service_capability::Rpc::PublishUnpublishVolume,
+            controller_service_capability::rpc::Type::CreateDeleteVolume,
+            controller_service_capability::rpc::Type::PublishUnpublishVolume,
         ];
 
         let capabilities = caps
             .into_iter()
             .map(|c| crate::csi::ControllerServiceCapability {
-                type_: Some(crate::csi::controller_service_capability::Type::Rpc(
-                    crate::csi::controller_service_capability::Rpc { type_: c as i32 },
+                r#type: Some(crate::csi::controller_service_capability::Type::Rpc(
+                    crate::csi::controller_service_capability::Rpc { r#type: c as i32 },
                 )),
             })
             .collect();
@@ -235,6 +235,8 @@ impl Controller for ControllerService {
     ) -> Result<Response<GetCapacityResponse>, Status> {
         Ok(Response::new(GetCapacityResponse {
             available_capacity: 0,
+            maximum_volume_size: None,
+            minimum_volume_size: None,
         }))
     }
 
@@ -277,5 +279,18 @@ impl Controller for ControllerService {
         _request: Request<ControllerGetVolumeRequest>,
     ) -> Result<Response<ControllerGetVolumeResponse>, Status> {
         Err(Status::unimplemented("Get volume not implemented"))
+    }
+    async fn get_snapshot(
+        &self,
+        _request: Request<GetSnapshotRequest>,
+    ) -> Result<Response<GetSnapshotResponse>, Status> {
+        Err(Status::unimplemented("get_snapshot not implemented"))
+    }
+
+    async fn controller_modify_volume(
+        &self,
+        _request: Request<ControllerModifyVolumeRequest>,
+    ) -> Result<Response<ControllerModifyVolumeResponse>, Status> {
+        Err(Status::unimplemented("controller_modify_volume not implemented"))
     }
 }
