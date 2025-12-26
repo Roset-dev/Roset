@@ -1,4 +1,3 @@
-
 use crate::csi::{
     node_server::Node, node_service_capability, NodeExpandVolumeRequest, NodeExpandVolumeResponse,
     NodeGetCapabilitiesRequest, NodeGetCapabilitiesResponse, NodeGetInfoRequest,
@@ -143,13 +142,13 @@ impl Node for NodeService {
     ) -> Result<Response<NodeUnpublishVolumeResponse>, Status> {
         let req = request.into_inner();
         let target_path = req.target_path;
-        
+
         if target_path.is_empty() {
-             return Err(Status::invalid_argument("Target path missing"));
+            return Err(Status::invalid_argument("Target path missing"));
         }
 
         info!("Unpublishing volume from {}", target_path);
-        
+
         // Attempt 1: Standard Unmount (fusermount -u)
         let output = Command::new("fusermount")
             .arg("-u")
@@ -161,8 +160,8 @@ impl Node for NodeService {
                 if o.status.success() {
                     info!("Successfully unmounted {}", target_path);
                     return Ok(Response::new(NodeUnpublishVolumeResponse {}));
-                } 
-                
+                }
+
                 let stderr = String::from_utf8_lossy(&o.stderr);
                 // If it's not mounted (entry not found), that's success (idempotency)
                 // If it's not mounted (entry not found), that's success (idempotency)

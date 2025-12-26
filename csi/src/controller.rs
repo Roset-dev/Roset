@@ -1,4 +1,3 @@
-
 use crate::csi::{
     controller_server::Controller, controller_service_capability, ControllerExpandVolumeRequest,
     ControllerExpandVolumeResponse, ControllerGetCapabilitiesRequest,
@@ -67,7 +66,7 @@ impl Controller for ControllerService {
         let api_url = params.get("apiUrl").ok_or_else(|| {
             Status::invalid_argument("Missing 'apiUrl' in StorageClass parameters")
         })?;
-        
+
         // Default to "/volumes" to avoid root pollution
         let base_path = params
             .get("basePath")

@@ -1,4 +1,3 @@
-
 use clap::Parser;
 use tokio::net::UnixListener;
 use tokio_stream::wrappers::UnixListenerStream;
@@ -41,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Node ID: {}", args.node_id);
 
     let socket_path = args.endpoint.trim_start_matches("unix://");
-    
+
     // Ensure directory exists
     if let Some(parent) = std::path::Path::new(socket_path).parent() {
         std::fs::create_dir_all(parent)
