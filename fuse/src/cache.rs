@@ -36,6 +36,8 @@ pub struct Cache {
     children: Mutex<LruCache<String, CachedChildren>>,
     /// Path resolution cache (path → node_id)
     paths: Mutex<LruCache<String, (String, Instant)>>,
+    /// Parents cache (node_id → parent_id) for reverse lookups
+    parents: Mutex<LruCache<String, String>>,
     /// Cache TTL
     ttl: Duration,
 }
@@ -47,6 +49,7 @@ impl Cache {
             nodes: Mutex::new(LruCache::new(size)),
             children: Mutex::new(LruCache::new(NonZeroUsize::new(1000).unwrap())),
             paths: Mutex::new(LruCache::new(size)),
+            parents: Mutex::new(LruCache::new(size)),
             ttl: Duration::from_secs(ttl_secs),
         }
     }
@@ -64,6 +67,10 @@ impl Cache {
         };
         
         let id = node.id.clone();
+        if let Some(ref parent_id) = node.parent_id {
+            self.parents.lock().put(id.clone(), parent_id.clone());
+        }
+
         self.nodes.lock().put(id, CachedNode { 
             node: Arc::new(node), 
             expires_at 
@@ -101,6 +108,7 @@ impl Cache {
 
         // Also cache each child node with the same policy
         for child in &children {
+            self.parents.lock().put(child.id.clone(), parent_id.to_string());
             self.put_node_with_policy(child.clone(), policy);
         }
         
@@ -148,11 +156,24 @@ impl Cache {
         None
     }
 
-    /// Invalidate cache for a node
-    pub fn invalidate(&self, node_id: &str) {
+    /// Invalidate cache for a node and its parent listing
+    pub fn invalidate_node(&self, node_id: &str) {
+        // 1. Invalidate parent's children cache if we know the parent
+        let parent_id = self.parents.lock().pop(node_id);
+        if let Some(pid) = parent_id {
+            self.children.lock().pop(&pid);
+        }
+
+        // 2. Invalidate node itself
         self.nodes.lock().pop(node_id);
-        // We might want to invalidate children caches too if we had reverse mapping
-        // For now, simpler invalidation is acceptable as this is mainly for mutable paths
+        
+        // 3. Invalidate node's own children (it might be a folder)
+        self.children.lock().pop(node_id);
+    }
+
+    /// Invalidate children cache for a parent ID
+    pub fn invalidate_children(&self, parent_id: &str) {
+        self.children.lock().pop(parent_id);
     }
 
     /// Bulk load nodes into cache as immutable

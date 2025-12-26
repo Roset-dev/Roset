@@ -103,7 +103,7 @@ impl RosetFs {
     pub fn init_root(&self) -> Result<()> {
         let client = self.client.clone();
         let node = self.rt.block_on(async move {
-            client.resolve("/").await
+            client.resolve("/", None).await
         }).map_err(|e| anyhow::anyhow!("Failed to resolve root: {}", e))?;
 
         if let Some(root) = node {
@@ -176,6 +176,34 @@ impl RosetFs {
             _ => libc::EIO,
         }
     }
+
+    /// Resolve a child by name in a parent directory, with API fallback
+    fn resolve_child(&self, parent_id: &str, name: &str) -> Result<Option<Node>, ApiError> {
+        // 1. Try cache first
+        if let Some(children) = self.cache.get_children(parent_id) {
+            if let Some(child) = children.iter().find(|c| c.name == name) {
+                return Ok(Some(child.clone()));
+            }
+        }
+
+        // 2. Resolve via API (targeted lookup relative to parent_id)
+        let client = self.client.clone();
+        let pid = parent_id.to_string();
+        let n = name.to_string();
+        
+        match self.rt.block_on(async move {
+            client.resolve(&n, Some(&pid)).await
+        })? {
+            Some(node) => {
+                // Node found, but we don't put it in children cache here 
+                // because it's a single node, not a full listing.
+                // We do put it in nodes cache.
+                self.cache.put_node(node.clone());
+                Ok(Some(node))
+            }
+            None => Ok(None)
+        }
+    }
 }
 
 fn parse_time(s: &str) -> SystemTime {
@@ -197,32 +225,14 @@ impl Filesystem for RosetFs {
             }
         };
 
-        // Try to find in cached children first
-        if let Some(children) = self.cache.get_children(&parent_id) {
-            if let Some(child) = children.iter().find(|c| c.name == name_str.as_ref()) {
-                let ino = self.inodes.get_or_create(&child.id);
-                let attr = self.node_to_attr(child, ino);
+        match self.resolve_child(&parent_id, &name_str) {
+            Ok(Some(node)) => {
+                let ino = self.inodes.get_or_create(&node.id);
+                let attr = self.node_to_attr(&node, ino);
                 reply.entry(&TTL, &attr, 0);
-                return;
             }
-        }
-
-        // Fetch from API with proper pagination
-        let client = self.client.clone();
-        let pid = parent_id.clone();
-        let max_entries = self.max_dir_entries;
-        
-        match self.rt.block_on(async move { client.list_all_children(&pid, max_entries).await }) {
-            Ok(children) => {
-                self.cache.put_children(&parent_id, children.clone());
-                
-                if let Some(child) = children.iter().find(|c| c.name == name_str.as_ref()) {
-                    let ino = self.inodes.get_or_create(&child.id);
-                    let attr = self.node_to_attr(child, ino);
-                    reply.entry(&TTL, &attr, 0);
-                } else {
-                    reply.error(libc::ENOENT);
-                }
+            Ok(None) => {
+                reply.error(libc::ENOENT);
             }
             Err(e) => {
                 error!("API error in lookup: {}", e);
@@ -417,7 +427,16 @@ impl Filesystem for RosetFs {
         let pid = parent_id.clone();
         let n = name_str.to_string();
 
-        match self.rt.block_on(async move { client.create_node(Some(pid), &n, NodeType::Folder).await }) {
+        let create_input = crate::client::CreateNodeInput {
+            name: n,
+            node_type: crate::client::NodeType::Folder,
+            parent_id: Some(pid),
+            parent_path: None,
+            metadata: None,
+            mount_id: None, // Will use default from client
+        };
+
+        match self.rt.block_on(async move { client.create_node(create_input).await }) {
             Ok(node) => {
                 self.cache.invalidate_children(&parent_id);
                 let ino = self.inodes.get_or_create(&node.id);
@@ -449,26 +468,21 @@ impl Filesystem for RosetFs {
              }
         };
 
-        // We need to resolve name to ID first to delete it
-        // This is a limitation of our ID-based API vs Path-based POSIX
-        // Check cache first
-        let node_id = if let Some(children) = self.cache.get_children(&parent_id) {
-             children.iter().find(|c| c.name == name_str.as_ref()).map(|c| c.id.clone())
-        } else {
-             None
-        };
-
-        let target_id = match node_id {
-             Some(id) => id,
-             None => {
-                 // Try resolve
-                 // For now, return ENOENT if not in cache to avoid complex logic
-                 // Ideally we should lookup again
-                 reply.error(libc::ENOENT);
-                 return;
-             }
+        // Resolve name to ID
+        let target_node = match self.resolve_child(&parent_id, &name_str) {
+            Ok(Some(node)) => node,
+            Ok(None) => {
+                reply.error(libc::ENOENT);
+                return;
+            }
+            Err(e) => {
+                error!("API error in rmdir resolution: {}", e);
+                reply.error(Self::api_error_to_errno(&e));
+                return;
+            }
         };
         
+        let target_id = target_node.id;
         let client = self.client.clone();
         match self.rt.block_on(async move { client.delete_node(&target_id).await }) {
              Ok(_) => {
@@ -478,7 +492,7 @@ impl Filesystem for RosetFs {
              }
              Err(e) => {
                   error!("API error in rmdir: {}", e);
-                  reply.error(Self::api_error_to_errno(&e));
+                   reply.error(Self::api_error_to_errno(&e));
              }
         }
     }
@@ -509,8 +523,20 @@ impl Filesystem for RosetFs {
         let pid = parent_id.clone();
         let n = name_str.to_string();
 
+        let init_input = crate::client::InitUploadInput {
+            node_id: None,
+            parent_id: Some(pid),
+            parent_path: None,
+            name: n.clone(),
+            content_type: None,
+            size: Some(0),
+            multipart: true,
+            metadata: None,
+            mount_id: None,
+        };
+
         // Initialize upload (force multipart for robustness)
-        match self.rt.block_on(async move { client.init_upload(&pid, &n, 0, true).await }) {
+        match self.rt.block_on(async move { client.init_upload(init_input).await }) {
              Ok(resp) => {
                  // Create a placeholder Node struct for the reply
                  let node = Node {

@@ -19,6 +19,60 @@ impl ControllerService {
     pub fn new() -> Self {
         Self {}
     }
+
+    async fn ensure_path_recursive(
+        &self,
+        client: &reqwest::Client,
+        api_url: &str,
+        api_key: &str,
+        path: &str,
+    ) -> Result<(), Status> {
+        if path == "/" || path.is_empty() {
+            return Ok(());
+        }
+
+        let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+        let mut current_path = String::from("");
+
+        for segment in segments {
+            let parent_path = if current_path.is_empty() {
+                "/".to_string()
+            } else {
+                format!("/{}", current_path)
+            };
+
+            let body = serde_json::json!({
+                "name": segment,
+                "type": "folder",
+                "parentPath": parent_path
+            });
+
+            let create_node_url = format!("{}/v1/nodes", api_url.trim_end_matches('/'));
+            let resp = client
+                .post(&create_node_url)
+                .header("Authorization", format!("Bearer {}", api_key))
+                .json(&body)
+                .send()
+                .await
+                .map_err(|e| Status::internal(format!("Failed to contact Roset API: {}", e)))?;
+
+            // 201 Created or 409 Conflict are both acceptable
+            if !resp.status().is_success() && resp.status().as_u16() != 409 {
+                let text = resp.text().await.unwrap_or_default();
+                return Err(Status::internal(format!(
+                    "Failed to create path segment {}: {}",
+                    segment, text
+                )));
+            }
+
+            if !current_path.is_empty() {
+                current_path.push('/');
+            }
+            current_path.push_str(segment);
+        }
+
+        Ok(())
+    }
 }
 
 #[tonic::async_trait]
@@ -80,23 +134,9 @@ impl Controller for ControllerService {
         let create_node_url = format!("{}/v1/nodes", api_url.trim_end_matches('/'));
 
         // 4. Ensure Base Path exists
-        // We attempt to create it at the root. If it works or conflicts (already exists), we proceed.
         if base_path != "/" {
-            let base_name = base_path.trim_start_matches('/');
-            // Note: This naive check only supports top-level folders as base_path for now
-            // e.g. "/volumes" works, "/my/deep/path" would fail if "/my" doesn't exist
-            let base_body = serde_json::json!({
-                "name": base_name,
-                "type": "folder",
-                "parentPath": "/"
-            });
-
-            let _ = client
-                .post(&create_node_url)
-                .header("Authorization", format!("Bearer {}", api_key))
-                .json(&base_body)
-                .send()
-                .await;
+            self.ensure_path_recursive(&client, api_url, api_key, base_path)
+                .await?;
         }
 
         // 5. Create the Volume Folder

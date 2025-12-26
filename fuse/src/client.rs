@@ -102,6 +102,43 @@ pub struct Lease {
     pub expires_at: String,
 }
 
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InitUploadInput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_path: Option<String>,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<u64>,
+    pub multipart: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mount_id: Option<String>,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateNodeInput {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub node_type: NodeType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mount_id: Option<String>,
+}
+
 impl RosetClient {
     pub fn new(base_url: &str, api_key: &str, mount_id: Option<String>) -> Result<Arc<Self>> {
         let mut headers = HeaderMap::new();
@@ -134,11 +171,14 @@ impl RosetClient {
         }
     }
 
-    /// Resolve a path to a node
-    pub async fn resolve(&self, path: &str) -> Result<Option<Node>, ApiError> {
+    /// Resolve a path to a node, optionally relative to a base_id
+    pub async fn resolve(&self, path: &str, base_id: Option<&str>) -> Result<Option<Node>, ApiError> {
         let url = format!("{}/v1/resolve", self.base_url);
         
         let mut body = serde_json::json!({ "paths": [path] });
+        if let Some(bid) = base_id {
+            body["baseId"] = serde_json::json!(bid);
+        }
         if let Some(ref mount_id) = self.mount_id {
             body["mountId"] = serde_json::json!(mount_id);
         }
@@ -321,25 +361,20 @@ impl RosetClient {
     }
 }
     /// Create a new node (file or folder)
-    pub async fn create_node(&self, parent_id: Option<String>, name: &str, node_type: NodeType) -> Result<Node, ApiError> {
+    pub async fn create_node(&self, mut input: CreateNodeInput) -> Result<Node, ApiError> {
         let url = format!("{}/v1/nodes", self.base_url);
         
-        let mut body = serde_json::json!({
-            "name": name,
-            "type": node_type,
-        });
-
-        if let Some(pid) = parent_id {
-            body["parentId"] = serde_json::json!(pid);
-        } else {
-            body["parentPath"] = serde_json::json!("/");
+        // Use client's mount_id if not specified in input
+        if input.mount_id.is_none() {
+            input.mount_id = self.mount_id.clone();
         }
 
-        if let Some(ref mount_id) = self.mount_id {
-            body["mountId"] = serde_json::json!(mount_id);
+        // If neither parentId nor parentPath is set, default to root
+        if input.parent_id.is_none() && input.parent_path.is_none() {
+            input.parent_path = Some("/".to_string());
         }
 
-        let resp = self.http.post(&url).json(&body).send().await?;
+        let resp = self.http.post(&url).json(&input).send().await?;
 
         if !resp.status().is_success() {
             let status = resp.status();
@@ -347,8 +382,10 @@ impl RosetClient {
             return Err(self.handle_status(status, &text));
         }
 
-        let node: Node = resp.json().await?;
-        Ok(node)
+        #[derive(Deserialize)]
+        struct Wrapper { node: Node }
+        let data: Wrapper = resp.json().await?;
+        Ok(data.node)
     }
 
     /// Delete a node and move to trash
@@ -366,23 +403,16 @@ impl RosetClient {
     }
 
     /// Initialize an upload session
-    pub async fn init_upload(&self, parent_id: &str, name: &str, size: u64, multipart: bool) -> Result<InitUploadResponse, ApiError> {
+    /// Initialize an upload session
+    pub async fn init_upload(&self, mut input: InitUploadInput) -> Result<InitUploadResponse, ApiError> {
         let url = format!("{}/v1/uploads/init", self.base_url);
         
-        // We assume creating a new file in a folder for now
-        let mut body = serde_json::json!({
-            "parentId": parent_id,
-            "name": name,
-            "size": size,
-            "type": "file",
-            "multipart": multipart
-        });
-
-        if let Some(ref mount_id) = self.mount_id {
-            body["mountId"] = serde_json::json!(mount_id);
+        // Use client's mount_id if not specified in input
+        if input.mount_id.is_none() {
+            input.mount_id = self.mount_id.clone();
         }
 
-        let resp = self.http.post(&url).json(&body).send().await?;
+        let resp = self.http.post(&url).json(&input).send().await?;
 
         if !resp.status().is_success() {
             let status = resp.status();
