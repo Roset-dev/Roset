@@ -1,7 +1,8 @@
 //! FUSE Filesystem Implementation
 
 use crate::cache::Cache;
-use crate::client::{ApiError, Node, NodeType, RosetClient};
+use futures::{StreamExt, TryStreamExt};
+use crate::client::{ApiError, CreateNodeInput, InitUploadInput, Node, NodeType, Part, RosetClient};
 use crate::config::Config;
 use crate::inode::{InodeMap, ROOT_INO};
 use crate::staging::StagingManager;
@@ -385,6 +386,7 @@ impl Filesystem for RosetFs {
         // Get download URL
         let client = self.client.clone();
         let id = node_id.clone();
+        match self.rt.block_on(async move { client.get_download_url(&id).await }) {
             Ok(resp) => {
                 let fh = self.next_fh.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                 self.handles.lock().insert(fh, OpenFile {
@@ -394,7 +396,7 @@ impl Filesystem for RosetFs {
                     write_mode: false,
                     upload_token: None,
                     upload_url: None,
-                    buffer: Vec::new(),
+                    temp_file: None,
                     dirty: false,
                 });
                 reply.opened(fh, 0);
@@ -654,6 +656,11 @@ impl Filesystem for RosetFs {
                     node_id: h.node_id.clone(),
                     download_url: h.download_url.clone(),
                     size: h.size,
+                    write_mode: h.write_mode,
+                    upload_token: h.upload_token.clone(),
+                    upload_url: h.upload_url.clone(),
+                    temp_file: None, // Don't clone NamedTempFile
+                    dirty: h.dirty,
                 },
                 None => {
                     reply.error(libc::EBADF);
@@ -748,66 +755,71 @@ impl Filesystem for RosetFs {
                           // Run multipart upload in background (blocking FUSE thread)
                           let res = self.rt.block_on(async move {
                               // Define Part Size (e.g., 20MB)
+                              const CONCURRENCY: usize = 5;
                               const PART_SIZE: u64 = 20 * 1024 * 1024; 
-                              let mut parts_vec = Vec::new();
-                              let mut part_number = 1;
-                              let mut offset = 0;
-
-                              // If file is empty, we must upload at least one empty part?
-                              // Actually, standard S3 client usually does 'PutObject' for empty.
-                              // But we forced multipart. Let's try to upload 1 part of 0 bytes if size is 0.
+                              
                               let iterations = if total_size > 0 {
                                   (total_size + PART_SIZE - 1) / PART_SIZE
                               } else {
                                   1
                               };
 
-                              for _ in 0..iterations {
+                              let mut pending_parts = Vec::new();
+                              let mut offset = 0;
+                              for part_number in 1..=iterations {
                                   let current_part_size = if total_size > 0 {
                                       std::cmp::min(PART_SIZE, total_size - offset)
                                   } else {
                                       0
                                   };
-
-                                  debug!("Uploading part {} ({} bytes)", part_number, current_part_size);
-
-                                  // 1. Get Signed URL
-                                  let url = client.get_upload_part_url(&token, part_number).await?;
-
-                                  // 2. Read Chunk
-                                  let mut file = tokio::fs::File::open(&path).await?;
-                                  file.seek(SeekFrom::Start(offset)).await?;
-                                  // Limit read to part size
-                                  let chunk = file.take(current_part_size);
-                                  
-                                  // 3. Upload Chunk
-                                  let stream = tokio_util::io::ReaderStream::new(chunk);
-                                  let body = reqwest::Body::wrap_stream(stream);
-
-                                  let put_client = reqwest::Client::new();
-                                  let resp = put_client.put(&url)
-                                      .body(body)
-                                      .send()
-                                      .await
-                                      .map_err(|e| anyhow::anyhow!("Part Upload failed: {}", e))?;
-                                  
-                                  if !resp.status().is_success() {
-                                       return Err(anyhow::anyhow!("Part Upload returned {}", resp.status()));
-                                  }
-
-                                  let etag = resp.headers().get("ETag")
-                                      .and_then(|h| h.to_str().ok())
-                                      .map(|s| s.trim_matches('"').to_string())
-                                      .ok_or_else(|| anyhow::anyhow!("No ETag in response"))?;
-
-                                  parts_vec.push(super::client::Part {
-                                      part_number,
-                                      etag,
-                                  });
-
+                                  pending_parts.push((part_number as u32, offset, current_part_size));
                                   offset += current_part_size;
-                                  part_number += 1;
                               }
+
+                              let client_ref = &client;
+                              let path_ref = &path;
+                              let token_ref = &token;
+
+                              let bodies = futures::stream::iter(pending_parts)
+                                  .map(|(part_number, off, size)| async move {
+                                      // 1. Get Signed URL
+                                      let url = client_ref.get_upload_part_url(token_ref, part_number).await?;
+
+                                      // 2. Read Chunk
+                                      let mut file = tokio::fs::File::open(path_ref).await?;
+                                      file.seek(SeekFrom::Start(off)).await?;
+                                      let chunk = file.take(size);
+                                      
+                                      // 3. Upload Chunk
+                                      let stream = tokio_util::io::ReaderStream::new(chunk);
+                                      let body = reqwest::Body::wrap_stream(stream);
+
+                                      let put_client = reqwest::Client::new();
+                                      let resp = put_client.put(&url)
+                                          .body(body)
+                                          .send()
+                                          .await
+                                          .map_err(|e| anyhow::anyhow!("Part Upload failed: {}", e))?;
+                                      
+                                      if !resp.status().is_success() {
+                                           return Err(anyhow::anyhow!("Part Upload returned {}", resp.status()));
+                                      }
+
+                                      let etag = resp.headers().get("ETag")
+                                          .and_then(|h| h.to_str().ok())
+                                          .map(|s| s.trim_matches('"').to_string())
+                                          .ok_or_else(|| anyhow::anyhow!("No ETag in response"))?;
+
+                                      Ok::<Part, anyhow::Error>(Part {
+                                          part_number,
+                                          etag,
+                                      })
+                                  })
+                                  .buffer_unordered(CONCURRENCY);
+
+                              // Collect results
+                              let mut parts_vec = bodies.try_collect::<Vec<Part>>().await?;
+                              parts_vec.sort_by_key(|p| p.part_number);
 
                               // 2. Complete Multipart
                               client.complete_multipart_upload(&token, parts_vec).await?;
@@ -1045,5 +1057,10 @@ impl Filesystem for RosetFs {
                 reply.error(Self::api_error_to_errno(&e));
             }
         }
+    }
+
+    fn forget(&mut self, _req: &Request, ino: u64, nlookup: u64) {
+        // debug!("forget: ino={}, nlookup={}", ino, nlookup); // noisy
+        self.inodes.forget(ino, nlookup);
     }
 }

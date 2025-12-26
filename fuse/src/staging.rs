@@ -9,6 +9,8 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use serde::{Serialize, Deserialize};
 
+use futures::{StreamExt, TryStreamExt};
+
 /// Message sent to the staging worker
 #[derive(Debug, Serialize, Deserialize)]
 struct UploadJob {
@@ -16,6 +18,8 @@ struct UploadJob {
     node_id: String,
     upload_token: String,
     total_size: u64,
+    #[serde(default)]
+    completed_parts: Vec<Part>,
 }
 
 /// Manages background uploads for write-back caching
@@ -87,7 +91,7 @@ impl StagingManager {
         tokio::spawn(async move {
             info!("Staging worker started. Watching {:?}", root);
             
-            while let Some(job) = rx.recv().await {
+            while let Some(mut job) = rx.recv().await {
                 let client = client.clone();
                 let job_info = format!("{} ({})", job.node_id, job.file_path.display());
                 info!("Processing background upload for {}", job_info);
@@ -98,7 +102,7 @@ impl StagingManager {
                 let mut success = false;
 
                 while attempts < max_attempts {
-                    match process_upload(&client, &job).await {
+                    match process_upload(&client, &mut job).await {
                         Ok(_) => {
                             info!("Successfully uploaded {}", job_info);
                             // Cleanup data file
@@ -169,6 +173,7 @@ impl StagingManager {
             node_id,
             upload_token,
             total_size: size,
+            completed_parts: Vec::new(),
         };
 
         // Persist job metadata
@@ -182,13 +187,10 @@ impl StagingManager {
     }
 }
 
-async fn process_upload(client: &RosetClient, job: &UploadJob) -> Result<()> {
-    const PART_SIZE: u64 = 20 * 1024 * 1024; // 20MB
-    let mut parts_vec = Vec::new();
-    let mut part_number = 1;
-    let mut offset = 0;
-    
-    // Check file exists
+const CONCURRENCY: usize = 5;
+const PART_SIZE: u64 = 20 * 1024 * 1024; // 20MB
+
+async fn process_upload(client: &RosetClient, job: &mut UploadJob) -> Result<()> {
     if !job.file_path.exists() {
         return Err(anyhow::anyhow!("Staged file not found: {:?}", job.file_path));
     }
@@ -199,52 +201,100 @@ async fn process_upload(client: &RosetClient, job: &UploadJob) -> Result<()> {
         1
     };
 
-    for _ in 0..iterations {
+    let existing_parts: std::collections::HashSet<u32> = job.completed_parts.iter()
+        .map(|p| p.part_number)
+        .collect();
+
+    // Create a vector of pending parts
+    let mut pending_parts = Vec::new();
+    let mut offset = 0;
+    
+    for part_number in 1..=iterations {
         let current_part_size = if job.total_size > 0 {
             std::cmp::min(PART_SIZE, job.total_size - offset)
         } else {
             0
         };
-
-        // Get Signed URL
-        let url = client.get_upload_part_url(&job.upload_token, part_number).await?;
-
-        // Read Chunk
-        let mut file = fs::File::open(&job.file_path).await?;
-        file.seek(std::io::SeekFrom::Start(offset)).await?;
-        let chunk = file.take(current_part_size);
         
-        // Upload Chunk
-        let stream = tokio_util::io::ReaderStream::new(chunk);
-        let body = reqwest::Body::wrap_stream(stream);
-
-        let put_client = reqwest::Client::new();
-        let resp = put_client.put(&url)
-            .body(body)
-            .send()
-            .await
-            .map_err(|e| anyhow::anyhow!("Part Upload request failed: {}", e))?;
-        
-        if !resp.status().is_success() {
-             return Err(anyhow::anyhow!("Part Upload returned {}", resp.status()));
+        if !existing_parts.contains(&(part_number as u32)) {
+            pending_parts.push((part_number as u32, offset, current_part_size));
         }
-
-        let etag = resp.headers().get("ETag")
-            .and_then(|h| h.to_str().ok())
-            .map(|s| s.trim_matches('"').to_string())
-            .ok_or_else(|| anyhow::anyhow!("No ETag in response"))?;
-
-        parts_vec.push(Part {
-            part_number,
-            etag,
-        });
-
+        
         offset += current_part_size;
-        part_number += 1;
     }
 
+    if pending_parts.is_empty() {
+        // Already done?
+        if !job.completed_parts.is_empty() {
+            client.complete_multipart_upload(&job.upload_token, job.completed_parts.clone()).await?;
+            return Ok(());
+        }
+    }
+
+    // Process in parallel
+    // Clone fields to separate variables to avoid borrowing `job` while mutating it later
+    let job_path = job.file_path.clone();
+    let token = job.upload_token.clone();
+
+    let bodies = futures::stream::iter(pending_parts)
+        .map(move |(part_number, off, size)| {
+            let path = job_path.clone();
+            let tok = token.clone();
+            async move {
+            // ... (keep existing logic) ...
+            // 1. Get Signed URL
+            let url = client.get_upload_part_url(&tok, part_number).await?;
+
+            // 2. Read Chunk
+            let mut file = fs::File::open(&path).await?;
+            file.seek(std::io::SeekFrom::Start(off)).await?;
+            let chunk = file.take(size);
+
+            // 3. Upload Chunk
+            let stream = tokio_util::io::ReaderStream::new(chunk);
+            let body = reqwest::Body::wrap_stream(stream);
+            let put_client = reqwest::Client::new();
+            
+            let resp = put_client.put(&url)
+                .body(body)
+                .send()
+                .await
+                .map_err(|e| anyhow::anyhow!("Part Upload request failed: {}", e))?;
+            
+            if !resp.status().is_success() {
+                 return Err(anyhow::anyhow!("Part Upload {} returned {}", part_number, resp.status()));
+            }
+
+            let etag = resp.headers().get("ETag")
+                .and_then(|h| h.to_str().ok())
+                .map(|s| s.trim_matches('"').to_string())
+                .ok_or_else(|| anyhow::anyhow!("No ETag in response"))?;
+
+            Ok::<Part, anyhow::Error>(Part {
+                part_number,
+                etag,
+            })
+        })
+        .buffer_unordered(CONCURRENCY);
+
+    // Collect results incrementally to persist state
+    let mut params_stream = bodies;
+    let job_file_path = job.file_path.with_extension("job.json");
+    
+    while let Some(res) = params_stream.next().await {
+        let part = res?;
+        job.completed_parts.push(part);
+        
+        // Persist every part (or could batch every 5)
+        let job_json = serde_json::to_vec(&job)?;
+        // Use atomic write? For now simple overwrite is better than nothing
+        fs::write(&job_file_path, job_json).await?;
+    }
+    
+    job.completed_parts.sort_by_key(|p| p.part_number);
+
     // Complete Multipart
-    client.complete_multipart_upload(&job.upload_token, parts_vec).await?;
+    client.complete_multipart_upload(&job.upload_token, job.completed_parts.clone()).await?;
     
     Ok(())
 }
