@@ -88,8 +88,6 @@ impl InodeMap {
         i2n.get(&ino).cloned()
     }
 
-
-
     /// Forget an inode (decrement refcount)
     pub fn forget(&self, ino: u64, nlookup: u64) {
         if ino == ROOT_INO {

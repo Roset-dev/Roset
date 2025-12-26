@@ -145,8 +145,6 @@ impl Cache {
         None
     }
 
-
-
     /// Invalidate cache for a node and its parent listing
     pub fn invalidate_node(&self, node_id: &str) {
         // 1. Invalidate parent's children cache if we know the parent
