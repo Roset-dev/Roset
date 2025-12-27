@@ -9,6 +9,9 @@ import { SharesResource } from "./resources/shares.js";
 import { AuditResource } from "./resources/audit.js";
 import { MountsResource } from "./resources/mounts.js";
 import { LeasesResource } from "./resources/leases.js";
+import { CommitsResource } from "./resources/commits.js";
+import { RefsResource } from "./resources/refs.js";
+import { SearchResource } from "./resources/search.js";
 import type { RosetClientConfig } from "./types.js";
 
 export class RosetClient {
@@ -33,6 +36,15 @@ export class RosetClient {
   /** Leases resource - file-level lease management */
   public readonly leases: LeasesResource;
 
+  /** Commits resource - ML checkpoints and versioning */
+  public readonly commits: CommitsResource;
+
+  /** Refs resource - symbolic references/tags */
+  public readonly refs: RefsResource;
+
+  /** Search resource - discovery and metadata queries */
+  public readonly search: SearchResource;
+
   constructor(config: RosetClientConfig) {
     if (!config.baseUrl) {
       throw new Error("baseUrl is required");
@@ -51,6 +63,9 @@ export class RosetClient {
     this.audit = new AuditResource(this.http, config);
     this.mounts = new MountsResource(this.http, config);
     this.leases = new LeasesResource(this.http, config);
+    this.commits = new CommitsResource(this.http, config);
+    this.refs = new RefsResource(this.http, config);
+    this.search = new SearchResource(this.http, config);
   }
 
   /**

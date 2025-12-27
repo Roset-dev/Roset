@@ -31,11 +31,15 @@ export class HttpClient {
     return this.request<T>("GET", path, undefined, options);
   }
 
-  /**
-   * Make a POST request
-   */
   async post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
     return this.request<T>("POST", path, body, options);
+  }
+
+  /**
+   * Make a PUT request
+   */
+  async put<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
+    return this.request<T>("PUT", path, body, options);
   }
 
   /**

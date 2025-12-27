@@ -198,6 +198,126 @@ export interface AuditQueryOptions extends PaginationOptions {
 }
 
 // ============================================================================
+// ML Control Plane Types
+// ============================================================================
+
+export interface Commit {
+  id: string;
+  nodeId: string;
+  manifestStorageKey: string;
+  message: string | null;
+  stats: {
+    fileCount: number;
+    totalSize: number;
+    metrics?: Record<string, number>;
+  };
+  status: 'pending' | 'completed' | 'failed';
+  createdAt: string;
+}
+
+export interface CommitOptions {
+  message?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface Ref {
+  name: string;
+  targetNodeId: string;
+  commitId: string | null;
+  updatedAt: string;
+}
+
+export interface FileDiff {
+  path: string;
+  name: string;
+  status: 'added' | 'removed' | 'changed' | 'unchanged';
+  sizeA?: number;
+  sizeB?: number;
+  checksumA?: string;
+  checksumB?: string;
+  isTextFile: boolean;
+}
+
+export interface CompareResult {
+  summary: {
+    added: number;
+    removed: number;
+    changed: number;
+    sizeDelta: number;
+    sizeDeltaPercent: number;
+  };
+  files: FileDiff[];
+  metrics?: Record<string, { valA: number; valB: number; delta: number; improved: boolean | null }>;
+}
+
+// ============================================================================
+// Org Management Types
+// ============================================================================
+
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  settings: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface Member {
+  id: string;
+  email: string | null;
+  name: string | null;
+  role: string;
+  joinedAt: string;
+}
+
+export interface Invitation {
+  email: string;
+  role: string;
+  expiresAt: string;
+  status: 'pending' | 'accepted' | 'expired';
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  prefix: string;
+  scopes: string[];
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface Integration {
+  id: string;
+  provider: 'aws' | 'gcp' | 'azure' | 'supabase';
+  status: 'connected' | 'pending' | 'errored';
+  lastSyncedAt: string | null;
+  createdAt: string;
+}
+
+// ============================================================================
+// Search Types
+// ============================================================================
+
+export interface SearchResult {
+  node: Node;
+  score: number;
+  highlights: Record<string, string[]>;
+}
+
+export interface SearchFilters {
+  type?: 'file' | 'folder';
+  parentId?: string;
+  extensions?: string[];
+  minSize?: number;
+  maxSize?: number;
+  dateRange?: {
+    start?: string | Date;
+    end?: string | Date;
+  };
+}
+
+// ============================================================================
 // API Response Types
 // ============================================================================
 
