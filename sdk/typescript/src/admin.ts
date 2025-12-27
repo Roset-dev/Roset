@@ -1,6 +1,7 @@
 import { HttpClient } from "./http.js";
 import { OrgResource } from "./resources/org.js";
 import { IntegrationsResource } from "./resources/integrations.js";
+import { WebhooksResource } from "./resources/webhooks.js";
 import type { RosetClientConfig } from "./types.js";
 
 /**
@@ -17,6 +18,9 @@ export class RosetAdmin {
   /** Integrations resource - cloud provider connections */
   public readonly integrations: IntegrationsResource;
 
+  /** Webhooks resource - webhook endpoint management */
+  public readonly webhooks: WebhooksResource;
+
   constructor(config: RosetClientConfig) {
     if (!config.baseUrl) {
       throw new Error("baseUrl is required");
@@ -31,5 +35,6 @@ export class RosetAdmin {
     // Initialize admin resources
     this.org = new OrgResource(this.http, config);
     this.integrations = new IntegrationsResource(this.http, config);
+    this.webhooks = new WebhooksResource(this.http, config);
   }
 }
