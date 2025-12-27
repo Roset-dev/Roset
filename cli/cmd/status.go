@@ -97,7 +97,7 @@ func runStatus(cmd *cobra.Command, args []string) {
 	if jsonOutput {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
-		enc.Encode(output)
+		_ = enc.Encode(output)
 		return
 	}
 
