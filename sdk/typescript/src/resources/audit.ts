@@ -28,7 +28,7 @@ export class AuditResource {
    * // Filter by action
    * const { items } = await client.audit.query({
    *   action: 'upload',
-   *   startDate: new Date('2024-01-01'),
+   *   startDate: new Date('2025-01-01'),
    * });
    *
    * // Filter by actor

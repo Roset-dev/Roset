@@ -19,7 +19,7 @@ await client.nodes.delete(nodeId);
 
 // Node still exists but is hidden
 const node = await client.nodes.get(nodeId);
-console.log(node.deletedAt); // "2024-01-15T10:30:00Z"
+console.log(node.deletedAt); // "2025-01-15T10:30:00Z"
 ```
 
 ## Restore from Trash
@@ -83,7 +83,7 @@ const { retention } = await client.mounts.get(mountId);
 
 console.log(retention.retentionDays); // 30
 console.log(retention.trashCount); // 42 files in trash
-console.log(retention.oldestTrash); // "2024-01-01T00:00:00Z"
+console.log(retention.oldestTrash); // "2025-01-01T00:00:00Z"
 ```
 
 ## Compliance Considerations

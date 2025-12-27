@@ -57,7 +57,7 @@ The Uploads API handles file data uploads using a two-phase commit pattern. Rose
     json={{
       uploadUrl: "https://storage.example.com/bucket/key?X-Amz-Signature=...",
       uploadToken: "ut_abc123...",
-      expiresAt: "2024-01-15T10:45:00Z",
+      expiresAt: "2025-01-15T10:45:00Z",
       method: "PUT",
       headers: {
         "Content-Type": "application/pdf",
@@ -105,7 +105,7 @@ The Uploads API handles file data uploads using a two-phase commit pattern. Rose
       sizeBytes: 1048576,
       contentType: "application/pdf",
       etag: '"d41d8cd98f00b204e9800998ecf8427e"',
-      committedAt: "2024-01-15T10:35:00Z",
+      committedAt: "2025-01-15T10:35:00Z",
     }}
   />
 </ApiEndpoint>
@@ -145,7 +145,7 @@ The Uploads API handles file data uploads using a two-phase commit pattern. Rose
     status={200}
     json={{
       downloadUrl: "https://storage.example.com/bucket/key?X-Amz-Signature=...",
-      expiresAt: "2024-01-15T11:30:00Z",
+      expiresAt: "2025-01-15T11:30:00Z",
       fileName: "report.pdf",
       contentType: "application/pdf",
       sizeBytes: 1048576,

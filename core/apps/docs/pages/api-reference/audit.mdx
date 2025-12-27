@@ -88,7 +88,7 @@ The Audit API provides access to the append-only operation log. Every action in 
           },
           ipAddress: "192.168.1.100",
           userAgent: "Mozilla/5.0...",
-          timestamp: "2024-01-15T10:30:00Z",
+          timestamp: "2025-01-15T10:30:00Z",
         },
       ],
       nextCursor: "eyJpZCI6Im9wX2FiYzEyMyJ9",
@@ -131,8 +131,8 @@ The Audit API provides access to the append-only operation log. Every action in 
   <ResponseExample
     status={200}
     json={{
-      downloadUrl: "https://storage.example.com/exports/audit-2024-01.json?...",
-      expiresAt: "2024-01-15T11:30:00Z",
+      downloadUrl: "https://storage.example.com/exports/audit-2025-01.json?...",
+      expiresAt: "2025-01-15T11:30:00Z",
       recordCount: 15234,
       sizeBytes: 2456789,
     }}
@@ -181,13 +181,13 @@ The Audit API provides access to the append-only operation log. Every action in 
           changes: {
             name: { from: "old-name.pdf", to: "new-name.pdf" },
           },
-          timestamp: "2024-01-15T11:00:00Z",
+          timestamp: "2025-01-15T11:00:00Z",
         },
         {
           id: "op_abc123",
           action: "node.create",
           principalEmail: "jane@example.com",
-          timestamp: "2024-01-15T10:30:00Z",
+          timestamp: "2025-01-15T10:30:00Z",
         },
       ],
       hasMore: false,

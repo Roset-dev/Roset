@@ -88,13 +88,13 @@ The Search API enables finding nodes by name, metadata, and content type across 
       items: [
         {
           id: "550e8400-e29b-41d4-a716-446655440000",
-          name: "quarterly-report-2024.pdf",
+          name: "quarterly-report-2025.pdf",
           type: "file",
-          path: "/documents/reports/quarterly-report-2024.pdf",
+          path: "/documents/reports/quarterly-report-2025.pdf",
           sizeBytes: 1048576,
           contentType: "application/pdf",
           highlight: {
-            name: ["<mark>quarterly</mark>-<mark>report</mark>-2024.pdf"],
+            name: ["<mark>quarterly</mark>-<mark>report</mark>-2025.pdf"],
           },
           score: 0.95,
         },
@@ -137,9 +137,9 @@ The Search API enables finding nodes by name, metadata, and content type across 
       items: [
         {
           id: "550e8400-e29b-41d4-a716-446655440000",
-          name: "quarterly-report-2024.pdf",
+          name: "quarterly-report-2025.pdf",
           type: "file",
-          path: "/documents/reports/quarterly-report-2024.pdf",
+          path: "/documents/reports/quarterly-report-2025.pdf",
         },
         {
           id: "550e8400-e29b-41d4-a716-446655440001",
@@ -174,7 +174,7 @@ const results = await client.search({
   q: "quarterly report",
   type: "file",
   contentType: "application/pdf",
-  createdAfter: "2024-01-01T00:00:00Z",
+  createdAfter: "2025-01-01T00:00:00Z",
   limit: 20,
 });
 
