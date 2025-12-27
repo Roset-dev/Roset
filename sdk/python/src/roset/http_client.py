@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import logging
 import time
 from typing import Any
@@ -26,7 +27,7 @@ class HttpClient:
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
         self.mount_id = mount_id
-        
+
         self._client = httpx.Client(
             base_url=self.api_url,
             headers={

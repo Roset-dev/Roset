@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from roset.http_client import HttpClient
-from roset.models import Tenant, Member, Invitation, ApiKey
+from roset.models import ApiKey, Invitation, Member, Tenant
+
 
 class OrgResource:
     """Organization/Tenant Management."""
@@ -21,8 +23,8 @@ class OrgResource:
     def invite_member(self, email: str, role: str) -> Invitation:
         """Invite a new member."""
         data = self.http.request(
-            "POST", 
-            "/v1/org/invites", 
+            "POST",
+            "/v1/org/invites",
             json={"email": email, "role": role}
         )
         return Invitation.model_validate(data["invitation"])
@@ -35,7 +37,7 @@ class OrgResource:
     def create_api_key(self, name: str, scopes: list[str]) -> dict:
         """Create a new API key. Returns dict with ApiKey object and the 'key' (secret)."""
         data = self.http.request(
-            "POST", 
+            "POST",
             "/v1/org/api-keys",
             json={"name": name, "scopes": scopes}
         )

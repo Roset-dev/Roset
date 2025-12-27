@@ -4,8 +4,8 @@ import logging
 from typing import Any
 
 from roset.http_client import HttpClient
-from roset.resources.org import OrgResource
 from roset.resources.integrations import IntegrationsResource
+from roset.resources.org import OrgResource
 
 logger = logging.getLogger(__name__)
 

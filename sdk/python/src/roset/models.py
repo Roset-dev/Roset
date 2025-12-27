@@ -7,7 +7,7 @@ Pydantic models for API responses.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -188,4 +188,3 @@ class CompareResult(BaseModel):
     metrics: dict[str, Any] | None = None
 
 
-from typing import Any  # Validated usage for generic dicts

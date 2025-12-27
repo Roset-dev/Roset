@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 from typing import Any
+
 from roset.http_client import HttpClient
 from roset.models import Integration
+
 
 class IntegrationsResource:
     """Cloud Integrations Management."""

@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 import time
 from typing import Any
 
+from roset.exceptions import RosetAPIError
 from roset.http_client import HttpClient
 from roset.models import Commit, CommitGroup, CompareResult
-from roset.exceptions import RosetAPIError
+
 
 class CommitsResource:
     """ML Checkpoints and Version Control."""
@@ -61,12 +63,12 @@ class CommitsResource:
             status_code=408,
             code="TIMEOUT",
         )
-    
+
     def compare(self, target_id: str, base_id: str) -> CompareResult:
         """Compare two checkpoints."""
         data = self.http.request(
-            "GET", 
-            f"/v1/commits/{target_id}/compare", 
+            "GET",
+            f"/v1/commits/{target_id}/compare",
             params={"base_id": base_id}
         )
         return CompareResult.model_validate(data)

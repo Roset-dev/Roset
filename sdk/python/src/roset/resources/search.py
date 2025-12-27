@@ -1,8 +1,11 @@
 from __future__ import annotations
-from typing import Any
+
 from datetime import datetime
+from typing import Any
+
 from roset.http_client import HttpClient
 from roset.models import SearchResult
+
 
 class SearchResource:
     """Search and Discovery."""
@@ -40,7 +43,7 @@ class SearchResource:
             params["min_size"] = min_size
         if max_size:
             params["max_size"] = max_size
-        
+
         # Format dates as ISO strings if they are datetime objects
         if start_date:
             params["start_date"] = start_date.isoformat() if isinstance(start_date, datetime) else start_date

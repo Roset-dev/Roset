@@ -4,8 +4,8 @@ import logging
 from typing import Any
 
 from roset.http_client import HttpClient
-from roset.resources.nodes import NodesResource
 from roset.resources.commits import CommitsResource
+from roset.resources.nodes import NodesResource
 from roset.resources.refs import RefsResource
 from roset.resources.search import SearchResource
 

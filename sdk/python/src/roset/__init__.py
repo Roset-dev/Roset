@@ -18,7 +18,6 @@ __all__ = [
     "Commit",
     "CommitGroup",
     "Ref",
-    "RosetError",
     "RosetAPIError",
-    "RosetValidationError",
+    "RosetNotFoundError",
 ]

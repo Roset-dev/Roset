@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from roset.http_client import HttpClient
 from roset.models import Node
+
 
 class Resource:
     def __init__(self, http: HttpClient):

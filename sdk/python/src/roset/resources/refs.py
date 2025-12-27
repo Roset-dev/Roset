@@ -1,7 +1,9 @@
 from __future__ import annotations
+
+from roset.exceptions import RosetNotFoundError
 from roset.http_client import HttpClient
 from roset.models import Ref
-from roset.exceptions import RosetNotFoundError
+
 
 class RefsResource:
     """Symbolic references (tags)."""
