@@ -30,10 +30,10 @@ export class OrgResource {
   /**
    * Invite a new member
    */
-  async inviteMember(email: string, role: string): Promise<Invitation> {
+  async inviteMember(params: { email: string; role: string }): Promise<Invitation> {
     const { invitation } = await this.http.post<{ invitation: Invitation }>(
       "/v1/org/invites",
-      { email, role }
+      params
     );
     return invitation;
   }
@@ -49,10 +49,10 @@ export class OrgResource {
   /**
    * Create a new API key
    */
-  async createApiKey(name: string, scopes: string[]): Promise<ApiKey & { key: string }> {
+  async createApiKey(params: { name: string; scopes: string[] }): Promise<ApiKey & { key: string }> {
     const { apiKey, key } = await this.http.post<{ apiKey: ApiKey; key: string }>(
       "/v1/org/api-keys",
-      { name, scopes }
+      params
     );
     // Return the full object including the secret key (only shown once)
     return { ...apiKey, key };

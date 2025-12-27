@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { RosetClient } from './index.js';
-import { RosetAdmin } from './admin_index.js';
+import { RosetAdmin } from './admin-index.js';
 
 describe('Roset SDK', () => {
   const config = { baseUrl: 'http://localhost', apiKey: 'test' };

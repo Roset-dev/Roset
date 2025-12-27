@@ -11,8 +11,8 @@
       "types": "./dist/index.d.ts"
     },
     "./admin": {
-      "import": "./dist/admin_index.js",
-      "types": "./dist/admin_index.d.ts"
+      "import": "./dist/admin-index.js",
+      "types": "./dist/admin-index.d.ts"
     }
   },
   "scripts": {
