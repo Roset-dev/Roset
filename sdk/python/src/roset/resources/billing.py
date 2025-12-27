@@ -21,7 +21,7 @@ class BillingResource:
         Calculates percentage used and remaining entitlement.
         """
         info = self.get_usage()
-        
+
         # Get usage and limit for the requested meter
         # Use getattr to dynamic access fields on Pydantic models
         used = getattr(info.usage, meter, 0)
