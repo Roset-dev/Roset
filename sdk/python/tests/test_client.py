@@ -9,6 +9,10 @@ def test_client_init():
     
     # Verify Data Plane Resources
     assert client.nodes is not None
+    assert client.uploads is not None
+    assert client.shares is not None
+    assert client.audit is not None
+    assert client.mounts is not None
     assert client.commits is not None
     assert client.refs is not None
     assert client.search is not None

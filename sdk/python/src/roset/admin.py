@@ -6,6 +6,7 @@ from typing import Any
 from roset.http_client import HttpClient
 from roset.resources.integrations import IntegrationsResource
 from roset.resources.org import OrgResource
+from roset.resources.webhooks import WebhooksResource
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class RosetAdmin:
         # Resources
         self.org = OrgResource(self._http)
         self.integrations = IntegrationsResource(self._http)
+        self.webhooks = WebhooksResource(self._http)
 
     def close(self) -> None:
         """Close the HTTP client."""

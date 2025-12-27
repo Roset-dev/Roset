@@ -188,3 +188,86 @@ class CompareResult(BaseModel):
     metrics: dict[str, Any] | None = None
 
 
+
+class Webhook(BaseModel):
+    """Webhook endpoint."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    url: str
+    secret: str
+    events: list[str]
+    enabled: bool
+    description: str | None = None
+    created_at: datetime
+    updated_at: datetime
+    last_triggered_at: datetime | None = None
+    failure_count: int
+
+
+class WebhookDelivery(BaseModel):
+    """Webhook delivery attempt."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    webhook_id: str
+    event: str
+    payload: dict[str, Any]
+    status_code: int | None = None
+    success: bool
+    attempt_count: int
+    created_at: datetime
+    delivered_at: datetime | None = None
+    error: str | None = None
+
+
+class Share(BaseModel):
+    """File sharing link."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    token: str
+    node_id: str
+    role: Literal["viewer", "editor"]
+    created_by: str
+    expires_at: datetime | None = None
+    revoked_at: datetime | None = None
+    created_at: datetime
+    url: str
+
+
+class AuditOp(BaseModel):
+    """Audit log operation."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    tenant_id: str
+    actor_id: str
+    action: str
+    target_id: str | None = None
+    payload: dict[str, Any]
+    status: Literal["success", "failure"]
+    ip_address: str | None = None
+    user_agent: str | None = None
+    created_at: datetime
+
+
+class Mount(BaseModel):
+    """Storage mount."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    tenant_id: str
+    name: str
+    provider: Literal["s3", "gcs", "azure", "r2", "minio"]
+    bucket: str
+    region: str | None = None
+    prefix: str | None = None
+    read_only: bool
+    created_at: datetime
+

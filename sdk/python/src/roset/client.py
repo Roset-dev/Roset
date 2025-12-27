@@ -8,6 +8,10 @@ from roset.resources.commits import CommitsResource
 from roset.resources.nodes import NodesResource
 from roset.resources.refs import RefsResource
 from roset.resources.search import SearchResource
+from roset.resources.shares import SharesResource
+from roset.resources.audit import AuditResource
+from roset.resources.mounts import MountsResource
+from roset.resources.uploads import UploadsResource
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +48,10 @@ class RosetClient:
 
         # Resources
         self.nodes = NodesResource(self._http)
+        self.uploads = UploadsResource(self._http)
+        self.shares = SharesResource(self._http)
+        self.audit = AuditResource(self._http)
+        self.mounts = MountsResource(self._http)
         self.commits = CommitsResource(self._http)
         self.refs = RefsResource(self._http)
         self.search = SearchResource(self._http)
