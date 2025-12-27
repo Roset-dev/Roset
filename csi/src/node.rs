@@ -125,9 +125,9 @@ impl Node for NodeService {
         }
 
         // Extract mount parameters from volume_context (NOT volume_id!)
-        let mount_id = volume_context.get("mountId").ok_or_else(|| {
-            Status::invalid_argument("Missing 'mountId' in volume_context")
-        })?;
+        let mount_id = volume_context
+            .get("mountId")
+            .ok_or_else(|| Status::invalid_argument("Missing 'mountId' in volume_context"))?;
 
         let api_url = volume_context
             .get("apiUrl")
@@ -202,7 +202,10 @@ impl Node for NodeService {
         // Spawn FUSE process (detached)
         match cmd.spawn() {
             Ok(_) => {
-                info!("Successfully spawned roset-fuse for {} at staging", volume_id);
+                info!(
+                    "Successfully spawned roset-fuse for {} at staging",
+                    volume_id
+                );
 
                 // Track the staging mount
                 if let Ok(mut mounts) = self.staging_mounts.lock() {
@@ -241,7 +244,10 @@ impl Node for NodeService {
 
         // Idempotency: if not mounted, return success
         if !Self::is_mounted(&staging_path) {
-            info!("Volume {} already unstaged from {}", volume_id, staging_path);
+            info!(
+                "Volume {} already unstaged from {}",
+                volume_id, staging_path
+            );
             // Clean up tracking
             if let Ok(mut mounts) = self.staging_mounts.lock() {
                 mounts.remove(&volume_id);
@@ -251,7 +257,10 @@ impl Node for NodeService {
         }
 
         // Attempt standard FUSE unmount
-        let output = Command::new("fusermount").arg("-u").arg(&staging_path).output();
+        let output = Command::new("fusermount")
+            .arg("-u")
+            .arg(&staging_path)
+            .output();
 
         match output {
             Ok(o) => {
@@ -313,7 +322,10 @@ impl Node for NodeService {
             }
             Err(e) => {
                 error!("Failed to execute lazy unmount: {}", e);
-                Err(Status::internal(format!("Failed to execute unmount: {}", e)))
+                Err(Status::internal(format!(
+                    "Failed to execute unmount: {}",
+                    e
+                )))
             }
         }
     }
@@ -375,7 +387,10 @@ impl Node for NodeService {
         match cmd.output() {
             Ok(o) => {
                 if o.status.success() {
-                    info!("Successfully bind mounted {} to {}", staging_path, target_path);
+                    info!(
+                        "Successfully bind mounted {} to {}",
+                        staging_path, target_path
+                    );
 
                     // Apply read-only if requested
                     if readonly {

@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/roset-dev/roset/monorepo/cli/pkg/api"
 	"github.com/roset-dev/roset/monorepo/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
@@ -21,12 +24,84 @@ func init() {
 	rootCmd.AddCommand(statusCmd)
 }
 
+// StatusOutput is the JSON output format for status command
+type StatusOutput struct {
+	Config     ConfigStatus `json:"config"`
+	Connection ConnStatus   `json:"connection"`
+	System     SystemInfo   `json:"system"`
+	Mounts     []string     `json:"mounts"`
+}
+
+type ConfigStatus struct {
+	APIURL    string `json:"apiUrl"`
+	HasAPIKey bool   `json:"hasApiKey"`
+}
+
+type ConnStatus struct {
+	Reachable     bool   `json:"reachable"`
+	Authenticated bool   `json:"authenticated"`
+	LatencyMs     int64  `json:"latencyMs,omitempty"`
+	Error         string `json:"error,omitempty"`
+}
+
+type SystemInfo struct {
+	OS        string `json:"os"`
+	Arch      string `json:"arch"`
+	GoVersion string `json:"goVersion"`
+}
+
 func runStatus(cmd *cobra.Command, args []string) {
 	success := lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
 	warning := lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
+	errorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
 	info := lipgloss.NewStyle().Foreground(lipgloss.Color("#4DA3FF"))
 	label := lipgloss.NewStyle().Bold(true).Width(16)
+	dim := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 
+	output := StatusOutput{
+		Config: ConfigStatus{
+			APIURL:    config.Cfg.APIURL,
+			HasAPIKey: config.Cfg.APIKey != "",
+		},
+		System: SystemInfo{
+			OS:        runtime.GOOS,
+			Arch:      runtime.GOARCH,
+			GoVersion: runtime.Version(),
+		},
+		Mounts: checkFuseMounts(),
+	}
+
+	// Check API connectivity and auth
+	if config.Cfg.APIKey != "" {
+		client := api.NewClient(config.Cfg.APIURL, config.Cfg.APIKey)
+		_, latency, err := client.Whoami()
+		output.Connection.LatencyMs = latency.Milliseconds()
+
+		if err == nil {
+			output.Connection.Reachable = true
+			output.Connection.Authenticated = true
+		} else {
+			// Check if it's just auth error (API is reachable)
+			if apiErr, ok := err.(*api.APIError); ok {
+				output.Connection.Reachable = true
+				output.Connection.Authenticated = false
+				output.Connection.Error = apiErr.Message
+			} else {
+				output.Connection.Reachable = false
+				output.Connection.Error = err.Error()
+			}
+		}
+	}
+
+	// JSON output
+	if jsonOutput {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		enc.Encode(output)
+		return
+	}
+
+	// Human output
 	fmt.Println()
 	fmt.Println(info.Bold(true).Render("Roset CLI Status"))
 	fmt.Println(strings.Repeat("─", 40))
@@ -40,6 +115,30 @@ func runStatus(cmd *cobra.Command, args []string) {
 		fmt.Printf("%s %s\n", label.Render("API Key:"), warning.Render("Not set (run `roset login`)"))
 	}
 
+	// Connectivity
+	fmt.Println()
+	if output.Connection.Reachable {
+		if output.Connection.Authenticated {
+			fmt.Printf("%s %s %s\n",
+				label.Render("API Status:"),
+				success.Render("● Connected"),
+				dim.Render(fmt.Sprintf("(%dms)", output.Connection.LatencyMs)),
+			)
+		} else {
+			fmt.Printf("%s %s\n",
+				label.Render("API Status:"),
+				errorStyle.Render("● Auth failed: "+output.Connection.Error),
+			)
+		}
+	} else if config.Cfg.APIKey != "" {
+		fmt.Printf("%s %s\n",
+			label.Render("API Status:"),
+			errorStyle.Render("● Unreachable: "+output.Connection.Error),
+		)
+	} else {
+		fmt.Printf("%s %s\n", label.Render("API Status:"), dim.Render("● Not configured"))
+	}
+
 	// System info
 	fmt.Println()
 	fmt.Printf("%s %s/%s\n", label.Render("System:"), runtime.GOOS, runtime.GOARCH)
@@ -47,10 +146,9 @@ func runStatus(cmd *cobra.Command, args []string) {
 
 	// Check for FUSE mounts
 	fmt.Println()
-	mounts := checkFuseMounts()
-	if len(mounts) > 0 {
+	if len(output.Mounts) > 0 {
 		fmt.Printf("%s\n", label.Render("Active Mounts:"))
-		for _, m := range mounts {
+		for _, m := range output.Mounts {
 			fmt.Printf("  %s %s\n", success.Render("●"), m)
 		}
 	} else {
