@@ -13,6 +13,10 @@
     "./admin": {
       "import": "./dist/admin-index.js",
       "types": "./dist/admin-index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
     }
   },
   "scripts": {

@@ -14,6 +14,7 @@ export { RosetAdmin } from "./admin.js";
 export { OrgResource } from "./resources/org.js";
 export { IntegrationsResource } from "./resources/integrations.js";
 export { WebhooksResource } from "./resources/webhooks.js";
+export { BillingResource } from "./resources/billing.js";
 export type { Webhook, WebhookEvent, WebhookDelivery, CreateWebhookOptions, UpdateWebhookOptions, RotateWebhookSecretOptions } from "./resources/webhooks.js";
 
 // Export types relevant to Admin
