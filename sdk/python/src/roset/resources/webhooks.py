@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, List  # noqa: UP035
 
 from roset.http_client import HttpClient
 from roset.models import Webhook, WebhookDelivery
@@ -12,7 +12,7 @@ class WebhooksResource:
     def __init__(self, http: HttpClient):
         self.http = http
 
-    def list(self) -> List[Webhook]:
+    def list(self) -> List[Webhook]:  # noqa: UP006
         """List all webhooks."""
         data = self.http.request("GET", "/v1/webhooks")
         return [Webhook.model_validate(item) for item in data.get("items", [])]
@@ -25,7 +25,7 @@ class WebhooksResource:
     def create(
         self,
         url: str,
-        events: List[str],
+        events: List[str],  # noqa: UP006
         secret: str | None = None,
         description: str | None = None,
         enabled: bool = True,
@@ -48,7 +48,7 @@ class WebhooksResource:
         self,
         webhook_id: str,
         url: str | None = None,
-        events: List[str] | None = None,
+        events: List[str] | None = None,  # noqa: UP006
         secret: str | None = None,
         description: str | None = None,
         enabled: bool | None = None,
