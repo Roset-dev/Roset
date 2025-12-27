@@ -77,4 +77,15 @@ export class MountsResource {
   ): Promise<Mount> {
     return this.update(id, { retentionDays }, options);
   }
+
+  /**
+   * Test mount connection
+   */
+  async testConnection(id: string, options?: RequestOptions): Promise<{ success: boolean; message?: string }> {
+    return this.http.post<{ success: boolean; message?: string }>(
+      `/v1/mounts/${id}/test`,
+      {},
+      options
+    );
+  }
 }

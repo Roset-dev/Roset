@@ -19,6 +19,14 @@ export class SharesResource {
   ) {}
 
   /**
+   * List all active shares
+   */
+  async list(options?: RequestOptions): Promise<Share[]> {
+    const { items } = await this.http.get<{ items: Share[] }>("/v1/shares", options);
+    return items;
+  }
+
+  /**
    * Create a share link for a node
    *
    * @example

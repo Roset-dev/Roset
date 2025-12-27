@@ -59,9 +59,27 @@ export class OrgResource {
   }
 
   /**
+   * Update an API key (e.g. rename)
+   */
+  async updateApiKey(id: string, params: { name: string }): Promise<ApiKey> {
+    const { apiKey } = await this.http.patch<{ apiKey: ApiKey }>(
+      `/v1/org/api-keys/${id}`,
+      params
+    );
+    return apiKey;
+  }
+
+  /**
    * Revoke an API key
    */
   async revokeApiKey(id: string): Promise<void> {
     await this.http.delete(`/v1/org/api-keys/${id}`);
+  }
+
+  /**
+   * Revoke/Delete an invitation
+   */
+  async revokeInvitation(id: string): Promise<void> {
+    await this.http.delete(`/v1/org/invites/${id}`);
   }
 }

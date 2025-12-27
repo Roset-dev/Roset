@@ -2,6 +2,7 @@ import { HttpClient } from "./http.js";
 import { OrgResource } from "./resources/org.js";
 import { IntegrationsResource } from "./resources/integrations.js";
 import { WebhooksResource } from "./resources/webhooks.js";
+import { SharesResource } from "./resources/shares.js";
 import type { RosetClientConfig } from "./types.js";
 
 /**
@@ -21,6 +22,9 @@ export class RosetAdmin {
   /** Webhooks resource - webhook endpoint management */
   public readonly webhooks: WebhooksResource;
 
+  /** Shares resource - active share/link management */
+  public readonly shares: SharesResource;
+
   constructor(config: RosetClientConfig) {
     if (!config.baseUrl) {
       throw new Error("baseUrl is required");
@@ -36,5 +40,6 @@ export class RosetAdmin {
     this.org = new OrgResource(this.http, config);
     this.integrations = new IntegrationsResource(this.http, config);
     this.webhooks = new WebhooksResource(this.http, config);
+    this.shares = new SharesResource(this.http, config);
   }
 }
