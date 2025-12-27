@@ -75,6 +75,7 @@ impl ControllerService {
     }
 
     /// Parse opaque volume_id format: `roset-vol:<node_id>` -> node_id
+    #[allow(clippy::result_large_err)]
     fn parse_volume_id(volume_id: &str) -> Result<String, Status> {
         if let Some(node_id) = volume_id.strip_prefix("roset-vol:") {
             Ok(node_id.to_string())

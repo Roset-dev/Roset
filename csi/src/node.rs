@@ -12,8 +12,6 @@ use std::process::Command;
 use tonic::{Request, Response, Status};
 use tracing::{error, info, warn};
 
-/// Global staging directory for FUSE mounts
-const STAGING_BASE: &str = "/var/lib/kubelet/plugins/roset-csi/staging";
 /// Directory for temporary API key files (secure)
 const SECRETS_DIR: &str = "/var/run/secrets/roset";
 
@@ -33,6 +31,7 @@ impl NodeService {
 
     /// Write API key to a temp file instead of passing via CLI args
     /// Returns the path to the key file
+    #[allow(clippy::result_large_err)]
     fn write_temp_api_key(volume_id: &str, api_key: &str) -> Result<String, Status> {
         std::fs::create_dir_all(SECRETS_DIR)
             .map_err(|e| Status::internal(format!("Failed to create secrets dir: {}", e)))?;
