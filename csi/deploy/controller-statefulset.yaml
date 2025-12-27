@@ -1,0 +1,119 @@
+---
+# Roset CSI Controller StatefulSet
+# Runs controller plugin with external-provisioner and csi-snapshotter sidecars
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: roset-csi-controller
+  namespace: roset-system
+  labels:
+    app: roset-csi-controller
+spec:
+  serviceName: roset-csi-controller
+  replicas: 1
+  selector:
+    matchLabels:
+      app: roset-csi-controller
+  template:
+    metadata:
+      labels:
+        app: roset-csi-controller
+    spec:
+      serviceAccountName: roset-csi-controller
+      containers:
+        - name: roset-csi-driver
+          image: roset/csi-driver:latest
+          args:
+            - "--endpoint=unix:///csi/csi.sock"
+          env:
+            - name: ROSET_API_URL
+              value: "https://api.roset.dev"
+            - name: ROSET_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: roset-credentials
+                  key: api-key
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+
+        # External Provisioner: handles CreateVolume/DeleteVolume
+        - name: csi-provisioner
+          image: registry.k8s.io/sig-storage/csi-provisioner:v3.6.0
+          args:
+            - "--csi-address=/csi/csi.sock"
+            - "--feature-gates=Topology=true"
+            - "--timeout=60s"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+
+        # CSI Snapshotter: handles CreateSnapshot/DeleteSnapshot
+        - name: csi-snapshotter
+          image: registry.k8s.io/sig-storage/csi-snapshotter:v6.3.0
+          args:
+            - "--csi-address=/csi/csi.sock"
+            - "--timeout=60s"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+
+      volumes:
+        - name: socket-dir
+          emptyDir: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: roset-csi-controller
+  namespace: roset-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: roset-csi-controller
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csinodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotcontents"]
+    verbs: ["create", "get", "list", "watch", "update", "delete", "patch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotcontents/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots"]
+    verbs: ["get", "list", "watch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: roset-csi-controller
+subjects:
+  - kind: ServiceAccount
+    name: roset-csi-controller
+    namespace: roset-system
+roleRef:
+  kind: ClusterRole
+  name: roset-csi-controller
+  apiGroup: rbac.authorization.k8s.io

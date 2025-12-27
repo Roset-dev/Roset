@@ -108,6 +108,17 @@ pub struct Lease {
     pub expires_at: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+pub struct Commit {
+    pub id: String,
+    #[serde(rename = "nodeId")]
+    pub node_id: String,
+    pub message: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+}
+
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InitUploadInput {
@@ -520,6 +531,102 @@ impl RosetClient {
         }
         let data: Wrapper = resp.json().await?;
         Ok(data.node)
+    }
+
+    /// Move or rename a node (O(1) metadata operation)
+    pub async fn move_node(
+        &self,
+        node_id: &str,
+        new_parent_id: Option<&str>,
+        new_name: Option<&str>,
+    ) -> Result<Node, ApiError> {
+        let url = format!("{}/v1/nodes/{}", self.base_url, node_id);
+
+        let mut body = serde_json::Map::new();
+        if let Some(parent_id) = new_parent_id {
+            body.insert(
+                "parentId".to_string(),
+                serde_json::Value::String(parent_id.to_string()),
+            );
+        }
+        if let Some(name) = new_name {
+            body.insert(
+                "name".to_string(),
+                serde_json::Value::String(name.to_string()),
+            );
+        }
+
+        let resp = self
+            .http
+            .patch(&url)
+            .json(&serde_json::Value::Object(body))
+            .send()
+            .await?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let text = resp.text().await.unwrap_or_default();
+            return Err(self.handle_status(status, &text));
+        }
+
+        #[derive(Deserialize)]
+        struct Wrapper {
+            node: Node,
+        }
+        let data: Wrapper = resp.json().await?;
+        Ok(data.node)
+    }
+
+    /// Renew an existing lease
+    #[allow(dead_code)]
+    pub async fn renew_lease(&self, node_id: &str, duration_secs: u32) -> Result<Lease, ApiError> {
+        let url = format!("{}/v1/nodes/{}/lease", self.base_url, node_id);
+        let body = serde_json::json!({
+            "durationSeconds": duration_secs
+        });
+
+        let resp = self.http.patch(&url).json(&body).send().await?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let text = resp.text().await.unwrap_or_default();
+            return Err(self.handle_status(status, &text));
+        }
+
+        let data: LeaseResponse = resp.json().await?;
+        Ok(data.lease)
+    }
+
+    /// Create a commit (seal a checkpoint folder)
+    #[allow(dead_code)]
+    pub async fn create_commit(
+        &self,
+        node_id: &str,
+        message: Option<&str>,
+    ) -> Result<Commit, ApiError> {
+        let url = format!("{}/v1/commits", self.base_url);
+
+        let mut body = serde_json::json!({
+            "node_id": node_id
+        });
+        if let Some(msg) = message {
+            body["message"] = serde_json::Value::String(msg.to_string());
+        }
+
+        let resp = self.http.post(&url).json(&body).send().await?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let text = resp.text().await.unwrap_or_default();
+            return Err(self.handle_status(status, &text));
+        }
+
+        #[derive(Deserialize)]
+        struct Wrapper {
+            commit: Commit,
+        }
+        let data: Wrapper = resp.json().await?;
+        Ok(data.commit)
     }
 }
 

@@ -288,6 +288,91 @@ impl Filesystem for RosetFs {
         }
     }
 
+    fn setattr(
+        &mut self,
+        _req: &Request,
+        ino: u64,
+        _mode: Option<u32>,
+        _uid: Option<u32>,
+        _gid: Option<u32>,
+        size: Option<u64>,
+        _atime: Option<fuser::TimeOrNow>,
+        mtime: Option<fuser::TimeOrNow>,
+        _ctime: Option<std::time::SystemTime>,
+        fh: Option<u64>,
+        _crtime: Option<std::time::SystemTime>,
+        _chgtime: Option<std::time::SystemTime>,
+        _bkuptime: Option<std::time::SystemTime>,
+        _flags: Option<u32>,
+        reply: ReplyAttr,
+    ) {
+        debug!("setattr: ino={}, size={:?}, fh={:?}", ino, size, fh);
+
+        let node_id = match self.inodes.get_node_id(ino) {
+            Some(id) => id,
+            None => {
+                reply.error(libc::ENOENT);
+                return;
+            }
+        };
+
+        // Handle truncate (size change)
+        if let Some(new_size) = size {
+            if let Some(file_handle) = fh {
+                let mut handles = self.handles.lock();
+                if let Some(handle) = handles.get_mut(&file_handle) {
+                    if handle.write_mode {
+                        // Truncate the local temp file
+                        if let Some(ref mut temp_file) = handle.temp_file {
+                            if let Err(e) = temp_file.as_file().set_len(new_size) {
+                                error!("Failed to truncate temp file: {}", e);
+                                reply.error(libc::EIO);
+                                return;
+                            }
+                            handle.size = new_size;
+                            handle.dirty = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Handle mtime update via metadata API
+        if mtime.is_some() {
+            // We could update mtime via metadata, but for now just acknowledge
+            // since we don't have a dedicated mtime field in the API
+        }
+
+        // Return current attributes
+        let node = match self.cache.get_node(&node_id) {
+            Some(n) => n,
+            None => {
+                let client = self.client.clone();
+                let id = node_id.clone();
+                match self.rt.block_on(async move { client.get_node(&id).await }) {
+                    Ok(n) => {
+                        self.cache.put_node(n.clone());
+                        std::sync::Arc::new(n)
+                    }
+                    Err(e) => {
+                        error!("API error in setattr: {}", e);
+                        reply.error(Self::api_error_to_errno(&e));
+                        return;
+                    }
+                }
+            }
+        };
+
+        let mut attr = self.node_to_attr(&node, ino);
+        // If we truncated, update the size in the reply
+        if let Some(new_size) = size {
+            attr.size = new_size;
+            attr.blocks = new_size.div_ceil(512);
+        }
+
+        reply.attr(&TTL, &attr);
+    }
+
     fn readdir(
         &mut self,
         _req: &Request,
@@ -540,6 +625,95 @@ impl Filesystem for RosetFs {
         self.rmdir(_req, parent, name, reply);
     }
 
+    fn rename(
+        &mut self,
+        _req: &Request,
+        parent: u64,
+        name: &OsStr,
+        newparent: u64,
+        newname: &OsStr,
+        _flags: u32,
+        reply: fuser::ReplyEmpty,
+    ) {
+        let name_str = name.to_string_lossy();
+        let newname_str = newname.to_string_lossy();
+        debug!(
+            "rename: parent={}, name={}, newparent={}, newname={}",
+            parent, name_str, newparent, newname_str
+        );
+
+        if self.read_only {
+            reply.error(libc::EROFS);
+            return;
+        }
+
+        // Resolve parent IDs
+        let parent_id = match self.inodes.get_node_id(parent) {
+            Some(id) => id,
+            None => {
+                reply.error(libc::ENOENT);
+                return;
+            }
+        };
+
+        let newparent_id = match self.inodes.get_node_id(newparent) {
+            Some(id) => id,
+            None => {
+                reply.error(libc::ENOENT);
+                return;
+            }
+        };
+
+        // Resolve source node
+        let source_node = match self.resolve_child(&parent_id, &name_str) {
+            Ok(Some(node)) => node,
+            Ok(None) => {
+                reply.error(libc::ENOENT);
+                return;
+            }
+            Err(e) => {
+                error!("API error in rename resolution: {}", e);
+                reply.error(Self::api_error_to_errno(&e));
+                return;
+            }
+        };
+
+        let source_id = source_node.id.clone();
+        let client = self.client.clone();
+
+        // Determine what changed
+        let new_parent = if parent_id != newparent_id {
+            Some(newparent_id.as_str())
+        } else {
+            None
+        };
+        let new_name = if name_str != newname_str {
+            Some(newname_str.as_ref())
+        } else {
+            None
+        };
+
+        // Call API
+        match self
+            .rt
+            .block_on(async move { client.move_node(&source_id, new_parent, new_name).await })
+        {
+            Ok(updated_node) => {
+                // Invalidate caches
+                self.cache.invalidate_children(&parent_id);
+                if parent_id != newparent_id {
+                    self.cache.invalidate_children(&newparent_id);
+                }
+                self.cache.put_node(updated_node);
+                reply.ok();
+            }
+            Err(e) => {
+                error!("API error in rename: {}", e);
+                reply.error(Self::api_error_to_errno(&e));
+            }
+        }
+    }
+
     fn create(
         &mut self,
         _req: &Request,
@@ -765,6 +939,171 @@ impl Filesystem for RosetFs {
             Err(e) => {
                 error!("Download error in read: {}", e);
                 reply.error(Self::api_error_to_errno(&e));
+            }
+        }
+    }
+
+    fn flush(
+        &mut self,
+        _req: &Request,
+        ino: u64,
+        fh: u64,
+        _lock_owner: u64,
+        reply: fuser::ReplyEmpty,
+    ) {
+        debug!("flush: ino={}, fh={}", ino, fh);
+        // Flush is called before close - we don't need to do anything special
+        // since we handle everything in release/fsync
+        reply.ok();
+    }
+
+    fn fsync(
+        &mut self,
+        _req: &Request,
+        ino: u64,
+        fh: u64,
+        datasync: bool,
+        reply: fuser::ReplyEmpty,
+    ) {
+        debug!("fsync: ino={}, fh={}, datasync={}", ino, fh, datasync);
+
+        // Get handle info without holding the lock during async operations
+        let handle_info = {
+            let handles = self.handles.lock();
+            handles.get(&fh).map(|h| {
+                (
+                    h.node_id.clone(),
+                    h.write_mode,
+                    h.dirty,
+                    h.upload_token.clone(),
+                    h.size,
+                )
+            })
+        };
+
+        let Some((node_id, write_mode, dirty, upload_token, total_size)) = handle_info else {
+            reply.error(libc::EBADF);
+            return;
+        };
+
+        if !write_mode || !dirty {
+            // Nothing to sync
+            reply.ok();
+            return;
+        }
+
+        let Some(token) = upload_token else {
+            reply.ok();
+            return;
+        };
+
+        // Get temp file path from handle
+        let temp_path = {
+            let handles = self.handles.lock();
+            handles
+                .get(&fh)
+                .and_then(|h| h.temp_file.as_ref())
+                .map(|f| f.path().to_path_buf())
+        };
+
+        let Some(path) = temp_path else {
+            reply.ok();
+            return;
+        };
+
+        info!(
+            "fsync: uploading {} bytes for node {} (blocking until complete)",
+            total_size, node_id
+        );
+
+        let client = self.client.clone();
+
+        // Perform synchronous multipart upload - blocks until complete
+        let res: anyhow::Result<()> = self.rt.block_on(async move {
+            const CONCURRENCY: usize = 5;
+            const PART_SIZE: u64 = 20 * 1024 * 1024;
+
+            let iterations = if total_size > 0 {
+                total_size.div_ceil(PART_SIZE)
+            } else {
+                1
+            };
+
+            let mut pending_parts = Vec::new();
+            let mut offset = 0;
+            for part_number in 1..=iterations {
+                let current_part_size = if total_size > 0 {
+                    std::cmp::min(PART_SIZE, total_size - offset)
+                } else {
+                    0
+                };
+                pending_parts.push((part_number as u32, offset, current_part_size));
+                offset += current_part_size;
+            }
+
+            let client_ref = &client;
+            let path_ref = &path;
+            let token_ref = &token;
+
+            let bodies = futures::stream::iter(pending_parts)
+                .map(|(part_number, off, size)| async move {
+                    let url = client_ref
+                        .get_upload_part_url(token_ref, part_number)
+                        .await?;
+
+                    let mut file = tokio::fs::File::open(path_ref).await?;
+                    file.seek(SeekFrom::Start(off)).await?;
+                    let chunk = file.take(size);
+
+                    let stream = tokio_util::io::ReaderStream::new(chunk);
+                    let body = reqwest::Body::wrap_stream(stream);
+
+                    let put_client = reqwest::Client::new();
+                    let resp = put_client
+                        .put(&url)
+                        .body(body)
+                        .send()
+                        .await
+                        .map_err(|e| anyhow::anyhow!("Part Upload failed: {}", e))?;
+
+                    if !resp.status().is_success() {
+                        return Err(anyhow::anyhow!("Part Upload returned {}", resp.status()));
+                    }
+
+                    let etag = resp
+                        .headers()
+                        .get("ETag")
+                        .and_then(|h| h.to_str().ok())
+                        .map(|s| s.trim_matches('"').to_string())
+                        .ok_or_else(|| anyhow::anyhow!("No ETag in response"))?;
+
+                    Ok::<Part, anyhow::Error>(Part { part_number, etag })
+                })
+                .buffer_unordered(CONCURRENCY);
+
+            let mut parts_vec = bodies.try_collect::<Vec<Part>>().await?;
+            parts_vec.sort_by_key(|p| p.part_number);
+
+            // Complete multipart upload
+            client.complete_multipart_upload(&token, parts_vec).await?;
+
+            Ok(())
+        });
+
+        match res {
+            Ok(()) => {
+                // Mark as not dirty after successful sync
+                let mut handles = self.handles.lock();
+                if let Some(handle) = handles.get_mut(&fh) {
+                    handle.dirty = false;
+                }
+                self.cache.invalidate_node(&node_id);
+                info!("fsync: upload complete for node {}", node_id);
+                reply.ok();
+            }
+            Err(e) => {
+                error!("fsync failed: {}", e);
+                reply.error(libc::EIO);
             }
         }
     }

@@ -1,0 +1,63 @@
+---
+# Roset CSI Driver - Kubernetes Deployment Manifests
+#
+# Required sidecars for dynamic provisioning:
+# - external-provisioner: https://kubernetes-csi.github.io/docs/external-provisioner.html
+# - csi-snapshotter: https://kubernetes-csi.github.io/docs/csi-snapshotter.html
+#
+# Deploy order:
+# 1. Create the namespace
+# 2. Create the secret with API credentials
+# 3. Apply the CSIDriver, StorageClass, VolumeSnapshotClass
+# 4. Deploy the DaemonSet (node plugin)
+# 5. Deploy the StatefulSet (controller plugin with sidecars)
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: roset-system
+---
+apiVersion: storage.k8s.io/v1
+kind: CSIDriver
+metadata:
+  name: csi.roset.dev
+spec:
+  attachRequired: false          # FUSE doesn't need controller attach
+  podInfoOnMount: true           # Pass pod info for audit/logging
+  fsGroupPolicy: ReadWriteOnceWithFSType
+  volumeLifecycleModes:
+    - Persistent
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: roset
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: csi.roset.dev
+parameters:
+  # Required: Roset API endpoint
+  apiUrl: "https://api.roset.dev"
+  # Required: Your Roset mount ID (from console or API)
+  mountId: "${MOUNT_ID}"
+  # Base path for volume folders (default: /volumes)
+  basePath: "/volumes"
+  # ML Performance Tuning (optional)
+  # cacheDir: "/var/cache/roset"
+  # cacheSizeGi: "10"
+  # readAhead: "128"
+  # Mount a ref instead of live path (optional)
+  # ref: "latest"
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: false
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: roset-snapshots
+driver: csi.roset.dev
+deletionPolicy: Retain          # Keep commits on snapshot deletion
+parameters:
+  # Snapshot message template
+  # message: "k8s-snapshot-${snapshot.name}"

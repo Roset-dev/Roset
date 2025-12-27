@@ -1,0 +1,110 @@
+---
+# Roset CSI Node DaemonSet
+# Runs on every node to handle staging/unstaging and mounting
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: roset-csi-node
+  namespace: roset-system
+  labels:
+    app: roset-csi-node
+spec:
+  selector:
+    matchLabels:
+      app: roset-csi-node
+  template:
+    metadata:
+      labels:
+        app: roset-csi-node
+    spec:
+      serviceAccountName: roset-csi-node
+      hostNetwork: true
+      containers:
+        - name: roset-csi-driver
+          image: roset/csi-driver:latest
+          args:
+            - "--endpoint=unix:///csi/csi.sock"
+            - "--node-id=$(NODE_ID)"
+          env:
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: ROSET_API_URL
+              value: "https://api.roset.dev"
+          securityContext:
+            privileged: true
+            capabilities:
+              add: ["SYS_ADMIN"]
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+            - name: pods-mount-dir
+              mountPath: /var/lib/kubelet
+              mountPropagation: Bidirectional
+            - name: device-dir
+              mountPath: /dev
+            - name: secrets-dir
+              mountPath: /var/run/secrets/roset
+        
+        - name: csi-node-driver-registrar
+          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.9.0
+          args:
+            - "--csi-address=/csi/csi.sock"
+            - "--kubelet-registration-path=/var/lib/kubelet/plugins/roset-csi/csi.sock"
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+            - name: registration-dir
+              mountPath: /registration
+
+      volumes:
+        - name: plugin-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/roset-csi
+            type: DirectoryOrCreate
+        - name: pods-mount-dir
+          hostPath:
+            path: /var/lib/kubelet
+            type: Directory
+        - name: device-dir
+          hostPath:
+            path: /dev
+            type: Directory
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+            type: Directory
+        - name: secrets-dir
+          hostPath:
+            path: /var/run/secrets/roset
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: roset-csi-node
+  namespace: roset-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: roset-csi-node
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: roset-csi-node
+subjects:
+  - kind: ServiceAccount
+    name: roset-csi-node
+    namespace: roset-system
+roleRef:
+  kind: ClusterRole
+  name: roset-csi-node
+  apiGroup: rbac.authorization.k8s.io
