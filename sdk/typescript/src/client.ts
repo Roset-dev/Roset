@@ -12,7 +12,6 @@ import { LeasesResource } from "./resources/leases.js";
 import { CommitsResource } from "./resources/commits.js";
 import { RefsResource } from "./resources/refs.js";
 import { SearchResource } from "./resources/search.js";
-import { OrgResource } from "./resources/org.js";
 import type { RosetClientConfig } from "./types.js";
 
 export class RosetClient {
@@ -46,9 +45,6 @@ export class RosetClient {
   /** Search resource - discovery and metadata queries */
   public readonly search: SearchResource;
 
-  /** Org resource - workspace settings, members, API keys */
-  public readonly org: OrgResource;
-
   constructor(config: RosetClientConfig) {
     if (!config.baseUrl) {
       throw new Error("baseUrl is required");
@@ -70,7 +66,6 @@ export class RosetClient {
     this.commits = new CommitsResource(this.http, config);
     this.refs = new RefsResource(this.http, config);
     this.search = new SearchResource(this.http, config);
-    this.org = new OrgResource(this.http, config);
   }
 
   /**

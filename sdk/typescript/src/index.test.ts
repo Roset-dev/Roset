@@ -26,8 +26,8 @@ describe('Roset SDK', () => {
 
     it('should NOT have admin resources', () => {
       const client = new RosetClient(config);
-      expect((client as any).org).toBeUndefined();
-      expect((client as any).integrations).toBeUndefined();
+      expect((client as unknown as Record<string, unknown>).org).toBeUndefined();
+      expect((client as unknown as Record<string, unknown>).integrations).toBeUndefined();
     });
   });
 
