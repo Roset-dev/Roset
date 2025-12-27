@@ -236,4 +236,72 @@ export class NodesResource {
       options
     );
   }
+
+  // ============================================================================
+  // Trash Management
+  // ============================================================================
+
+  /**
+   * Permanently delete a node (from trash)
+   * 
+   * @example
+   * ```typescript
+   * // Node must be in trash first
+   * await client.nodes.delete(nodeId);
+   * 
+   * // Then permanently delete
+   * await client.nodes.permanentDelete(nodeId);
+   * ```
+   */
+  async permanentDelete(id: string, options?: RequestOptions): Promise<void> {
+    await this.http.delete(`/v1/nodes/${id}/permanent`, options);
+  }
+
+  /**
+   * Batch permanently delete nodes (from trash)
+   */
+  async permanentDeleteMany(ids: string[], options?: RequestOptions): Promise<void> {
+    await this.http.post("/v1/nodes/batch/permanent-delete", { ids }, options);
+  }
+
+  /**
+   * List trash items
+   * 
+   * @example
+   * ```typescript
+   * const { items, total, hasMore } = await client.nodes.listTrash({ pageSize: 50 });
+   * for (const item of items) {
+   *   console.log(`${item.name} deleted at ${item.deletedAt}`);
+   * }
+   * ```
+   */
+  async listTrash(options?: PaginationOptions & RequestOptions): Promise<PaginatedResult<Node>> {
+    const params = new URLSearchParams();
+
+    if (options?.page) params.set("page", String(options.page));
+    if (options?.pageSize) params.set("pageSize", String(options.pageSize));
+    if (options?.sortBy) params.set("sortBy", options.sortBy);
+    if (options?.sortOrder) params.set("sortOrder", options.sortOrder);
+
+    const query = params.toString();
+    const path = `/v1/trash${query ? `?${query}` : ""}`;
+
+    return this.http.get<PaginatedResult<Node>>(path, options);
+  }
+
+  /**
+   * Empty trash (permanently delete all trashed items)
+   * 
+   * @returns The count of items deleted
+   * 
+   * @example
+   * ```typescript
+   * const { deletedCount } = await client.nodes.emptyTrash();
+   * console.log(`Permanently deleted ${deletedCount} items`);
+   * ```
+   */
+  async emptyTrash(options?: RequestOptions): Promise<{ deletedCount: number }> {
+    return this.http.delete<{ deletedCount: number }>("/v1/trash", options);
+  }
 }
+
