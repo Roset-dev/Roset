@@ -46,9 +46,13 @@ class SearchResource:
 
         # Format dates as ISO strings if they are datetime objects
         if start_date:
-            params["start_date"] = start_date.isoformat() if isinstance(start_date, datetime) else start_date
+            params["start_date"] = (
+                start_date.isoformat() if isinstance(start_date, datetime) else start_date
+            )
         if end_date:
-            params["end_date"] = end_date.isoformat() if isinstance(end_date, datetime) else end_date
+            params["end_date"] = (
+                end_date.isoformat() if isinstance(end_date, datetime) else end_date
+            )
 
         data = self.http.request("GET", "/v1/search", params=params)
         return [SearchResult.model_validate(item) for item in data.get("items", [])]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Literal
+
 from roset.http_client import HttpClient
 from roset.models import Node
 
@@ -8,6 +9,7 @@ from roset.models import Node
 class Resource:
     def __init__(self, http: HttpClient):
         self.http = http
+
 
 class NodesResource(Resource):
     """File and folder management."""
@@ -45,7 +47,7 @@ class NodesResource(Resource):
             params["sortOrder"] = sort_order
         if type:
             params["type"] = type
-            
+
         return self.http.request("GET", f"/v1/nodes/{node_id}/children", params=params)
 
     def create(
@@ -74,19 +76,19 @@ class NodesResource(Resource):
         return Node.model_validate(data["node"])
 
     def create_folder(
-        self, 
-        name: str, 
+        self,
+        name: str,
         parent_path: str | None = None,
         parent_id: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> Node:
         """Create a folder (convenience method)."""
         return self.create(
-            name=name, 
-            type="folder", 
-            parent_path=parent_path, 
+            name=name,
+            type="folder",
+            parent_path=parent_path,
             parent_id=parent_id,
-            metadata=metadata
+            metadata=metadata,
         )
 
     def update(
@@ -110,9 +112,7 @@ class NodesResource(Resource):
         if idempotency_key:
             headers["Idempotency-Key"] = idempotency_key
 
-        data = self.http.request(
-            "PATCH", f"/v1/nodes/{node_id}", json=payload, headers=headers
-        )
+        data = self.http.request("PATCH", f"/v1/nodes/{node_id}", json=payload, headers=headers)
         return Node.model_validate(data["node"])
 
     def rename(self, node_id: str, new_name: str) -> Node:

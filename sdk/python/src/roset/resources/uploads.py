@@ -27,7 +27,7 @@ class UploadsResource:
                 "expiresIn": expires_in,
             },
         )
-        return data["url"]
+        return str(data["url"])
 
     def complete(self, upload_id: str, parts: list[dict[str, Any]]) -> None:
         """Complete a multipart upload."""

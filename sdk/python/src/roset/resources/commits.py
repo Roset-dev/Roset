@@ -67,9 +67,7 @@ class CommitsResource:
     def compare(self, target_id: str, base_id: str) -> CompareResult:
         """Compare two checkpoints."""
         data = self.http.request(
-            "GET",
-            f"/v1/commits/{target_id}/compare",
-            params={"base_id": base_id}
+            "GET", f"/v1/commits/{target_id}/compare", params={"base_id": base_id}
         )
         return CompareResult.model_validate(data)
 

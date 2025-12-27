@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import Any, List
 
 import httpx
 
@@ -47,11 +47,14 @@ class HttpClient:
         path: str,
         json: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """Make an API request and handle errors with retries."""
         for attempt in range(self.max_retries + 1):
             try:
-                response = self._client.request(method, path, json=json, params=params)
+                response = self._client.request(
+                    method, path, json=json, params=params, headers=headers
+                )
 
                 if response.status_code == 404:
                     raise RosetNotFoundError("Resource")
@@ -68,7 +71,7 @@ class HttpClient:
                                 details=data.get("details"),
                             )
                         except ValueError:
-                             response.raise_for_status()
+                            response.raise_for_status()
 
                     # For 5xx or 429, raise to trigger retry
                     response.raise_for_status()
@@ -98,7 +101,7 @@ class HttpClient:
                         code="NETWORK_ERROR",
                     ) from e
 
-                sleep_time = self.backoff_factor * (2 ** attempt)
+                sleep_time = self.backoff_factor * (2**attempt)
                 logger.warning(
                     f"Request failed (attempt {attempt + 1}/{self.max_retries}), "
                     f"retrying in {sleep_time:.2f}s: {e}"

@@ -22,11 +22,7 @@ class OrgResource:
 
     def invite_member(self, email: str, role: str) -> Invitation:
         """Invite a new member."""
-        data = self.http.request(
-            "POST",
-            "/v1/org/invites",
-            json={"email": email, "role": role}
-        )
+        data = self.http.request("POST", "/v1/org/invites", json={"email": email, "role": role})
         return Invitation.model_validate(data["invitation"])
 
     def list_api_keys(self) -> list[ApiKey]:
@@ -38,11 +34,7 @@ class OrgResource:
 
     def create_api_key(self, name: str, scopes: list[str]) -> dict[str, Any]:
         """Create a new API key. Returns dict with ApiKey object and the 'key' (secret)."""
-        data = self.http.request(
-            "POST",
-            "/v1/org/api-keys",
-            json={"name": name, "scopes": scopes}
-        )
+        data = self.http.request("POST", "/v1/org/api-keys", json={"name": name, "scopes": scopes})
         api_key = ApiKey.model_validate(data["apiKey"])
         return {"api_key": api_key, "key": data["key"]}
 

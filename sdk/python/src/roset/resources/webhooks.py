@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List
 
 from roset.http_client import HttpClient
 from roset.models import Webhook, WebhookDelivery
@@ -12,7 +12,7 @@ class WebhooksResource:
     def __init__(self, http: HttpClient):
         self.http = http
 
-    def list(self) -> list[Webhook]:
+    def list(self) -> List[Webhook]:
         """List all webhooks."""
         data = self.http.request("GET", "/v1/webhooks")
         return [Webhook.model_validate(item) for item in data.get("items", [])]
@@ -25,7 +25,7 @@ class WebhooksResource:
     def create(
         self,
         url: str,
-        events: list[str],
+        events: List[str],
         secret: str | None = None,
         description: str | None = None,
         enabled: bool = True,
@@ -48,7 +48,7 @@ class WebhooksResource:
         self,
         webhook_id: str,
         url: str | None = None,
-        events: list[str] | None = None,
+        events: List[str] | None = None,
         secret: str | None = None,
         description: str | None = None,
         enabled: bool | None = None,
@@ -66,9 +66,7 @@ class WebhooksResource:
         if enabled is not None:
             payload["enabled"] = enabled
 
-        data = self.http.request(
-            "PATCH", f"/v1/webhooks/{webhook_id}", json=payload
-        )
+        data = self.http.request("PATCH", f"/v1/webhooks/{webhook_id}", json=payload)
         return Webhook.model_validate(data["webhook"])
 
     def delete(self, webhook_id: str) -> None:
@@ -95,13 +93,11 @@ class WebhooksResource:
         # But existing org.list_members returns list[Member].
         # Let's keep it raw dict for pagination metadata for now, or match TS strictly.
         # Python SDK seems to generally return list[T] and hide pagination or return raw.
-        # Given the explicit page params, returning the raw paginated structure 
+        # Given the explicit page params, returning the raw paginated structure
         # (items, total, has_more) is best.
         return data
 
-    def retry_delivery(
-        self, webhook_id: str, delivery_id: str
-    ) -> WebhookDelivery:
+    def retry_delivery(self, webhook_id: str, delivery_id: str) -> WebhookDelivery:
         """Retry a failed delivery."""
         data = self.http.request(
             "POST",

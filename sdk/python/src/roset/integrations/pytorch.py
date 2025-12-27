@@ -183,8 +183,8 @@ class RosetCheckpointIO(CheckpointIO):
         # 2. Checkpoint Folder = `path` (strip extension)
         # 3. File inside = `path.name` (keep extension)
 
-        ckpt_folder_name = local_path.stem # epoch=0
-        ckpt_parent = str(Path(roset_path).parent) # /checkpoints
+        ckpt_folder_name = local_path.stem  # epoch=0
+        ckpt_parent = str(Path(roset_path).parent)  # /checkpoints
 
         # Checkpoint Folder Path: /checkpoints/epoch=0
         ckpt_roset_path = f"{ckpt_parent}/{ckpt_folder_name}"
@@ -229,7 +229,7 @@ class RosetCheckpointIO(CheckpointIO):
         # It expects to find a file. It will find a directory. `torch.load` might fail.
         # WE override `load_checkpoint`. So we can handle this redirection.
 
-        real_folder_path = local_path # Treat the "file path" as a directory
+        real_folder_path = local_path  # Treat the "file path" as a directory
         real_file_path = real_folder_path / "model.pt"
 
         parent_roset_path = str(Path(roset_path).parent)
@@ -289,5 +289,5 @@ class RosetCheckpointIO(CheckpointIO):
         if node:
             self.client.delete_node(node.id)
         elif os.path.exists(path):
-             # Fallback cleanup for local-only files (unlikely in this integration)
-             shutil.rmtree(path)
+            # Fallback cleanup for local-only files (unlikely in this integration)
+            shutil.rmtree(path)

@@ -19,11 +19,7 @@ class IntegrationsResource:
 
     def connect(self, provider: str, config: dict[str, Any]) -> Integration:
         """Connect a new cloud provider."""
-        data = self.http.request(
-            "POST",
-            "/v1/integrations",
-            json={"provider": provider, **config}
-        )
+        data = self.http.request("POST", "/v1/integrations", json={"provider": provider, **config})
         return Integration.model_validate(data["integration"])
 
     def disconnect(self, integration_id: str) -> None:

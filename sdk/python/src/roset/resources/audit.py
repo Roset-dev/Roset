@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 
 from roset.http_client import HttpClient
-from roset.models import AuditOp
 
 
 class AuditResource:
@@ -34,5 +33,5 @@ class AuditResource:
             params["startDate"] = start_date
         if end_date:
             params["endDate"] = end_date
-            
+
         return self.http.request("GET", "/v1/audit", params=params)

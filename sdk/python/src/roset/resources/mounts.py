@@ -21,7 +21,7 @@ class MountsResource:
         """Get a mount by ID."""
         data = self.http.request("GET", f"/v1/mounts/{mount_id}")
         return Mount.model_validate(data["mount"])
-        
+
     def create(
         self,
         name: str,
@@ -41,7 +41,7 @@ class MountsResource:
             },
         )
         return Mount.model_validate(data["mount"])
-        
+
     def delete(self, mount_id: str) -> None:
         """Delete a mount."""
         self.http.request("DELETE", f"/v1/mounts/{mount_id}")

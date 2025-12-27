@@ -4,13 +4,13 @@ import logging
 from typing import Any
 
 from roset.http_client import HttpClient
+from roset.resources.audit import AuditResource
 from roset.resources.commits import CommitsResource
+from roset.resources.mounts import MountsResource
 from roset.resources.nodes import NodesResource
 from roset.resources.refs import RefsResource
 from roset.resources.search import SearchResource
 from roset.resources.shares import SharesResource
-from roset.resources.audit import AuditResource
-from roset.resources.mounts import MountsResource
 from roset.resources.uploads import UploadsResource
 
 logger = logging.getLogger(__name__)

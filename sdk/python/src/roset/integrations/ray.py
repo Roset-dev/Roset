@@ -14,8 +14,7 @@ try:
     import ray  # noqa: F401 - import for availability check only
 except ImportError as e:
     raise ImportError(
-        "Ray is required for this integration. "
-        "Install with: pip install roset[ray]"
+        "Ray is required for this integration. Install with: pip install roset[ray]"
     ) from e
 
 from roset.client import RosetClient
@@ -109,9 +108,7 @@ class RosetRayTrainCallback:
             rel_path = path.relative_to(self.mount_path)
             roset_path = f"/{rel_path}"
         except ValueError:
-            logger.warning(
-                f"Checkpoint {path} not in mount {self.mount_path}. Skipping commit."
-            )
+            logger.warning(f"Checkpoint {path} not in mount {self.mount_path}. Skipping commit.")
             return None
 
         # Resolve node

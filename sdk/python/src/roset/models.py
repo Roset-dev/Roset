@@ -188,7 +188,6 @@ class CompareResult(BaseModel):
     metrics: dict[str, Any] | None = None
 
 
-
 class Webhook(BaseModel):
     """Webhook endpoint."""
 
@@ -270,4 +269,3 @@ class Mount(BaseModel):
     prefix: str | None = None
     read_only: bool
     created_at: datetime
-
