@@ -9,3 +9,4 @@ def test_admin_init():
 def test_admin_context_manager():
     with RosetAdmin(api_url="https://api.test", api_key="test-key") as admin:
         assert admin.webhooks is not None
+        assert admin.billing is not None
