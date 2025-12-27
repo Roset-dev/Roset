@@ -76,7 +76,7 @@ class HttpClient:
                 if response.status_code == 204:
                     return {}
 
-                return response.json()
+                return dict(response.json())
 
             except (httpx.TransportError, httpx.HTTPStatusError) as e:
                 # Retry on transport errors or 5xx/429

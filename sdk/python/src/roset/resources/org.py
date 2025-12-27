@@ -34,7 +34,9 @@ class OrgResource:
         data = self.http.request("GET", "/v1/org/api-keys")
         return [ApiKey.model_validate(item) for item in data.get("keys", [])]
 
-    def create_api_key(self, name: str, scopes: list[str]) -> dict:
+    from typing import Any
+
+    def create_api_key(self, name: str, scopes: list[str]) -> dict[str, Any]:
         """Create a new API key. Returns dict with ApiKey object and the 'key' (secret)."""
         data = self.http.request(
             "POST",

@@ -22,7 +22,7 @@ class CommitsResource:
         metadata: dict[str, Any] | None = None,
     ) -> Commit:
         """Create a checkpoint."""
-        payload = {"node_id": node_id}
+        payload: dict[str, Any] = {"node_id": node_id}
         if message:
             payload["message"] = message
         if group_id:
