@@ -1,31 +1,35 @@
 """Tests for RosetClient."""
-
 import pytest
-
+from roset import RosetClient, RosetAdmin
+from roset.exceptions import RosetAPIError, RosetNotFoundError
 
 def test_client_init():
-    """Test client initialization."""
-    from roset import Client
+    """Test data plane client initialization."""
+    client = RosetClient(api_url="http://localhost", api_key="test")
+    
+    # Verify Data Plane Resources
+    assert client.nodes is not None
+    assert client.commits is not None
+    assert client.refs is not None
+    assert client.search is not None
 
-    # Would need mock server to test properly
-    # For now just verify import works
-    assert Client is not None
+    # Verify Control Plane Resources are ABSENT
+    assert not hasattr(client, "org")
+    assert not hasattr(client, "integrations")
 
+def test_admin_init():
+    """Test control plane client initialization."""
+    admin = RosetAdmin(api_url="http://localhost", api_key="test")
+    
+    # Verify Control Plane Resources
+    assert admin.org is not None
+    assert admin.integrations is not None
 
-def test_models_import():
-    """Test models can be imported."""
-    from roset.models import Commit, CommitGroup, Node, Ref
-
-    assert Node is not None
-    assert Commit is not None
-    assert CommitGroup is not None
-    assert Ref is not None
-
+    # Verify Data Plane Resources are ABSENT
+    assert not hasattr(admin, "nodes")
+    assert not hasattr(admin, "commits")
 
 def test_exceptions_import():
     """Test exceptions can be imported."""
-    from roset.exceptions import RosetAPIError, RosetError, RosetNotFoundError
-
-    assert RosetError is not None
     assert RosetAPIError is not None
     assert RosetNotFoundError is not None
