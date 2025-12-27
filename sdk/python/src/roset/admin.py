@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 from roset.http_client import HttpClient
+from roset.resources.billing import BillingResource
 from roset.resources.integrations import IntegrationsResource
 from roset.resources.org import OrgResource
 from roset.resources.webhooks import WebhooksResource
@@ -43,6 +44,7 @@ class RosetAdmin:
         self.org = OrgResource(self._http)
         self.integrations = IntegrationsResource(self._http)
         self.webhooks = WebhooksResource(self._http)
+        self.billing = BillingResource(self._http)
 
     def close(self) -> None:
         """Close the HTTP client."""
@@ -53,3 +55,4 @@ class RosetAdmin:
 
     def __exit__(self, *args: Any) -> None:
         self.close()
+

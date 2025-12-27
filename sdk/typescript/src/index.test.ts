@@ -43,6 +43,7 @@ describe('Roset SDK', () => {
       const admin = new RosetAdmin(config);
       expect(admin.org).toBeDefined();
       expect(admin.integrations).toBeDefined();
+      expect(admin.billing).toBeDefined();
     });
   });
 });

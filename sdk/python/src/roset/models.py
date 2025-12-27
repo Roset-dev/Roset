@@ -269,3 +269,58 @@ class Mount(BaseModel):
     prefix: str | None = None
     read_only: bool
     created_at: datetime
+
+
+# ============================================================================
+# Billing
+# ============================================================================
+
+
+class BillingUsage(BaseModel):
+    """Current usage statistics."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    managed_files: int
+    api_calls: int
+    mount_ops: int
+    connectors: int
+    active_devices: int
+    team_members: int
+
+
+class BillingLimits(BaseModel):
+    """Plan limits."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    api_calls: int | float  # float for Infinity
+    managed_files: int | float
+    connectors: int | float
+    active_devices: int | float
+    mount_ops: int | float
+    team_members: int | float
+
+
+class BillingInfo(BaseModel):
+    """Full billing information."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    plan: Literal["free", "starter", "team", "scale", "enterprise"]
+    usage: BillingUsage
+    limits: BillingLimits
+    period_end: datetime
+
+
+class QuotaStatus(BaseModel):
+    """Quota usage status."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    used: int
+    limit: int | float
+    remaining: int | float
+    percent_used: float
+    is_exceeded: bool
+

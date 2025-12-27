@@ -361,6 +361,45 @@ export interface SearchFilters {
 }
 
 // ============================================================================
+// Billing Types
+// ============================================================================
+
+export type PlanTier = "free" | "starter" | "team" | "scale" | "enterprise";
+
+export interface BillingUsage {
+  managedFiles: number;
+  apiCalls: number;
+  mountOps: number;
+  connectors: number;
+  activeDevices: number;
+  teamMembers: number;
+}
+
+export interface BillingLimits {
+  apiCalls: number;
+  managedFiles: number;
+  connectors: number;
+  activeDevices: number;
+  mountOps: number;
+  teamMembers: number;
+}
+
+export interface BillingInfo {
+  plan: PlanTier;
+  usage: BillingUsage;
+  limits: BillingLimits;
+  periodEnd: string;
+}
+
+export interface QuotaStatus {
+  used: number;
+  limit: number;
+  remaining: number;
+  percentUsed: number;
+  isExceeded: boolean;
+}
+
+// ============================================================================
 // API Response Types
 // ============================================================================
 

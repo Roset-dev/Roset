@@ -3,6 +3,7 @@ import { OrgResource } from "./resources/org.js";
 import { IntegrationsResource } from "./resources/integrations.js";
 import { WebhooksResource } from "./resources/webhooks.js";
 import { SharesResource } from "./resources/shares.js";
+import { BillingResource } from "./resources/billing.js";
 import type { RosetClientConfig } from "./types.js";
 
 /**
@@ -25,6 +26,9 @@ export class RosetAdmin {
   /** Shares resource - active share/link management */
   public readonly shares: SharesResource;
 
+  /** Billing resource - plan, usage, and limits */
+  public readonly billing: BillingResource;
+
   constructor(config: RosetClientConfig) {
     if (!config.baseUrl) {
       throw new Error("baseUrl is required");
@@ -41,5 +45,7 @@ export class RosetAdmin {
     this.integrations = new IntegrationsResource(this.http, config);
     this.webhooks = new WebhooksResource(this.http, config);
     this.shares = new SharesResource(this.http, config);
+    this.billing = new BillingResource(this.http, config);
   }
 }
+
