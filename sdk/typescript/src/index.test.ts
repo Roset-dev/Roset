@@ -22,6 +22,8 @@ describe('Roset SDK', () => {
       expect(client.commits).toBeDefined();
       expect(client.refs).toBeDefined();
       expect(client.search).toBeDefined();
+      expect(client.nodes.deleteMany).toBeDefined();
+      expect(client.nodes.moveMany).toBeDefined();
     });
 
     it('should NOT have admin resources', () => {

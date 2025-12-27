@@ -348,6 +348,7 @@ export interface SearchResult {
 }
 
 export interface SearchFilters {
+  mode?: 'metadata' | 'fulltext';
   type?: 'file' | 'folder';
   parentId?: string;
   extensions?: string[];

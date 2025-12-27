@@ -33,6 +33,7 @@ export class SearchResource {
     if (!filters) return {};
     
     const result: Record<string, string> = {};
+    if (filters.mode) result.mode = filters.mode;
     if (filters.type) result.type = filters.type;
     if (filters.parentId) result.parent_id = filters.parentId;
     if (filters.extensions) result.extensions = filters.extensions.join(',');

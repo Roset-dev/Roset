@@ -214,4 +214,26 @@ export class NodesResource {
   async restore(id: string, options?: RequestOptions): Promise<Node> {
     return this.http.post<Node>(`/v1/nodes/${id}/restore`, undefined, options);
   }
+
+  /**
+   * Batch delete nodes
+   */
+  async deleteMany(ids: string[], options?: RequestOptions): Promise<void> {
+    await this.http.post("/v1/nodes/batch/delete", { ids }, options);
+  }
+
+  /**
+   * Batch move nodes
+   */
+  async moveMany(
+    ids: string[],
+    newParentId: string,
+    options?: RequestOptions
+  ): Promise<Node[]> {
+    return this.http.post<Node[]>(
+      "/v1/nodes/batch/move",
+      { ids, parentId: newParentId },
+      options
+    );
+  }
 }
