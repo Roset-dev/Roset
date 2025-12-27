@@ -31,45 +31,45 @@ curl https://api.roset.dev/v1/nodes \
 
 ### Nodes
 
-- `POST /v1/resolve` — Batch resolve paths
-- `GET /v1/nodes/:id` — Get node metadata
-- `GET /v1/nodes/:id/children` — List children
-- `POST /v1/nodes` — Create file/folder
-- `PATCH /v1/nodes/:id` — Rename/move
-- `DELETE /v1/nodes/:id` — Soft delete
-- `POST /v1/nodes/:id/restore` — Restore from trash
+- `POST /v1/resolve` : Batch resolve paths
+- `GET /v1/nodes/:id` : Get node metadata
+- `GET /v1/nodes/:id/children` : List children
+- `POST /v1/nodes` : Create file/folder
+- `PATCH /v1/nodes/:id` : Rename/move
+- `DELETE /v1/nodes/:id` : Soft delete
+- `POST /v1/nodes/:id/restore` : Restore from trash
 
 ### Uploads
 
-- `POST /v1/uploads/init` — Initialize upload
-- `POST /v1/uploads/commit` — Finalize upload
-- `GET /v1/nodes/:id/download` — Get download URL
+- `POST /v1/uploads/init` : Initialize upload
+- `POST /v1/uploads/commit` : Finalize upload
+- `GET /v1/nodes/:id/download` : Get download URL
 
 ### Shares
 
-- `POST /v1/shares` — Create share link
-- `GET /v1/shares/:token` — Get share info
-- `DELETE /v1/shares/:token` — Revoke share
+- `POST /v1/shares` : Create share link
+- `GET /v1/shares/:token` : Get share info
+- `DELETE /v1/shares/:token` : Revoke share
 
 ### Mounts
 
-- `GET /v1/mounts` — List mounts
-- `POST /v1/mounts` — Create mount
-- `PATCH /v1/mounts/:id` — Update mount
-- `DELETE /v1/mounts/:id` — Delete mount
+- `GET /v1/mounts` : List mounts
+- `POST /v1/mounts` : Create mount
+- `PATCH /v1/mounts/:id` : Update mount
+- `DELETE /v1/mounts/:id` : Delete mount
 
 ### Leases
 
-- `POST /v1/nodes/:id/lease` — Acquire lease
-- `PATCH /v1/nodes/:id/lease` — Renew lease
-- `DELETE /v1/nodes/:id/lease` — Release lease
+- `POST /v1/nodes/:id/lease` : Acquire lease
+- `PATCH /v1/nodes/:id/lease` : Renew lease
+- `DELETE /v1/nodes/:id/lease` : Release lease
 
 ### Search
 
-- `GET /v1/search` — Search nodes
-- `GET /v1/search/quick` — Quick search
+- `GET /v1/search` : Search nodes
+- `GET /v1/search/quick` : Quick search
 
 ### Audit
 
-- `GET /v1/audit` — Query audit log
-- `GET /v1/audit/export` — Export audit log
+- `GET /v1/audit` : Query audit log
+- `GET /v1/audit/export` : Export audit log

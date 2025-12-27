@@ -1,6 +1,6 @@
 # Roset Semantics
 
-This document defines the explicit behavioral contract for Roset — what it does and doesn't support.
+This document defines the explicit behavioral contract for Roset: what it does and doesn't support.
 
 ## Core Model
 
@@ -162,8 +162,8 @@ All node mutations use `SERIALIZABLE` isolation or `FOR UPDATE` locks to prevent
 
 The Roset API follows these principles:
 
-1. **Node IDs are stable** — use them for bookmarks, not paths
-2. **Paths are for humans** — use resolution API, expect cache lag
-3. **All writes are idempotent** — use `Idempotency-Key` header
-4. **Errors are structured** — machine-readable `code` + human-readable `message`
-5. **Pagination is cursor-based** — use `?cursor=` for large lists
+1. **Node IDs are stable** : use them for bookmarks, not paths
+2. **Paths are for humans** : use resolution API, expect cache lag
+3. **All writes are idempotent** : use `Idempotency-Key` header
+4. **Errors are structured** : machine-readable `code` + human-readable `message`
+5. **Pagination is cursor-based** : use `?cursor=` for large lists

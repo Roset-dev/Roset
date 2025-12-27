@@ -296,6 +296,48 @@ export interface Integration {
 }
 
 // ============================================================================
+// Mount Types
+// ============================================================================
+
+export interface Mount {
+  id: string;
+  tenantId: string;
+  name: string;
+  provider: "s3" | "r2" | "minio" | "gcs" | "azure";
+  bucket: string;
+  region: string | null;
+  basePrefix: string;
+  endpoint: string | null;
+  isDefault: boolean;
+  retentionDays: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MountRetentionInfo {
+  retentionDays: number | null;
+  trashCount: number;
+  oldestTrash: string | null;
+}
+
+export interface CreateMountOptions {
+  name: string;
+  provider: "s3" | "r2" | "minio" | "gcs" | "azure";
+  bucket: string;
+  region?: string;
+  basePrefix?: string;
+  endpoint?: string;
+  isDefault?: boolean;
+  retentionDays?: number;
+}
+
+export interface UpdateMountOptions {
+  name?: string;
+  isDefault?: boolean;
+  retentionDays?: number | null;
+}
+
+// ============================================================================
 // Search Types
 // ============================================================================
 

@@ -7,13 +7,13 @@ import {
 
 # Uploads API
 
-The Uploads API handles file data uploads using a two-phase commit pattern. Roset never proxies file data—clients upload directly to storage using signed URLs.
+The Uploads API handles file data uploads using a two-phase commit pattern. Roset never proxies file data: clients upload directly to storage using signed URLs.
 
 ## Upload Flow
 
-1. **Init** — Request a signed upload URL from Roset
-2. **Upload** — Upload file data directly to storage (S3/R2/MinIO)
-3. **Commit** — Notify Roset that upload is complete with the ETag
+1. **Init** : Request a signed upload URL from Roset
+2. **Upload** : Upload file data directly to storage (S3/R2/MinIO)
+3. **Commit** : Notify Roset that upload is complete with the ETag
 
 ## Initialize Upload
 

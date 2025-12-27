@@ -1,35 +1,18 @@
-# Roset Python SDK
+# <img src="../../logo.png" width="32" height="32" align="center" /> Roset Python SDK
 
-[![PyPI version](https://badge.fury.io/py/roset.svg)](https://badge.fury.io/py/roset)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Atomic checkpoints for ML training. Never lose a checkpoint to corrupt uploads again.
 
-**Atomic checkpoints for ML training. Never lose a checkpoint again.**
+## Why Roset?
 
-Roset is a filesystem for object storage that guarantees:
-
-- ✅ **Atomic commits** – Checkpoints are either fully written or not visible
-- ✅ **Resume always works** – The `latest` pointer only updates after successful commit
-- ✅ **Multi-cloud** – Works with S3, R2, MinIO, GCS
-- ✅ **One-line integration** – Drop-in support for PyTorch Lightning, HuggingFace, and Ray
+Object storage is eventually consistent and lacks atomic directory moves. Roset adds a metadata layer that guarantees:
+- ✅ **Atomic Commits** - Checkpoints are 100% visible or not at all.
+- ✅ **Resume Always Works** - `latest` pointer only updates after successful flush.
+- ✅ **One-Line Integration** - Native support for PyTorch Lightning and HuggingFace.
 
 ## Installation
 
 ```bash
-# Base SDK
 pip install roset
-
-# With PyTorch Lightning
-pip install roset[pytorch]
-
-# With HuggingFace Transformers
-pip install roset[huggingface]
-
-# With Ray Train
-pip install roset[ray]
-
-# All integrations
-pip install roset[all]
 ```
 
 ## Quick Start
@@ -37,54 +20,17 @@ pip install roset[all]
 ```python
 import roset
 
-# Initialize client
-client = roset.Client(
-    api_url="https://api.roset.dev",
-    api_key="rsk_...",
-)
+client = roset.Client(api_key="rk_...")
 
-# Create a checkpoint folder
-folder = client.create_folder("/checkpoints", "step-1000")
+# Create an atomic checkpoint group
+checkpoint = client.create_folder("/training", "step-5000")
 
-# Commit atomically (async, ~50ms)
-commit = client.commit(folder.id, message="Training step 1000")
-commit = client.wait_for_commit(commit.id)
-
-# Update "latest" pointer atomically
-client.update_ref("latest", commit.id)
+# After writing bytes...
+client.commit(checkpoint.id)
+client.update_ref("latest", checkpoint.id)
 ```
 
-## PyTorch Lightning Integration
-
-```python
-from roset import Client
-from roset.integrations.pytorch import RosetCheckpointIO
-from pytorch_lightning import Trainer
-
-client = Client(api_url="...", api_key="...")
-
-trainer = Trainer(
-    plugins=[RosetCheckpointIO(
-        client=client,
-        mount_path="/mnt/roset",
-        checkpoint_dir="/checkpoints",
-        update_ref="latest",  # Atomic pointer update after each save
-    )]
-)
-
-# Resume from latest – always works!
-trainer.fit(model, ckpt_path="latest")
-```
-
-### The Guarantee
-
-```
-Before Roset:
-  save() → crash → corrupt checkpoint → training lost
-
-With Roset:
-  save() → crash → latest still points to previous good checkpoint → resume works
-```
+[Python SDK Docs](https://docs.roset.dev/sdk/python)
 
 ## HuggingFace Transformers Integration
 

@@ -3,45 +3,7 @@
  */
 
 import { HttpClient } from "../http.js";
-import type { RosetClientConfig, RequestOptions } from "../types.js";
-
-export interface Mount {
-  id: string;
-  tenantId: string;
-  name: string;
-  provider: "s3" | "r2" | "minio" | "gcs" | "azure";
-  bucket: string;
-  region: string | null;
-  basePrefix: string;
-  endpoint: string | null;
-  isDefault: boolean;
-  retentionDays: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface MountRetentionInfo {
-  retentionDays: number | null;
-  trashCount: number;
-  oldestTrash: string | null;
-}
-
-export interface CreateMountOptions {
-  name: string;
-  provider: "s3" | "r2" | "minio" | "gcs" | "azure";
-  bucket: string;
-  region?: string;
-  basePrefix?: string;
-  endpoint?: string;
-  isDefault?: boolean;
-  retentionDays?: number;
-}
-
-export interface UpdateMountOptions {
-  name?: string;
-  isDefault?: boolean;
-  retentionDays?: number | null;
-}
+import type { RosetClientConfig, RequestOptions, Mount, MountRetentionInfo, CreateMountOptions, UpdateMountOptions } from "../types.js";
 
 export class MountsResource {
   constructor(

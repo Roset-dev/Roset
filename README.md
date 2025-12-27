@@ -1,86 +1,32 @@
-# <img src="./core/apps/docs/public/logos/logo-white.png" width="32" height="32" align="center" /> Roset
+# <img src="./logo.png" width="32" height="32" align="center" /> Roset
 
-**The filesystem for object storage.**
+**Filesystem semantics for object storage.**
 
-Roset provides filesystem semantics (folders, atomic moves, permissions) on top of any object storage (S3, Google Cloud Storage, Azure Blob, R2, MinIO, etc.).
+Roset adds a metadata layer to any S3-compatible bucket (S3, R2, GCS, MinIO). Move folders instantly, manage permissions, and mount your data as a disk: while your bytes stay in your own bucket.
 
-## What's in this repo?
+## Components
 
-This is the **public open-source** monorepo for Roset. It contains:
+- **[`sdk/typescript`](./sdk/typescript)** - Modern SDK for web & backend
+- **[`sdk/python`](./sdk/python)** - Python SDK with ML training integrations
+- **[`cli/`](./cli)** - Management CLI for developers
+- **[`fuse/`](./fuse)** - High-performance FUSE client (Rust)
+- **[`csi/`](./csi)** - Kubernetes CSI driver
 
-- **`core/packages/sdk`** - TypeScript SDK for interacting with Roset
-- **`core/apps/docs`** - Documentation site
-- **`fuse/`** - FUSE client for mounting Roset as a filesystem
-
-## Getting Started
-
-```bash
-# Install dependencies
-pnpm install
-
-# Run docs site
-pnpm dev --filter docs
-
-# Build SDK
-pnpm build --filter @roset/sdk
-
-# Build UI library
-pnpm build --filter @roset/ui
-```
-
-## Documentation
-
-Visit our [documentation site](https://docs.roset.dev) (coming soon) for:
-- **Quickstart guides**
-- **API reference**
-- **SDK documentation**
-- **FUSE client setup**
-
-## Architecture
-
-Roset wraps object storage with a metadata layer that provides:
-
-- **Real folders** - Not simulated with prefixes
-- **Atomic operations** - Move/rename without copying bytes
-- **Access control** - Inherited permissions
-- **Versioning** - Track file history
-- **POSIX-like interface** - Mount with FUSE
-
-## Packages
-
-### [@roset/sdk](./core/packages/sdk)
-
-TypeScript SDK for interacting with the Roset API.
-
-```typescript
-import { RosetClient } from '@roset/sdk';
-
-const client = new RosetClient({
-  baseUrl: 'https://api.roset.dev',
-  apiKey: 'rk_...'
-});
-
-const file = await client.uploads.upload('/documents/report.pdf', buffer);
-```
-
-### [FUSE Client](./fuse)
-
-Mount Roset as a local filesystem.
+## Usage
 
 ```bash
-roset-fuse mount /mnt/roset --api-key rk_...
+# Build all components
+pnpm install && pnpm build
 ```
 
-## Contributing
+## How it works
 
-We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for details.
+1. **Control Plane** - Roset manages the namespace (paths, folders, ACLs).
+2. **Data Plane** - Clients get signed URLs to talk directly to your storage provider.
+3. **Correctness** - Renames and moves are atomic O(1) metadata updates.
 
-## License
+## Resources
 
-[MIT](./LICENSE) - See LICENSE file for details.
-
-## Links
-
-- **Website**: [roset.dev](https://roset.dev) (coming soon)
-- **Documentation**: [docs.roset.dev](https://docs.roset.dev) (coming soon)
-- **Issues**: [GitHub Issues](https://github.com/your-org/roset/issues)
+- [Website](https://www.roset.dev)
+- [Console](https://console.roset.dev)
+- [Documentation](https://docs.roset.dev)

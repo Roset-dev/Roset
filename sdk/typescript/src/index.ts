@@ -63,6 +63,9 @@ export type {
   Invitation,
   ApiKey,
   Integration,
+  Mount,
+  CreateMountOptions,
+  UpdateMountOptions,
   SearchResult,
   SearchFilters,
 } from "./types.js";

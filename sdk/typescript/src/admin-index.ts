@@ -22,5 +22,16 @@ export type {
   Member,
   Invitation,
   ApiKey,
-  Integration
+  Integration,
 } from "./types.js";
+
+// Errors
+export {
+  RosetError,
+  NotFoundError,
+  ForbiddenError,
+  ConflictError,
+  ValidationError,
+  RateLimitError,
+} from "./errors.js";
+
