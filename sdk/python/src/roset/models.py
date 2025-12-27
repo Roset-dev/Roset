@@ -302,6 +302,24 @@ class BillingLimits(BaseModel):
     team_members: int | float
 
 
+class TrendMetric(BaseModel):
+    """Trend statistics."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    growth: float
+    history: list[float]
+
+
+class BillingTrend(BaseModel):
+    """Usage trends."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    managed_files: TrendMetric | None = None
+    api_calls: TrendMetric | None = None
+
+
 class BillingInfo(BaseModel):
     """Full billing information."""
 
@@ -310,6 +328,7 @@ class BillingInfo(BaseModel):
     plan: Literal["free", "starter", "team", "scale", "enterprise"]
     usage: BillingUsage
     limits: BillingLimits
+    trend: BillingTrend | None = None
     period_end: datetime
 
 

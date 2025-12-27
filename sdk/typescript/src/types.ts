@@ -384,10 +384,22 @@ export interface BillingLimits {
   teamMembers: number;
 }
 
+export interface BillingTrend {
+  managedFiles?: {
+    growth: number;
+    history: number[];
+  };
+  apiCalls?: {
+    growth: number;
+    history: number[];
+  };
+}
+
 export interface BillingInfo {
   plan: PlanTier;
   usage: BillingUsage;
   limits: BillingLimits;
+  trend?: BillingTrend;
   periodEnd: string;
 }
 
