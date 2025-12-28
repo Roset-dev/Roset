@@ -1,12 +1,15 @@
 const withNextra = require('nextra')({
   theme: 'nextra-theme-docs',
   themeConfig: './theme.config.tsx',
+  // Disable Nextra's built-in Shiki syntax highlighting
+  // This allows our custom CodeBlock component to handle all code blocks
+  codeHighlight: false,
 })
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@roset/ui'],
+  transpilePackages: [],
   
   // Redirects from old Mintlify URLs
   async redirects() {

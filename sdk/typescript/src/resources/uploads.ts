@@ -147,14 +147,20 @@ export class UploadsResource {
       options
     );
 
+    const headers: Record<string, string> = {
+      "Content-Type": contentType,
+    };
+
+    // Only set Content-Length in Node.js (browsers forbid this header)
+    if (typeof globalThis.window === "undefined") {
+      headers["Content-Length"] = String(size);
+    }
+
     // Step 2: Upload to storage
     const uploadResponse = await this.fetchFn(uploadUrl, {
       method: "PUT",
-      body: data,
-      headers: {
-        "Content-Type": contentType,
-        "Content-Length": String(size),
-      },
+      body: data as BodyInit,
+      headers,
     });
 
     if (!uploadResponse.ok) {

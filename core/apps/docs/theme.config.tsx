@@ -1,6 +1,5 @@
 import React from 'react'
 import { DocsThemeConfig } from 'nextra-theme-docs'
-import { Search } from '@roset/ui'
 import { MDXComponents } from './components/MDXComponents'
 
 const config: DocsThemeConfig = {
@@ -18,7 +17,17 @@ const config: DocsThemeConfig = {
   },
   docsRepositoryBase: 'https://github.com/Roset-dev/roset/tree/main/core/apps/docs',
   footer: {
-    text: `© ${new Date().getFullYear()} Roset. All rights reserved.`,
+    text: (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/logos/logo-white-no-bg.png" alt="Roset Logo" width="16" height="16" />
+          <span style={{ fontWeight: 600 }}>Roset</span>
+        </div>
+        <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', opacity: 0.5 }}>
+          © {new Date().getFullYear()} THE FIELD RESOLUTION CORE. ALL RIGHTS RESERVED.
+        </span>
+      </div>
+    ),
   },
   head: (
     <>
@@ -63,7 +72,7 @@ const config: DocsThemeConfig = {
     next: true,
   },
   search: {
-    component: <Search />,
+    placeholder: 'Search documentation...',
   },
   darkMode: true,
   nextThemes: {

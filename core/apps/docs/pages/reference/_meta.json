@@ -1,5 +1,3 @@
 {
-  "semantics": "Semantics",
-  "checkpoint-contract": "Checkpoint Safety Contract",
-  "errors": "Error Codes"
+  "api": "API Reference"
 }

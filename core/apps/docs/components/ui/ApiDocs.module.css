@@ -1,0 +1,149 @@
+.endpoint {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  margin: 2rem 0;
+  overflow: hidden;
+}
+
+.header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background-color: rgba(255, 255, 255, 0.01);
+}
+
+.route {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.method {
+  min-width: 60px;
+  text-align: center;
+}
+
+.path {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-foreground);
+  background: none;
+  padding: 0;
+}
+
+.description {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-muted-foreground);
+  line-height: 1.5;
+}
+
+.body {
+  padding: 1.5rem;
+}
+
+.paramSection {
+  margin-top: 1.5rem;
+}
+
+.paramSection:first-child {
+  margin-top: 0;
+}
+
+.paramTitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+}
+
+.paramTableWrapper {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.paramTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.paramTable th {
+  background-color: rgba(255, 255, 255, 0.02);
+  padding: 10px 12px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.paramTable td {
+  padding: 12px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.paramTable tr:last-child td {
+  border-bottom: none;
+}
+
+.paramName {
+  white-space: nowrap;
+}
+
+.paramName code {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.required {
+  color: var(--color-error);
+  margin-left: 2px;
+  font-weight: 700;
+}
+
+.paramType code {
+  color: var(--color-muted-foreground);
+}
+
+.paramDesc {
+  color: var(--color-foreground);
+  line-height: 1.5;
+}
+
+.defaultValue {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-secondary-foreground);
+}
+
+.example {
+  margin-top: 1.5rem;
+}
+
+.exampleHeader {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exampleHeader code {
+  color: var(--color-foreground);
+}
+
+.exampleDesc {
+  font-weight: 400;
+  color: var(--color-secondary-foreground);
+}
+
+.exampleCode {
+  margin-top: 0 !important;
+}

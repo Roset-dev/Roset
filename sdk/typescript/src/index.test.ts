@@ -26,6 +26,27 @@ describe('Roset SDK', () => {
       expect(client.nodes.moveMany).toBeDefined();
     });
 
+    it('should have core FS convenience methods', () => {
+      const client = new RosetClient(config);
+      expect(client.nodes.list).toBeDefined();
+      expect(client.nodes.stat).toBeDefined();
+      expect(client.nodes.exists).toBeDefined();
+      expect(client.nodes.mkdirp).toBeDefined();
+    });
+
+    it('should support mount and tenant scoping', () => {
+      const client = new RosetClient({ ...config, tenantId: 'tenant-1', mountId: 'mount-1' });
+      expect(client.tenantId).toBe('tenant-1');
+      expect(client.mountId).toBe('mount-1');
+
+      const scopedClient = client.useMount('mount-2');
+      expect(scopedClient.mountId).toBe('mount-2');
+      expect(scopedClient.tenantId).toBe('tenant-1');
+
+      const tenantClient = client.useTenant('tenant-2');
+      expect(tenantClient.tenantId).toBe('tenant-2');
+    });
+
     it('should NOT have admin resources', () => {
       const client = new RosetClient(config);
       expect((client as unknown as Record<string, unknown>).org).toBeUndefined();

@@ -13,7 +13,7 @@ export interface RosetClientConfig {
   /** API key for authentication */
   apiKey: string;
 
-  /** Default tenant ID (optional if using tenant-scoped API keys) */
+  /** Default tenant ID (optional, derived from API key if not specified) */
   tenantId?: string;
 
   /** Default mount ID (optional, uses default mount if not specified) */

@@ -3,8 +3,6 @@ title: File Leases
 description: "Acquire exclusive or shared locks for concurrent access control"
 ---
 
-import { Callout } from "@roset/ui";
-
 # File Leases
 
 Leases provide advisory locking for concurrent file access. Use them when multiple clients may write to the same file.
@@ -19,8 +17,6 @@ Leases provide advisory locking for concurrent file access. Use them when multip
 ## Acquire a Lease
 
 ```typescript
-import { RosetClient } from "@roset/sdk";
-
 const client = new RosetClient({
   baseUrl: "https://api.roset.dev",
   apiKey: "rsk_live_...",

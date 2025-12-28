@@ -95,7 +95,7 @@ export class RosetClient {
    * @example
    * ```ts
    * const s3Client = client.useMount('mount-id-here');
-   * await s3Client.nodes.list('/');
+   * const { items } = await s3Client.nodes.list('/');
    * ```
    */
   useMount(mountId: string): RosetClient {
@@ -116,4 +116,3 @@ export class RosetClient {
     });
   }
 }
-

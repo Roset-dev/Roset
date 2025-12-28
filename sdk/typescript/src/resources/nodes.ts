@@ -300,8 +300,106 @@ export class NodesResource {
    * console.log(`Permanently deleted ${deletedCount} items`);
    * ```
    */
+  /**
+   * Empty trash (permanently delete all trashed items)
+   * 
+   * @returns The count of items deleted
+   * 
+   * @example
+   * ```typescript
+   * const { deletedCount } = await client.nodes.emptyTrash();
+   * console.log(`Permanently deleted ${deletedCount} items`);
+   * ```
+   */
   async emptyTrash(options?: RequestOptions): Promise<{ deletedCount: number }> {
     return this.http.delete<{ deletedCount: number }>("/v1/trash", options);
+  }
+
+  // ============================================================================
+  // Convenience Core FS Operations
+  // ============================================================================
+
+  /**
+   * List children at a path (convenience wrapper around resolve + listChildren)
+   * 
+   * @example
+   * ```typescript
+   * const { items } = await client.nodes.list('/documents');
+   * ```
+   */
+  async list(
+    path: string,
+    options?: ListChildrenOptions & RequestOptions
+  ): Promise<PaginatedResult<Node>> {
+    const node = await this.resolvePath(path, options);
+    if (!node) {
+      throw new Error(`Path not found: ${path}`);
+    }
+    return this.listChildren(node.id, options);
+  }
+
+  /**
+   * Stat a node by path (get metadata without children)
+   * 
+   * @example
+   * ```typescript
+   * const node = await client.nodes.stat('/documents/report.pdf');
+   * ```
+   */
+  async stat(path: string, options?: RequestOptions): Promise<Node | null> {
+    return this.resolvePath(path, options);
+  }
+
+  /**
+   * Check if a path exists
+   * 
+   * @example
+   * ```typescript
+   * if (await client.nodes.exists('/documents')) { ... }
+   * ```
+   */
+  async exists(path: string, options?: RequestOptions): Promise<boolean> {
+    const node = await this.resolvePath(path, options);
+    return !!node;
+  }
+
+  /**
+   * Create nested folder structure (like mkdir -p)
+   * 
+   * @example
+   * ```typescript
+   * await client.nodes.mkdirp('/projects/2025/q1');
+   * ```
+   */
+  async mkdirp(path: string, options?: RequestOptions): Promise<Node> {
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    const parts = normalizedPath.split("/").filter(Boolean);
+    
+    let currentPath = "";
+    let lastNode: Node | null = null;
+
+    for (const part of parts) {
+      currentPath += `/${part}`;
+      const existing = await this.resolvePath(currentPath, options);
+      
+      if (existing) {
+        if (existing.type !== "folder") {
+          throw new Error(`Path component is not a folder: ${currentPath}`);
+        }
+        lastNode = existing;
+      } else {
+        lastNode = await this.createFolder(part, {
+          parentId: lastNode?.id,
+          ...options,
+        });
+      }
+    }
+
+    if (!lastNode) {
+      throw new Error("Failed to create folder structure");
+    }
+
+    return lastNode;
   }
 }
 

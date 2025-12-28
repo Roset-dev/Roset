@@ -8,10 +8,13 @@ import { RosetError, parseApiError, RateLimitError } from "./errors.js";
 const DEFAULT_TIMEOUT = 30000;
 const DEFAULT_RETRIES = 3;
 const RETRY_DELAYS = [100, 500, 1000]; // Exponential-ish backoff
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 export class HttpClient {
   private readonly baseUrl: string;
   private readonly apiKey: string;
+  private readonly tenantId?: string;
+  private readonly mountId?: string;
   private readonly timeout: number;
   private readonly maxRetries: number;
   private readonly fetchFn: typeof globalThis.fetch;
@@ -19,6 +22,8 @@ export class HttpClient {
   constructor(config: RosetClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, ""); // Remove trailing slash
     this.apiKey = config.apiKey;
+    this.tenantId = config.tenantId;
+    this.mountId = config.mountId;
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
     this.maxRetries = config.retries ?? DEFAULT_RETRIES;
     this.fetchFn = config.fetch ?? globalThis.fetch;
@@ -74,6 +79,14 @@ export class HttpClient {
       ...options?.headers,
     };
 
+    // Add tenant and mount context headers
+    if (this.tenantId) {
+      headers["X-Roset-Tenant-Id"] = this.tenantId;
+    }
+    if (this.mountId) {
+      headers["X-Roset-Mount-Id"] = this.mountId;
+    }
+
     if (options?.idempotencyKey) {
       headers["Idempotency-Key"] = options.idempotencyKey;
     }
@@ -128,8 +141,12 @@ export class HttpClient {
             continue;
           }
 
-          // Retry on 5xx errors
-          if (response.status >= 500 && attempt < this.maxRetries) {
+          // Retry on 5xx errors (only if safe or idempotent)
+          if (
+            response.status >= 500 &&
+            attempt < this.maxRetries &&
+            this.isSafeToRetry(method, options)
+          ) {
             await this.sleep(RETRY_DELAYS[attempt] ?? 1000);
             lastError = error;
             continue;
@@ -144,8 +161,12 @@ export class HttpClient {
           throw error;
         }
 
-        // Retry on network errors
-        if (this.isRetryableError(error) && attempt < this.maxRetries) {
+        // Retry on network errors (only if safe or idempotent)
+        if (
+          this.isRetryableError(error) &&
+          attempt < this.maxRetries &&
+          this.isSafeToRetry(method, options)
+        ) {
           await this.sleep(RETRY_DELAYS[attempt] ?? 1000);
           lastError = error instanceof Error ? error : new Error(String(error));
           continue;
@@ -190,6 +211,23 @@ export class HttpClient {
       signal.addEventListener("abort", () => controller.abort(), { once: true });
     }
     return controller.signal;
+  }
+
+  /**
+   * Check if a request is safe to retry.
+   * Safe methods (GET, HEAD, OPTIONS) can always be retried.
+   * Unsafe methods (POST, PUT, PATCH, DELETE) need an idempotency key.
+   */
+  private isSafeToRetry(method: string, options?: RequestOptions): boolean {
+    if (SAFE_METHODS.has(method)) {
+      return true;
+    }
+    // DELETE is considered idempotent by HTTP spec, so allow retries
+    if (method === "DELETE") {
+      return true;
+    }
+    // For POST/PUT/PATCH, only retry if idempotency key is present
+    return !!options?.idempotencyKey;
   }
 }
 

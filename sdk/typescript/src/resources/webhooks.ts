@@ -127,6 +127,7 @@ export class WebhooksResource {
         enabled: options.enabled ?? true,
       },
       {
+        ...options,
         idempotencyKey: options.idempotencyKey ?? generateIdempotencyKey(),
       }
     );

@@ -1,0 +1,160 @@
+.wrapper {
+  background-color: #000;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-family: var(--font-mono);
+  margin: 1.5rem 0;
+}
+
+.header {
+  padding: 8px 12px;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted-foreground);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.terminalIcon {
+  color: var(--color-primary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionButton {
+  color: var(--color-muted-foreground);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionButton:hover {
+  background-color: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+.copied {
+  color: var(--color-success) !important;
+}
+
+.pre {
+  padding: 16px;
+  margin: 0;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.pre code {
+  color: var(--color-foreground);
+  text-shadow: none;
+  font-family: var(--font-mono);
+  display: block;
+}
+
+/* Prism Tokens - Roset Dark Theme */
+.pre :global(.token) {
+  display: inline;
+}
+
+.pre :global(.token.comment),
+.pre :global(.token.prolog),
+.pre :global(.token.doctype),
+.pre :global(.token.cdata) {
+  color: var(--color-secondary-foreground);
+  font-style: italic;
+}
+
+.pre :global(.token.punctuation) {
+  color: #a9b4d0;
+}
+
+.pre :global(.token.namespace) {
+  opacity: 0.7;
+}
+
+.pre :global(.token.property),
+.pre :global(.token.tag),
+.pre :global(.token.boolean),
+.pre :global(.token.number),
+.pre :global(.token.constant),
+.pre :global(.token.symbol),
+.pre :global(.token.deleted) {
+  color: #ffb020; /* Warning Yellow */
+}
+
+.pre :global(.token.selector),
+.pre :global(.token.attr-name),
+.pre :global(.token.string),
+.pre :global(.token.char),
+.pre :global(.token.builtin),
+.pre :global(.token.inserted) {
+  color: #2bd576; /* Success Green */
+}
+
+.pre :global(.token.operator),
+.pre :global(.token.entity),
+.pre :global(.token.url),
+.pre :global(.language-css .token.string),
+.pre :global(.style .token.string) {
+  color: #4da3ff; /* Primary Blue */
+}
+
+.pre :global(.token.atrule),
+.pre :global(.token.attr-value),
+.pre :global(.token.keyword) {
+  color: #4da3ff;
+}
+
+.pre :global(.token.function),
+.pre :global(.token.class-name) {
+  color: #eaf0ff;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(77, 163, 255, 0.3);
+}
+
+.pre :global(.token.regex),
+.pre :global(.token.important),
+.pre :global(.token.variable) {
+  color: #ff4d4d; /* Error Red */
+}
+
+/* Light Mode Support */
+:global([data-theme="light"]) .wrapper,
+:global(.light) .wrapper {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .header,
+:global(.light) .header {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .pre code,
+:global(.light) .pre code {
+  color: #1e293b;
+}

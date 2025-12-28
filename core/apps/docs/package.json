@@ -11,16 +11,20 @@
   },
   "dependencies": {
     "@mdx-js/react": "^2.3.0",
-    "@roset/ui": "workspace:*",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
     "next": "^14.2.0",
     "nextra": "^2.13.0",
     "nextra-theme-docs": "^2.13.0",
+    "prismjs": "^1.30.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^20",
+    "@types/prismjs": "^1.26.5",
     "@types/react": "^18",
     "next-sitemap": "^4.2.0",
     "pagefind": "^1.0.0",

@@ -39,8 +39,16 @@ export class SearchResource {
     if (filters.extensions) result.extensions = filters.extensions.join(',');
     if (filters.minSize) result.min_size = filters.minSize.toString();
     if (filters.maxSize) result.max_size = filters.maxSize.toString();
-    if (filters.dateRange?.start) result.start_date = filters.dateRange.start.toString();
-    if (filters.dateRange?.end) result.end_date = filters.dateRange.end.toString();
+    if (filters.dateRange?.start) {
+      result.start_date = filters.dateRange.start instanceof Date
+        ? filters.dateRange.start.toISOString()
+        : filters.dateRange.start;
+    }
+    if (filters.dateRange?.end) {
+      result.end_date = filters.dateRange.end instanceof Date
+        ? filters.dateRange.end.toISOString()
+        : filters.dateRange.end;
+    }
     
     return result;
   }

@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@source "../../../packages/ui/dist";
 
 /* ============================================
    ROSET DESIGN SYSTEM
@@ -201,49 +200,87 @@ table tbody tr:last-child {
 
 /* ============================================
    NEXTRA SIDEBAR OVERRIDES
-   Match Roset design system
+   Match Roset "The Field" design system
    ============================================ */
 
 /* Sidebar container */
 .nextra-menu-desktop {
-  gap: 0.25rem !important;
+  gap: 0.125rem !important;
+  padding-top: 1rem !important;
 }
 
 /* All sidebar links - base state */
 .nextra-menu-desktop a,
 .nextra-menu-desktop button {
   color: var(--text-2) !important;
-  border-radius: 0.5rem !important;
-  padding: 0.5rem 0.75rem !important;
+  border-radius: 0.375rem !important;
+  padding: 0.375rem 0.75rem !important;
   font-size: 0.875rem !important;
-  transition: all 0.15s ease !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  margin: 0.125rem 0 !important;
+  border: 1px solid transparent !important;
 }
 
 /* Hover state */
 .nextra-menu-desktop a:hover,
 .nextra-menu-desktop button:hover {
-  background: var(--surface-2) !important;
+  background: rgba(77, 163, 255, 0.04) !important;
   color: var(--text) !important;
+  border-color: rgba(77, 163, 255, 0.1) !important;
 }
 
-/* Active/current page - only for actual links, not folder buttons */
+/* Active/current page - Minimalist "Field" style */
 .nextra-menu-desktop li.active > a:not([class*="items-center"]) {
-  background: var(--accent) !important;
-  color: white !important;
-  font-weight: 600 !important;
+  background: transparent !important;
+  color: var(--text) !important;
+  font-weight: 500 !important;
+  position: relative !important;
 }
 
-/* Folder buttons should NOT get accent background even when open */
+/* Vertical accent bar for active item */
+.nextra-menu-desktop li.active > a:not([class*="items-center"])::before {
+  content: "";
+  position: absolute;
+  left: -0.5px;
+  top: 20%;
+  bottom: 20%;
+  width: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+  border-radius: 4px;
+  animation: field-pulse 2s infinite ease-in-out;
+}
+
+@keyframes field-pulse {
+  0%, 100% { opacity: 0.8; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.05); }
+}
+
+/* Folder buttons should NOT get accent background or bar */
 .nextra-menu-desktop li.open > button,
 .nextra-menu-desktop li.active > button {
   background: transparent !important;
-  color: var(--text-2) !important;
+  color: var(--text) !important;
+  font-weight: 500 !important;
 }
 
-.nextra-menu-desktop li.open > button:hover,
-.nextra-menu-desktop li.active > button:hover {
-  background: var(--surface-2) !important;
-  color: var(--text) !important;
+/* Section Headers (Separators) - technical look */
+.nextra-menu-desktop .nx-text-xs.nx-font-semibold.nx-uppercase,
+.nextra-menu-desktop [class*="uppercase"][class*="font-semibold"] {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 0.05em !important;
+  color: var(--text-3) !important;
+  font-size: 10px !important;
+  padding: 1.5rem 0.75rem 0.5rem !important;
+  opacity: 0.8;
+}
+
+/* Nested items container - thinner vector lines */
+.nextra-menu-desktop ul ul {
+  margin-left: 0.625rem !important;
+  padding-left: 0.75rem !important;
+  border-left: 0.5px solid var(--border) !important;
+  position: relative;
 }
 
 /* Folder expand/collapse buttons */
@@ -256,79 +293,53 @@ table tbody tr:last-child {
   color: var(--text-2) !important;
 }
 
-/* Nested items - left border line */
-.nextra-menu-desktop ul ul::before {
-  background: var(--border) !important;
-}
-
-/* Nested items container */
-.nextra-menu-desktop ul ul {
-  margin-left: 0.75rem !important;
-  padding-left: 0.75rem !important;
-  border-left: 1px solid var(--border) !important;
-}
-
-/* Override Nextra's dark mode specific styling */
-.dark .nextra-menu-desktop a,
-.dark .nextra-menu-desktop button {
-  color: var(--text-2) !important;
-}
-
+/* Dark mode specific overrides - maintain the void */
 .dark .nextra-menu-desktop a:hover,
 .dark .nextra-menu-desktop button:hover {
-  background: var(--surface-2) !important;
-  color: var(--text) !important;
+  background: rgba(77, 163, 255, 0.06) !important;
 }
 
-.dark .nextra-menu-desktop li.active > a {
-  background: var(--accent) !important;
-  color: white !important;
-}
-
-/* Sidebar scrollbar styling */
+/* Scrollbar styling for the sidebar */
 .nextra-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.nextra-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  width: 4px;
 }
 
 .nextra-scrollbar::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 3px;
+  border-radius: 10px;
 }
 
 .nextra-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--text-3);
 }
 
-/* Remove Nextra's gray/neutral colors */
+/* Clean up Nextra default colors */
 .nx-text-gray-500,
 .nx-text-neutral-400 {
   color: var(--text-2) !important;
 }
 
 .nx-bg-gray-100,
-.nx-bg-primary-100 {
-  background: var(--surface-2) !important;
-}
-
-/* Override primary colors for active state */
 .nx-bg-primary-100,
 .dark\:nx-bg-primary-400\/10 {
-  background: var(--accent) !important;
+  background: transparent !important;
 }
 
 .nx-text-primary-800,
-.dark\:nx-text-primary-600,
-.nx-font-semibold.nx-text-primary-800 {
-  color: white !important;
+.dark\:nx-text-primary-600 {
+  color: var(--text) !important;
 }
 
 /* Sidebar section divider lines */
 .nextra-menu-desktop ul::before {
   background: var(--border) !important;
+}
+
+/* Hide default Nextra section separators if we have our own */
+.nextra-menu-desktop hr {
+  border-color: var(--border) !important;
+  opacity: 0.3;
+  margin: 1rem 0.75rem !important;
 }
 
 /* ============================================
@@ -407,12 +418,288 @@ table tbody tr:last-child {
   padding: 0.5rem 1rem 0.5rem 0;
 }
 
-/* Code inside parameter names */
-.nextra-content .px-4.py-4 code {
+/* ============================================
+   GLOBAL CODE STYLING
+   ============================================ */
+
+/* Inline code (not inside a pre block) */
+code:not(pre code) {
   background: var(--surface-2);
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  font-family: ui-monospace, monospace;
-  font-size: 0.75rem;
+  color: var(--accent);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  border: 1px solid var(--border);
 }
 
+[data-theme="light"] code:not(pre code),
+.light code:not(pre code) {
+  background: #f1f5f9;
+  color: #0366d6;
+  border-color: #e2e8f0;
+}
+
+/* Pre blocks are handled by CodeBlock.module.css - do not add global pre styles here */
+/* ============================================
+   CONTENT TYPOGRAPHY & HEADINGS
+   Clean, technical, and confident.
+   ============================================ */
+
+/* Headings */
+.nextra-content h1 {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  margin-bottom: 2rem !important;
+  color: var(--text) !important;
+  line-height: 1.1 !important;
+}
+
+.nextra-content h2 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  margin-top: 3rem !important;
+  margin-bottom: 1rem !important;
+  color: var(--text) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.nextra-content h3 {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  margin-top: 2rem !important;
+  margin-bottom: 0.75rem !important;
+  color: var(--text) !important;
+}
+
+/* Paragraphs and lists */
+.nextra-content p {
+  line-height: 1.625 !important;
+  margin-top: 1.25rem !important;
+  color: var(--text-2) !important;
+}
+
+.nextra-content ul, 
+.nextra-content ol {
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+  padding-left: 1.5rem !important;
+  color: var(--text-2) !important;
+}
+
+.nextra-content li {
+  margin-top: 0.5rem !important;
+  line-height: 1.6 !important;
+}
+
+/* ============================================
+   TABLE OF CONTENTS (RIGHT SIDEBAR)
+   ============================================ */
+
+.nextra-toc {
+  border-left: 1px solid var(--border) !important;
+  padding-left: 1rem !important;
+}
+
+/* TOC title */
+.nextra-toc p {
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--text-3) !important;
+  letter-spacing: 0.05em !important;
+  margin-bottom: 1rem !important;
+}
+
+/* TOC Links */
+.nextra-toc a {
+  font-size: 13px !important;
+  color: var(--text-2) !important;
+  transition: all 0.2s ease !important;
+  display: block !important;
+  padding: 0.25rem 0 !important;
+}
+
+.nextra-toc a:hover {
+  color: var(--text) !important;
+}
+
+/* Active TOC item */
+.nextra-toc li a[class*="nx-text-primary-600"],
+.nextra-toc li a.active {
+  color: var(--accent) !important;
+  font-weight: 500 !important;
+  position: relative !important;
+}
+
+.nextra-toc li a[class*="nx-text-primary-600"]::before,
+.nextra-toc li a.active::before {
+  content: "";
+  position: absolute;
+  left: -1.05rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 12px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  border-radius: 2px;
+}
+
+/* ============================================
+   BREADCRUMBS
+   ============================================ */
+
+.nextra-breadcrumb {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  color: var(--text-3) !important;
+  margin-bottom: 1.5rem !important;
+  opacity: 0.8 !important;
+}
+
+.nextra-breadcrumb a {
+  color: var(--text-3) !important;
+  transition: color 0.2s ease !important;
+}
+
+.nextra-breadcrumb a:hover {
+  color: var(--text-2) !important;
+}
+
+/* Separator */
+.nextra-breadcrumb svg {
+  width: 10px !important;
+  height: 10px !important;
+  opacity: 0.4 !important;
+}
+
+/* ============================================
+   NAVIGATION LINKS (PAGINATION)
+   ============================================ */
+
+.nextra-navigation-links {
+  border-top: 1px solid var(--border) !important;
+  margin-top: 5rem !important;
+  padding-top: 2rem !important;
+  display: flex !important;
+  gap: 1.5rem !important;
+}
+
+.nextra-navigation-links a {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+  padding: 1rem 1.5rem !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 0.75rem !important;
+  background: var(--surface-1) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  text-decoration: none !important;
+}
+
+.nextra-navigation-links a:hover {
+  border-color: rgba(77, 163, 255, 0.3) !important;
+  background: rgba(77, 163, 255, 0.04) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+.nextra-navigation-links a .nx-text-xs {
+  font-family: var(--font-mono) !important;
+  color: var(--text-3) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.nextra-navigation-links a .nx-text-lg {
+  color: var(--text) !important;
+  font-weight: 600 !important;
+}
+
+/* Active/Hover Icons in Pagination */
+.nextra-navigation-links a svg {
+  color: var(--text-3) !important;
+  transition: all 0.2s ease !important;
+}
+
+.nextra-navigation-links a:hover svg {
+  color: var(--accent) !important;
+  transform: translateX(4px) !important;
+}
+
+.nextra-navigation-links a:first-child:hover svg {
+  transform: translateX(-4px) !important;
+}
+
+/* ============================================
+   ALERTS / CALLOUTS REFINEMENT
+   ============================================ */
+
+.nextra-callout {
+  border: 1px solid var(--border) !important;
+  background: var(--surface-1) !important;
+  border-radius: 0.75rem !important;
+  padding: 1rem 1.25rem !important;
+  margin: 2rem 0 !important;
+  display: flex !important;
+  gap: 1rem !important;
+  align-items: flex-start !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* Info Callout */
+.nextra-callout[class*="nx-bg-blue-"],
+.nextra-callout[class*="bg-blue-"] {
+  background: rgba(77, 163, 255, 0.03) !important;
+  border-color: rgba(77, 163, 255, 0.2) !important;
+}
+
+.nextra-callout[class*="nx-bg-blue-"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent);
+}
+
+/* Warning Callout */
+.nextra-callout[class*="nx-bg-yellow-"],
+.nextra-callout[class*="bg-orange-"] {
+  background: rgba(255, 176, 32, 0.03) !important;
+  border-color: rgba(255, 176, 32, 0.2) !important;
+}
+
+.nextra-callout[class*="nx-bg-yellow-"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--warning);
+}
+
+/* Error Callout */
+.nextra-callout[class*="nx-bg-red-"],
+.nextra-callout[class*="bg-red-"] {
+  background: rgba(255, 77, 77, 0.03) !important;
+  border-color: rgba(255, 77, 77, 0.2) !important;
+}
+
+.nextra-callout[class*="nx-bg-red-"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--error);
+}

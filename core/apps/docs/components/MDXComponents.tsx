@@ -1,8 +1,25 @@
-
 import React from 'react';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, CodeBlock } from '@roset/ui';
+import { 
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell, CodeBlock,
+  Button, Card, CardHeader, CardTitle, CardContent, Badge, Alert,
+  ApiEndpoint, ParameterTable, ResponseExample, RequestExample
+} from './ui';
+import { PromptActions } from './PromptActions';
+import { InstallInCursor } from './InstallInCursor';
 
 export const MDXComponents = {
+  Button: (props: any) => <Button {...props} />,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Badge,
+  Alert,
+  Callout: Alert,
+  ApiEndpoint,
+  ParameterTable,
+  ResponseExample,
+  RequestExample,
   table: (props: any) => (
     <Table className="my-6">
       {props.children}
@@ -14,22 +31,53 @@ export const MDXComponents = {
   th: (props: any) => <TableHead {...props} />,
   td: (props: any) => <TableCell {...props} />,
   pre: (props: any) => {
-    // Nextra passes children to pre. Usually it's a code element.
-    // We need to extract the code string and language.
-    // The children of pre is usually a 'code' element.
-    const codeElement = React.Children.only(props.children);
+    const { children } = props;
+    console.log('[Roset MDX] pre override firing', { hasChildren: !!children, childType: typeof children });
     
-    if (React.isValidElement(codeElement)) {
-        const { children, className } = codeElement.props as any;
-        const language = className?.replace('language-', '') || 'text';
-        
-        // CodeBlock expects a string for 'code'.
-        // If children is a string, great. If not, we might need to handle it.
-        const codeString = typeof children === 'string' ? children.trim() : '';
+    // Helper to recursively get text content from React nodes
+    const getTextContent = (node: any): string => {
+      if (!node) return '';
+      if (typeof node === 'string') return node;
+      if (typeof node === 'number') return String(node);
+      if (Array.isArray(node)) return node.map(getTextContent).join('');
+      if (React.isValidElement(node)) {
+        return getTextContent((node.props as any).children);
+      }
+      return '';
+    };
 
-        return <CodeBlock code={codeString} language={language}>{children}</CodeBlock>;
+    // Find the code element to get the language
+    const findCodeElement = (node: any): any => {
+      if (!node) return null;
+      if (React.isValidElement(node)) {
+        if (node.type === 'code' || (node.props as any)?.originalType === 'code') return node;
+        return findCodeElement((node.props as any).children);
+      }
+      if (Array.isArray(node)) {
+        for (const child of node) {
+          const found = findCodeElement(child);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const codeElement = findCodeElement(children);
+    if (codeElement) {
+      const { className } = codeElement.props as any;
+      const language = className?.replace('language-', '') || 'text';
+      // Grab all text content recursively
+      const code = getTextContent(codeElement).trim();
+      
+      if (code) {
+        return <CodeBlock code={code} language={language} />;
+      }
     }
     
+    // Fallback to plain pre if we can't find code or it's empty
     return <pre {...props} />;
-  }
+  },
+  Pre: (props: any) => MDXComponents.pre(props),
+  PromptActions,
+  InstallInCursor,
 };

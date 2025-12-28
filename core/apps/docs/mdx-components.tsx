@@ -4,11 +4,12 @@ import { MDXComponents as CustomComponents } from './components/MDXComponents'
 
 const themeComponents = getDocsMDXComponents()
 
-// Merge default theme components with our custom ones
+// Merge: theme defaults < passed components < OUR custom overrides (highest priority)
 export function useMDXComponents(components: any) {
   return {
     ...themeComponents,
     ...components,
-    ...CustomComponents
+    // Custom components LAST = highest priority override
+    ...CustomComponents,
   }
 }

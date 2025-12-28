@@ -1,9 +1,9 @@
 {
-  "index": "Introduction",
-  "quickstart": "Quickstart",
+  "start": "Start",
   "concepts": "Concepts",
   "guides": "Guides",
-  "self-hosting": "Self-Hosting",
+  "integrations": "Integrations",
+  "operate": "Operate",
   "reference": "Reference",
-  "api-reference": "API Reference"
+  "support": "Support"
 }
