@@ -17,6 +17,10 @@ export interface Notification {
   readAt: string | null;
 }
 
+export interface NotificationSettings {
+  [key: string]: boolean;
+}
+
 export interface NotificationsListResult {
   items: Notification[];
   unreadCount: number;
@@ -73,6 +77,27 @@ export class NotificationsResource {
     return this.http.post<{ success: boolean; markedCount: number }>(
       `/v1/notifications/read-all`,
       {},
+      options
+    );
+  }
+
+  /**
+   * Get notification settings
+   */
+  async getSettings(options?: RequestOptions): Promise<{ settings: NotificationSettings }> {
+    return this.http.get<{ settings: NotificationSettings }>(
+      '/v1/notifications/settings',
+      options
+    );
+  }
+
+  /**
+   * Update notification settings
+   */
+  async updateSettings(settings: NotificationSettings, options?: RequestOptions): Promise<{ success: boolean; settings: NotificationSettings }> {
+    return this.http.put<{ success: boolean; settings: NotificationSettings }>(
+      '/v1/notifications/settings',
+      settings,
       options
     );
   }

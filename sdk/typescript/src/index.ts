@@ -37,7 +37,7 @@ export { IntegrationsResource } from "./resources/integrations.js";
 export { SearchResource } from "./resources/search.js";
 export { TenantResource, type TenantStats } from "./resources/tenant.js";
 export { UserResource, type UserProfile, type UserProfileUpdate } from "./resources/user.js";
-export { NotificationsResource, type Notification, type NotificationsListResult } from "./resources/notifications.js";
+export { NotificationsResource, type Notification, type NotificationsListResult, type NotificationSettings } from "./resources/notifications.js";
 
 // Types
 export type {
@@ -80,4 +80,5 @@ export {
   ConflictError,
   ValidationError,
   RateLimitError,
+  QuotaExceededError,
 } from "./errors.js";

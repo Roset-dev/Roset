@@ -65,6 +65,13 @@ export class RateLimitError extends RosetError {
   }
 }
 
+export class QuotaExceededError extends RosetError {
+  constructor(message: string = "Quota exceeded", details?: Record<string, unknown>) {
+    super(message, "QUOTA_EXCEEDED", 402, details);
+    this.name = "QuotaExceededError";
+  }
+}
+
 /**
  * Parse API error response into appropriate error class
  */
@@ -84,7 +91,12 @@ export function parseApiError(
       return new NotFoundError(message);
     case 409:
       return new ConflictError(message);
+    case 402:
+      return new QuotaExceededError(message, body.details);
     case 429:
+      if (body.code === "QUOTA_EXCEEDED") {
+        return new QuotaExceededError(message, body.details);
+      }
       return new RateLimitError(message);
     default:
       return new RosetError(message, code, statusCode, body.details);
