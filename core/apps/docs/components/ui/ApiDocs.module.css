@@ -2,12 +2,17 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background-color: var(--color-surface);
-  margin: 2rem 0;
+  margin: 3rem 0;
   overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.endpoint:hover {
+  border-color: rgba(77, 163, 255, 0.3);
 }
 
 .header {
-  padding: 1.5rem;
+  padding: 1.5rem 2rem;
   border-bottom: 1px solid var(--color-border);
   background-color: rgba(255, 255, 255, 0.01);
 }
@@ -20,13 +25,18 @@
 }
 
 .method {
-  min-width: 60px;
+  min-width: 64px;
   text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.05em;
 }
 
 .path {
-  font-size: 1rem;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 500;
   color: var(--color-foreground);
   background: none;
   padding: 0;
@@ -34,17 +44,18 @@
 
 .description {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--color-muted-foreground);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .body {
-  padding: 1.5rem;
+  padding: 2rem;
 }
 
+/* Parameter Field List */
 .paramSection {
-  margin-top: 1.5rem;
+  margin-top: 2rem;
 }
 
 .paramSection:first-child {
@@ -55,95 +66,145 @@
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-muted-foreground);
-  letter-spacing: 0.1em;
-  margin-bottom: 0.75rem;
+  color: var(--color-secondary-foreground);
+  letter-spacing: 0.15em;
+  margin-bottom: 1rem;
+  padding-left: 2px;
 }
 
-.paramTableWrapper {
+.paramList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
 
-.paramTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  text-align: left;
-}
-
-.paramTable th {
-  background-color: rgba(255, 255, 255, 0.02);
-  padding: 10px 12px;
-  font-weight: 600;
-  color: var(--color-muted-foreground);
+.paramItem {
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--color-border);
+  background-color: transparent;
+  position: relative;
+  transition: background-color 0.2s ease;
 }
 
-.paramTable td {
-  padding: 12px;
-  border-bottom: 1px solid var(--color-border);
-  vertical-align: top;
+.paramItem:hover {
+  background-color: rgba(255, 255, 255, 0.01);
 }
 
-.paramTable tr:last-child td {
+.paramItem:last-child {
   border-bottom: none;
 }
 
-.paramName {
-  white-space: nowrap;
+.paramItem::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1.25rem;
+  bottom: 1.25rem;
+  width: 2px;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
 }
 
-.paramName code {
-  color: var(--color-primary);
+.paramItem:hover::before {
+  background-color: var(--color-primary);
+}
+
+.paramHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.paramName {
+  font-family: var(--font-mono);
+  font-size: 14px;
   font-weight: 600;
+  color: var(--color-primary);
+  letter-spacing: -0.01em;
+}
+
+.paramType {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-secondary-foreground);
 }
 
 .required {
+  font-size: 11px;
+  font-weight: 600;
   color: var(--color-error);
-  margin-left: 2px;
-  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: 4px;
 }
 
-.paramType code {
+.paramContent {
+  font-size: 14px;
   color: var(--color-muted-foreground);
-}
-
-.paramDesc {
-  color: var(--color-foreground);
   line-height: 1.5;
 }
 
 .defaultValue {
-  margin-top: 4px;
-  font-size: 11px;
+  margin-top: 8px;
+  font-size: 12px;
   color: var(--color-secondary-foreground);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
+.defaultValue code {
+  color: var(--color-foreground);
+  font-size: 11px;
+  background-color: var(--color-muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Examples */
 .example {
-  margin-top: 1.5rem;
+  margin-top: 2.5rem;
 }
 
 .exampleHeader {
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   font-weight: 600;
-  color: var(--color-muted-foreground);
-  margin-bottom: 8px;
+  color: var(--color-secondary-foreground);
+  margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
   gap: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .exampleHeader code {
   color: var(--color-foreground);
+  text-transform: none;
+  letter-spacing: 0;
+  background-color: var(--color-muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
 }
 
 .exampleDesc {
   font-weight: 400;
   color: var(--color-secondary-foreground);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 4px;
 }
 
 .exampleCode {
   margin-top: 0 !important;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
 }

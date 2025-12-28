@@ -1,9 +1,7 @@
 {
   "start": "Start",
-  "concepts": "Concepts",
   "guides": "Guides",
   "integrations": "Integrations",
-  "operate": "Operate",
-  "reference": "Reference",
-  "support": "Support"
+  "agent": "Roset Agent",
+  "reference": "Reference"
 }

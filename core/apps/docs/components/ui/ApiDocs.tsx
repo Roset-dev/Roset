@@ -55,37 +55,24 @@ export const ParameterTable = ({ type = 'query', params = [] }: ParameterTablePr
   return (
     <div className={styles.paramSection}>
       <h4 className={styles.paramTitle}>{type.toUpperCase()} PARAMETERS</h4>
-      <div className={styles.paramTableWrapper}>
-        <table className={styles.paramTable}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {params.map((param) => (
-              <tr key={param.name}>
-                <td className={styles.paramName}>
-                  <code>{param.name}</code>
-                  {param.required && <span className={styles.required}>*</span>}
-                </td>
-                <td className={styles.paramType}>
-                  <code>{param.type}</code>
-                </td>
-                <td className={styles.paramDesc}>
-                  {param.description}
-                  {param.default && (
-                    <div className={styles.defaultValue}>
-                      Default: <code>{param.default}</code>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className={styles.paramList}>
+        {params.map((param) => (
+          <div key={param.name} className={styles.paramItem}>
+            <div className={styles.paramHeader}>
+              <span className={styles.paramName}>{param.name}</span>
+              <span className={styles.paramType}>{param.type}</span>
+              {param.required && <span className={styles.required}>Required</span>}
+            </div>
+            <div className={styles.paramContent}>
+              {param.description}
+              {param.default && (
+                <div className={styles.defaultValue}>
+                  Default: <code>{param.default}</code>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -101,7 +88,6 @@ export const RequestExample = ({ json = {}, title = "Request Body" }: { json?: a
 };
 
 export const ResponseExample = ({ status = 200, json = {}, description }: { status?: number; json?: any; description?: string }) => {
-  const isError = status >= 400;
   return (
     <div className={styles.example}>
       <div className={styles.exampleHeader}>
