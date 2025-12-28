@@ -12,27 +12,26 @@ Mount Roset filesystems natively in Kubernetes.
 
 ## Quick Start
 
-1. **Deploy Driver**
+1. **Install Helm Chart**
    ```bash
-   kubectl apply -f deploy/
+   helm install roset oci://ghcr.io/roset-dev/charts/roset-csi \
+     --version 0.1.0 \
+     --create-namespace \
+     --namespace roset-system \
+     --set roset.secretName=roset-credentials \
+     --set storageClass.mountId="your-mount-id-here"
    ```
 
-2. **Configure Credentials**
+2. **Configure Credentials** (if not already created)
    ```bash
    kubectl create secret generic roset-credentials \
      --namespace roset-system \
      --from-literal=api-key=rk_...
    ```
 
-3. **Update StorageClass**
-   
-   Edit `deploy/storageclass.yaml` and set your `mountId`:
-   ```yaml
-   parameters:
-     mountId: "your-mount-id-here"
-   ```
 
-4. **Create a PVC**
+
+3. **Create a PVC**
    ```yaml
    apiVersion: v1
    kind: PersistentVolumeClaim

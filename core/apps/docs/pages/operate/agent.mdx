@@ -1,0 +1,87 @@
+---
+title: Roset Agent
+description: "Deploy the Roset Node / Connector Agent"
+---
+
+# Roset Agent
+
+The **Roset Agent** (`roset-agent`) is a unified binary/container that runs on your infrastructure. It acts as the bridge between your storage ("Data Plane") and the Roset Metadata Layer ("Control Plane").
+
+It includes:
+
+1. **FUSE Driver**: High-performance POSIX client.
+2. **CSI Driver**: Kubernetes volume plugin.
+3. **CLI**: Admin and debug tool.
+
+## Installation
+
+### Kubernetes (Recommended)
+
+Use the Helm chart to deploy the agent as a DaemonSet (for mounts) and a controller (for dynamic provisioning).
+
+```bash
+# Install the chart
+helm install roset oci://ghcr.io/roset-dev/charts/roset-csi \
+  --version 0.1.0 \
+  --create-namespace \
+  --namespace roset-system \
+  --set roset.secretName=roset-credentials \
+  --set storageClass.mountId="your-mount-id-here"
+```
+
+### Docker (Standalone)
+
+You can run the agent directly on a Linux host (e.g., EC2, VM) to mount a Roset filesystem.
+
+**Requirements**:
+
+- Linux with FUSE support
+- `/dev/fuse` access
+- `--privileged` or `CAP_SYS_ADMIN`
+
+```bash
+# Run FUSE mount
+docker run -d \
+  --name roset-mount \
+  --device /dev/fuse \
+  --cap-add SYS_ADMIN \
+  --security-opt apparmor:unconfined \
+  -v /mnt/roset:/mnt/roset:rshared \
+  -e ROSET_API_KEY=rk_... \
+  ghcr.io/roset-dev/roset/roset-agent:latest \
+  roset-fuse /mnt/roset
+```
+
+### CLI Utility
+
+You can use the same image to run CLI commands without installing anything on your host.
+
+```bash
+# Run one-off command
+docker run -it --rm \
+  -e ROSET_API_KEY=rk_... \
+  ghcr.io/roset-dev/roset/roset-agent:latest \
+  roset status --json
+```
+
+## Configuration
+
+| Env Variable    | Description                                 | Default                 |
+| --------------- | ------------------------------------------- | ----------------------- |
+| `ROSET_API_URL` | Control plane endpoint                      | `https://api.roset.dev` |
+| `ROSET_API_KEY` | Your secret API key                         | -                       |
+| `RUST_LOG`      | Log level (error, warn, info, debug, trace) | `info`                  |
+
+## Updates
+
+The agent is stateless. To update, simply pull the new image and restart the container/pod.
+
+```bash
+# Kubernetes
+helm upgrade roset oci://ghcr.io/roset-dev/charts/roset-csi --version 0.2.0
+
+# Docker
+docker pull ghcr.io/roset-dev/roset/roset-agent:latest
+docker stop roset-mount && docker rm roset-mount
+# ... run again
+```

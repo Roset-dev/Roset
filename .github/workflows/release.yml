@@ -1,0 +1,81 @@
+name: Release Agent & Chart
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/roset-agent
+  CHART_NAME: roset-csi
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./monorepo
+          file: ./monorepo/agent/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  publish-chart:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Login to Helm Registry
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
+
+      - name: Package and Push Chart
+        run: |
+          # Strip the 'v' prefix from the tag for valid SemVer (e.g., v0.1.0 -> 0.1.0)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          
+          # Update chart version
+          sed -i "s/^version: .*/version: $VERSION/" monorepo/deploy/charts/${{ env.CHART_NAME }}/Chart.yaml
+          sed -i "s/^appVersion: .*/appVersion: \"$VERSION\"/" monorepo/deploy/charts/${{ env.CHART_NAME }}/Chart.yaml
+          
+          # Package
+          helm package monorepo/deploy/charts/${{ env.CHART_NAME }} --version $VERSION --app-version $VERSION
+          
+          # Push to OCI registry
+          helm push ${{ env.CHART_NAME }}-$VERSION.tgz oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts

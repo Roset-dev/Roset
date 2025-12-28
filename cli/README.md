@@ -8,6 +8,9 @@ The operator's interface for Roset. Manage, debug, and automate your object stor
 # Install (Go 1.23+)
 go install github.com/roset-dev/roset/monorepo/cli@latest
 
+# OR run via Docker Agent
+docker run -it --rm ghcr.io/roset-dev/roset/roset-agent roset status
+
 # Authenticate
 roset login
 

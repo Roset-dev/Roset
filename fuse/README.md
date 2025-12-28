@@ -2,18 +2,38 @@
 
 Mount Roset object storage as a local disk. POSIX-compatible and optimized for ML workloads.
 
-## Installation
+## Quick Start
 
+The easiest way to mount Roset is via the CLI or Docker Agent.
+
+### Option 1: CLI (macOS/Linux)
 ```bash
-# requires Rust 1.75+
-cargo build --release
+# Install CLI
+go install github.com/roset-dev/roset/monorepo/cli@latest
+
+# Mount via CLI wrapper (handles permissions automatically)
+roset mount /mnt/work --api-key rk_...
 ```
 
-## Usage
-
+### Option 2: Docker Agent
 ```bash
-# Mount your data
-./roset-fuse /mnt/roset --api-key rk_...
+# Zero-install mount
+docker run -d \
+  --device /dev/fuse \
+  --cap-add SYS_ADMIN \
+  -v /mnt/work:/mnt/work:rshared \
+  -e ROSET_API_KEY=rk_... \
+  ghcr.io/roset-dev/roset/roset-agent:latest \
+  roset-fuse /mnt/work
+```
+
+### Option 3: Build from Source
+```bash
+# requires Rust 1.76+
+cargo install --path monorepo/fuse
+
+# Run directly
+roset-fuse /mnt/work --api-key rk_...
 ```
 
 ## Features
