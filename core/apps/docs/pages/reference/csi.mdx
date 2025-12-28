@@ -1,0 +1,121 @@
+# CSI Driver Reference
+
+The Roset Container Storage Interface (CSI) driver allows Kubernetes clusters to dynamically provision and mount Roset volumes.
+
+## Installation via Helm
+
+Install the chart from the OCI registry:
+
+<CodeBlock
+  language="bash"
+  code={`helm install roset oci://ghcr.io/roset-dev/charts/roset-csi \\
+  --namespace roset-system \\
+  --create-namespace \\
+  --set roset.apiKey="rk_..."`}
+/>
+
+## StorageClass Configuration
+
+Define a `StorageClass` to template your mounts.
+
+<CodeBlock
+  language="yaml"
+  code={`apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: roset-ml
+provisioner: io.roset.csi
+parameters:
+  # REQUIRED: The ID of the Roset Mount to connect to
+  mountId: "mount_12345"
+
+# OPTIONAL: Sub-path within the mount to use as root
+
+basePath: "/checkpoints"
+
+# Performance Tuning
+
+readAhead: "256" # KB
+cacheSizeGi: "10" # GB`}
+/>
+
+## PersistentVolumeClaim (PVC)
+
+Consume the storage in your Pods.
+
+<CodeBlock
+  language="yaml"
+  code={`apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: training-data
+spec:
+  accessModes:
+    - ReadWriteMany  # Supports RWX (shared access)
+  storageClassName: roset-ml
+  resources:
+    requests:
+      storage: 1Ti  # Logical size (not enforced)`}
+/>
+
+## Volume Snapshots
+
+Roset CSI supports the `VolumeSnapshot` API for atomic checkpoint management.
+
+### Create Snapshot
+
+<CodeBlock
+  language="yaml"
+  code={`apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: epoch-10
+spec:
+  volumeSnapshotClassName: roset-snapshots
+  source:
+    persistentVolumeClaimName: training-data`}
+/>
+
+### Restore Snapshot
+
+<CodeBlock
+  language="yaml"
+  code={`apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: restored-training-data
+spec:
+  dataSource:
+    name: epoch-10
+    kind: VolumeSnapshot
+    apiGroup: snapshot.storage.k8s.io
+  accessModes:
+    - ReadOnlyMany
+  storageClassName: roset-ml
+  resources:
+    requests:
+      storage: 1Ti`}
+/>
+
+## Troubleshooting
+
+### Architecture
+
+The CSI driver consists of:
+
+1. **Controller (StatefulSet)**: Handles provisioning (`CreateVolume`, `CreateSnapshot`).
+2. **Node (DaemonSet)**: Handles mounting (`NodeStageVolume`, `NodePublishVolume`) on each node.
+
+### Logs
+
+If a mount fails, check the Node logs for the specific node running your pod:
+
+<CodeBlock
+  language="bash"
+  code={`# Get node name
+kubectl get pod training-pod -o wide
+
+# Logs from node agent
+
+kubectl logs -l app=roset-csi-node --field-selector spec.nodeName=NODE_NAME -n roset-system -c roset-plugin`}
+/>

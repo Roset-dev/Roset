@@ -1,0 +1,44 @@
+# Roset FUSE Client Reference
+
+The `roset-fuse` binary is the core data plane agent that mounts Roset buckets as POSIX filesystems. It is typically invoked via the `roset` CLI or the CSI driver, but can be run standalone.
+
+## Features
+
+- **Metadata Caching**: Caches directory structures in memory for zero-latency lookups.
+- **Streaming IO**: Reads/writes stream directly to S3/R2 endpoints (bypass control plane).
+- **Atomic Writes**: Implements "write barriers" for safe ML checkpointing.
+
+## Standalone Usage
+
+<CodeBlock language="bash" code={`roset-fuse [OPTIONS] <MOUNTPOINT>`} />
+
+## Options
+
+### General Configuration
+
+| Option                 | Description                       | Default          |
+| :--------------------- | :-------------------------------- | :--------------- |
+| `--mount-point <path>` | Target directory (must exist)     | Required         |
+| `--api-key <key>`      | Roset API Key                     | `$ROSET_API_KEY` |
+| `--read-only`          | Mount volume as Read-Only         | `false`          |
+| `--allow-other`        | Allow other users to access mount | `false`          |
+
+### Performance Tuning
+
+| Option               | Description                     | Default      |
+| :------------------- | :------------------------------ | :----------- |
+| `--cache-dir <path>` | Directory for data caching      | `/tmp/roset` |
+| `--cache-size <mb>`  | Max size of local cache         | `512MB`      |
+| `--read-ahead <kb>`  | Kernel read-ahead buffer        | `128KB`      |
+| `--workers <num>`    | Number of concurrent IO threads | `16`         |
+
+## Checkpoint Manifests
+
+If you are mounting a **Committed Checkpoint** (ML workload), the FUSE client enables **Manifest Caching**:
+
+1. Client downloads `manifest.json.gz` from the commit.
+2. In-memory tree is built instantly.
+3. No further list/stat API calls are made to the remote provider.
+4. `readdir` and `stat` become sub-millisecond local operations.
+
+This mode is activated automatically when mounting a specific commit or a read-only checkpoint folder.

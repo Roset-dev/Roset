@@ -1,0 +1,75 @@
+# Roset CLI Reference
+
+The `roset` command-line interface is the primary tool for managing your local environment and debugging connectivity.
+
+## Installation
+
+<CodeBlock
+  language="bash"
+  code={`# Install via Go
+go install github.com/roset-dev/roset/monorepo/cli@latest
+
+# Verify
+
+roset version`}
+/>
+
+## Commands
+
+### `roset login`
+
+Authenticate your machine with the Roset API.
+
+- **Usage**: `roset login [flags]`
+- **Behavior**: Prompts for your API Key (starts with `rk_...`) and validates it against the API.
+- **Config**: Saves credentials to `~/.roset/config.yaml` (0600 permissions).
+
+### `roset status`
+
+Check connectivity to the Roset Control Plane.
+
+- **Usage**: `roset status [flags]`
+- **Output**:
+  - API Reachability
+  - Latency (ms)
+  - Authentication status (Identity info)
+
+### `roset mount`
+
+Mount a Roset filesystem to a local directory via FUSE.
+
+- **Usage**: `roset mount <mountpoint> [flags]`
+- **Example**: `roset mount /mnt/roset`
+- **Flags**:
+  - `--read-only`: Mount in read-only mode for safety.
+  - `--background`: Run in background (daemonize).
+
+### `roset unmount`
+
+Unmount a Roset filesystem.
+
+- **Usage**: `roset unmount <mountpoint>`
+
+### `roset debug bundle`
+
+Generate a diagnostics bundle for support requests.
+
+- **Usage**: `roset debug bundle [flags]`
+- **Flags**:
+  - `-o, --output <file>`: Output file path (default: `timestamp-diagnostics.tar.gz`)
+- **Privacy**: Automatically redacted API keys and secrets.
+
+## Global Flags
+
+The following flags apply to all commands:
+
+- `--api-key <string>`: Override configured API key.
+- `--json`: Output results in JSON format for automation/scripts.
+- `-v, --verbose`: Enable verbose logging.
+
+## Environment Variables
+
+| Variable        | Description                                                |
+| :-------------- | :--------------------------------------------------------- |
+| `ROSET_API_KEY` | Overrides the stored API key.                              |
+| `RUST_LOG`      | Controls FUSE client log intensity (e.g. `debug`, `info`). |

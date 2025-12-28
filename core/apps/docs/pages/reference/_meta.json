@@ -1,3 +1,6 @@
 {
-  "api": "API Reference"
+  "api": "API Reference",
+  "cli": "CLI",
+  "fuse": "FUSE Client",
+  "csi": "CSI Driver"
 }
