@@ -4,9 +4,7 @@ The Roset API is organized around REST. All requests must include authentication
 
 ## Base URL
 
-```text
-https://api.roset.dev/v1
-```
+<CodeBlock language="text" code={`https://api.roset.dev/v1`} />
 
 For self-hosted deployments, use your own base URL.
 
@@ -14,10 +12,11 @@ For self-hosted deployments, use your own base URL.
 
 Include your API key in the `Authorization` header:
 
-```bash
-curl https://api.roset.dev/v1/nodes \
-  -H "Authorization: Bearer rsk_live_..."
-```
+<CodeBlock
+  language="bash"
+  code={`curl https://api.roset.dev/v1/nodes \\
+  -H "Authorization: Bearer rsk_live_..."`}
+/>
 
 ## Common Headers
 

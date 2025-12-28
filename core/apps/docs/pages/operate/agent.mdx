@@ -19,15 +19,16 @@ It includes:
 
 Use the Helm chart to deploy the agent as a DaemonSet (for mounts) and a controller (for dynamic provisioning).
 
-```bash
-# Install the chart
-helm install roset oci://ghcr.io/roset-dev/charts/roset-csi \
-  --version 0.1.0 \
-  --create-namespace \
-  --namespace roset-system \
-  --set roset.secretName=roset-credentials \
-  --set storageClass.mountId="your-mount-id-here"
-```
+<CodeBlock
+  language="bash"
+  code={`# Install the chart
+helm install roset oci://ghcr.io/roset-dev/charts/roset-csi \\
+  --version 0.1.0 \\
+  --create-namespace \\
+  --namespace roset-system \\
+  --set roset.secretName=roset-credentials \\
+  --set storageClass.mountId="your-mount-id-here"`}
+/>
 
 ### Docker (Standalone)
 
@@ -39,30 +40,32 @@ You can run the agent directly on a Linux host (e.g., EC2, VM) to mount a Roset 
 - `/dev/fuse` access
 - `--privileged` or `CAP_SYS_ADMIN`
 
-```bash
-# Run FUSE mount
-docker run -d \
-  --name roset-mount \
-  --device /dev/fuse \
-  --cap-add SYS_ADMIN \
-  --security-opt apparmor:unconfined \
-  -v /mnt/roset:/mnt/roset:rshared \
-  -e ROSET_API_KEY=rk_... \
-  ghcr.io/roset-dev/roset/roset-agent:latest \
-  roset-fuse /mnt/roset
-```
+<CodeBlock
+  language="bash"
+  code={`# Run FUSE mount
+docker run -d \\
+  --name roset-mount \\
+  --device /dev/fuse \\
+  --cap-add SYS_ADMIN \\
+  --security-opt apparmor:unconfined \\
+  -v /mnt/roset:/mnt/roset:rshared \\
+  -e ROSET_API_KEY=rk_... \\
+  ghcr.io/roset-dev/roset/roset-agent:latest \\
+  roset-fuse /mnt/roset`}
+/>
 
 ### CLI Utility
 
 You can use the same image to run CLI commands without installing anything on your host.
 
-```bash
-# Run one-off command
-docker run -it --rm \
-  -e ROSET_API_KEY=rk_... \
-  ghcr.io/roset-dev/roset/roset-agent:latest \
-  roset status --json
-```
+<CodeBlock
+  language="bash"
+  code={`# Run one-off command
+docker run -it --rm \\
+  -e ROSET_API_KEY=rk_... \\
+  ghcr.io/roset-dev/roset/roset-agent:latest \\
+  roset status --json`}
+/>
 
 ## Configuration
 
@@ -76,12 +79,12 @@ docker run -it --rm \
 
 The agent is stateless. To update, simply pull the new image and restart the container/pod.
 
-```bash
-# Kubernetes
+<CodeBlock language="bash" code={`# Kubernetes
 helm upgrade roset oci://ghcr.io/roset-dev/charts/roset-csi --version 0.2.0
 
 # Docker
+
 docker pull ghcr.io/roset-dev/roset/roset-agent:latest
 docker stop roset-mount && docker rm roset-mount
-# ... run again
-```
+
+# ... run again`} />

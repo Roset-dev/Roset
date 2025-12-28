@@ -148,36 +148,34 @@ The Uploads API handles file data uploads using a two-phase commit pattern. Rose
 
 ## Example: Complete Upload Flow
 
-```typescript
-import { RosetClient } from "@roset/sdk";
+<CodeBlock language="typescript" code={`import { RosetClient } from "@roset/sdk";
 
-const client = new RosetClient({ apiKey: "rsk_live_..." });
+const client = new RosetClient({ apiKey: "rsk*live*..." });
 
 // 1. Create the file node
 const file = await client.nodes.create({
-  name: "document.pdf",
-  type: "file",
-  parentPath: "/documents",
+name: "document.pdf",
+type: "file",
+parentPath: "/documents",
 });
 
 // 2. Initialize upload
 const { uploadUrl, uploadToken, headers } = await client.uploads.init({
-  nodeId: file.id,
-  contentType: "application/pdf",
-  sizeBytes: pdfBuffer.length,
+nodeId: file.id,
+contentType: "application/pdf",
+sizeBytes: pdfBuffer.length,
 });
 
 // 3. Upload directly to storage
 const uploadResponse = await fetch(uploadUrl, {
-  method: "PUT",
-  headers,
-  body: pdfBuffer,
+method: "PUT",
+headers,
+body: pdfBuffer,
 });
 const etag = uploadResponse.headers.get("ETag");
 
 // 4. Commit the upload
 await client.uploads.commit({
-  uploadToken,
-  etag,
-});
-```
+uploadToken,
+etag,
+});`} />

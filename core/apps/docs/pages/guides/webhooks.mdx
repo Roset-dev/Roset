@@ -20,21 +20,23 @@ Roset can notify your server when events occur in your storage.
 
 ## Register a Webhook
 
-```bash
-curl -X POST https://api.roset.dev/v1/webhooks \
-  -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
+<CodeBlock
+  language="bash"
+  code={`curl -X POST https://api.roset.dev/v1/webhooks \\
+  -H "Authorization: Bearer $API_KEY" \\
+  -H "Content-Type: application/json" \\
   -d '{
     "url": "https://your-server.com/webhook",
     "events": ["upload.completed", "node.deleted"],
     "secret": "your-signing-secret"
-  }'
-```
+  }'`}
+/>
 
 ## Payload Format
 
-```json
-{
+<CodeBlock
+  language="json"
+  code={`{
   "id": "evt_abc123",
   "event": "upload.completed",
   "timestamp": "2025-01-15T10:30:00Z",
@@ -43,30 +45,26 @@ curl -X POST https://api.roset.dev/v1/webhooks \
     "path": "/uploads/report.pdf",
     "size": 1024567
   }
-}
-```
+}`}
+/>
 
 ## Verifying Signatures
 
 Each webhook includes a signature header:
 
-```
-X-Roset-Signature: sha256=abc123...
-```
+<CodeBlock language="text" code={`X-Roset-Signature: sha256=abc123...`} />
 
 Verify it using HMAC-SHA256:
 
-```typescript
-import { createHmac } from "crypto";
+<CodeBlock language="typescript" code={`import { createHmac } from "crypto";
 
 const signature = createHmac("sha256", secret)
-  .update(JSON.stringify(payload))
-  .digest("hex");
+.update(JSON.stringify(payload))
+.digest("hex");
 
-if (`sha256=${signature}` === headerSignature) {
-  // Valid
-}
-```
+if (\`sha256=\${signature}\` === headerSignature) {
+// Valid
+}`} />
 
 ## Retry Policy
 

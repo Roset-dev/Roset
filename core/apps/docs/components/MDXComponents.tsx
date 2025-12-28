@@ -20,6 +20,7 @@ export const MDXComponents = {
   ParameterTable,
   ResponseExample,
   RequestExample,
+  CodeBlock,
   table: (props: any) => (
     <Table className="my-6">
       {props.children}

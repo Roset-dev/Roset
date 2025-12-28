@@ -218,29 +218,27 @@ Leases provide distributed locking for nodes. They prevent concurrent modificati
 
 ## Example: Safe File Update
 
-```typescript
-import { RosetClient } from "@roset/sdk";
+<CodeBlock language="typescript" code={`import { RosetClient } from "@roset/sdk";
 
-const client = new RosetClient({ apiKey: "rsk_live_..." });
+const client = new RosetClient({ apiKey: "rsk*live*..." });
 
 // Acquire a lease before modifying
 const lease = await client.leases.acquire(fileId, {
-  ttlSeconds: 300,
-  mode: "write",
+ttlSeconds: 300,
+mode: "write",
 });
 
 try {
-  // Perform modifications
-  const { uploadUrl, uploadToken } = await client.uploads.init({
-    nodeId: fileId,
-    contentType: "application/pdf",
-    sizeBytes: newContent.length,
-  });
+// Perform modifications
+const { uploadUrl, uploadToken } = await client.uploads.init({
+nodeId: fileId,
+contentType: "application/pdf",
+sizeBytes: newContent.length,
+});
 
-  await fetch(uploadUrl, { method: "PUT", body: newContent });
-  await client.uploads.commit({ uploadToken, etag });
+await fetch(uploadUrl, { method: "PUT", body: newContent });
+await client.uploads.commit({ uploadToken, etag });
 } finally {
-  // Always release the lease
-  await client.leases.release(fileId, lease.leaseId);
-}
-```
+// Always release the lease
+await client.leases.release(fileId, lease.leaseId);
+}`} />

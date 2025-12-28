@@ -193,19 +193,17 @@ The Shares API enables creating and managing shareable links for files and folde
 
 ## Example: Creating a Password-Protected Share
 
-```typescript
-import { RosetClient } from "@roset/sdk";
+<CodeBlock language="typescript" code={`import { RosetClient } from "@roset/sdk";
 
-const client = new RosetClient({ apiKey: "rsk_live_..." });
+const client = new RosetClient({ apiKey: "rsk*live*..." });
 
 // Create a password-protected share that expires in 24 hours
 const share = await client.shares.create({
-  nodeId: file.id,
-  expiresIn: "24h",
-  password: "secret123",
-  maxDownloads: 10,
+nodeId: file.id,
+expiresIn: "24h",
+password: "secret123",
+maxDownloads: 10,
 });
 
-console.log(`Share URL: ${share.url}`);
-// Share URL: https://share.roset.dev/shr_Kj8nM2pL4qR7...
-```
+console.log(\`Share URL: \${share.url}\`);
+// Share URL: https://share.roset.dev/shr_Kj8nM2pL4qR7...`} />

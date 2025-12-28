@@ -27,9 +27,10 @@ import { Cards, Card } from "nextra/components";
 
 Roset is a **control plane**: it manages namespace, policies, and coordination. Your files upload and download directly to/from your object storage via signed URLs.
 
-```text
-Client → Roset (auth + resolve) → signed URL → Client → S3/R2/MinIO
-```
+<CodeBlock
+  language="text"
+  code={`Client → Roset (auth + resolve) → signed URL → Client → S3/R2/MinIO`}
+/>
 
 ## Key Features
 

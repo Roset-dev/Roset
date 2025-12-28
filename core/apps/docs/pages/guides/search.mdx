@@ -9,13 +9,14 @@ Roset provides powerful search across your files using PostgreSQL trigram indexe
 
 ## Basic Search
 
-```typescript
-const results = await client.search("/v1/search", {
+<CodeBlock
+  language="typescript"
+  code={`const results = await client.search("/v1/search", {
   q: "report", // Search query
   type: "file", // 'file' or 'folder'
   pageSize: 20,
-});
-```
+});`}
+/>
 
 ## Filter Options
 
@@ -36,34 +37,37 @@ const results = await client.search("/v1/search", {
 
 Search by custom metadata:
 
-```typescript
-const results = await client.search("/v1/search", {
+<CodeBlock
+  language="typescript"
+  code={`const results = await client.search("/v1/search", {
   metadata: {
     project: "alpha",
     status: "published",
   },
-});
-```
+});`}
+/>
 
 ## Quick Search (Autocomplete)
 
 For fast autocomplete:
 
-```typescript
-const suggestions = await client.search("/v1/search/quick", {
+<CodeBlock
+  language="typescript"
+  code={`const suggestions = await client.search("/v1/search/quick", {
   q: "rep",
   limit: 5,
-});
-```
+});`}
+/>
 
 Returns just `id`, `name`, and `type` for speed.
 
 ## Sorting
 
-```typescript
-const results = await client.search("/v1/search", {
+<CodeBlock
+  language="typescript"
+  code={`const results = await client.search("/v1/search", {
   q: "report",
   sortBy: "relevance", // 'name', 'size', 'created_at', 'relevance'
   sortOrder: "desc",
-});
-```
+});`}
+/>

@@ -11,22 +11,18 @@ Roset uses soft-delete: deleted files go to trash and can be restored within the
 
 When you delete a file, it's marked with a `deleted_at` timestamp:
 
-```typescript
-// Soft delete
+<CodeBlock language="typescript" code={`// Soft delete
 await client.nodes.delete(nodeId);
 
 // Node still exists but is hidden
 const node = await client.nodes.get(nodeId);
-console.log(node.deletedAt); // "2025-01-15T10:30:00Z"
-```
+console.log(node.deletedAt); // "2025-01-15T10:30:00Z"`} />
 
 ## Restore from Trash
 
 Restore a deleted file before retention expires:
 
-```typescript
-await client.nodes.restore(nodeId);
-```
+<CodeBlock language="typescript" code={`await client.nodes.restore(nodeId);`} />
 
 <Callout type="note">
   Restore fails if a file with the same name already exists at the original
@@ -37,11 +33,12 @@ await client.nodes.restore(nodeId);
 
 Each mount has a configurable `retentionDays` setting:
 
-```typescript
-await client.mounts.update(mountId, {
+<CodeBlock
+  language="typescript"
+  code={`await client.mounts.update(mountId, {
   retentionDays: 30, // Keep deleted files for 30 days
-});
-```
+});`}
+/>
 
 | Value  | Behavior                    |
 | ------ | --------------------------- |
@@ -67,22 +64,21 @@ Permanently delete a file immediately:
   object storage.
 </Callout>
 
-```bash
-# Via API (if retention allows)
-DELETE /v1/nodes/:id/permanent
-```
+<CodeBlock
+  language="bash"
+  code={`# Via API (if retention allows)
+DELETE /v1/nodes/:id/permanent`}
+/>
 
 ## View Retention Info
 
 Get trash statistics for a mount:
 
-```typescript
-const { retention } = await client.mounts.get(mountId);
+<CodeBlock language="typescript" code={`const { retention } = await client.mounts.get(mountId);
 
 console.log(retention.retentionDays); // 30
 console.log(retention.trashCount); // 42 files in trash
-console.log(retention.oldestTrash); // "2025-01-01T00:00:00Z"
-```
+console.log(retention.oldestTrash); // "2025-01-01T00:00:00Z"`} />
 
 ## Compliance Considerations
 

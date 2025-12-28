@@ -83,13 +83,14 @@ graph LR
 
 Every checkpoint folder supports a **latest** pointer concept:
 
-```
-/checkpoints/
+<CodeBlock
+  language="text"
+  code={`/checkpoints/
 ├── step-1000/     (committed)
 ├── step-2000/     (committed)
 ├── step-3000/     (committed, latest)
-└── step-4000/     (active, staging)
-```
+└── step-4000/     (active, staging)`}
+/>
 
 **Semantics:**
 
@@ -139,101 +140,101 @@ Every checkpoint folder supports a **latest** pointer concept:
 
 Roset provides first-class integrations for popular ML frameworks. Install the Python SDK:
 
-```bash
-pip install roset[all]  # All frameworks
+<CodeBlock
+  language="bash"
+  code={`pip install roset[all]  # All frameworks
 # or
 pip install roset[pytorch]       # PyTorch Lightning
 pip install roset[huggingface]   # Hugging Face
-pip install roset[ray]           # Ray Train
-```
+pip install roset[ray]           # Ray Train`}
+/>
 
 ### PyTorch Lightning
 
-```python
-from pytorch_lightning import Trainer
+<CodeBlock language="python" code={`from pytorch_lightning import Trainer
 from roset import Client
 from roset.integrations.pytorch import RosetCheckpointIO
 
-client = Client(api_url="https://api.roset.dev", api_key="rsk_...")
+client = Client(api*url="https://api.roset.dev", api_key="rsk*...")
 
 trainer = Trainer(
-    plugins=[RosetCheckpointIO(
-        client=client,
-        mount_path="/mnt/roset",
-        checkpoint_dir="/checkpoints",
-        update_ref="latest",  # Atomic pointer update after each save
-    )],
+plugins=[RosetCheckpointIO(
+client=client,
+mount_path="/mnt/roset",
+checkpoint_dir="/checkpoints",
+update_ref="latest", # Atomic pointer update after each save
+)],
 )
 
 # Resume from latest (always works!)
-trainer.fit(model, ckpt_path="latest")
-```
+
+trainer.fit(model, ckpt_path="latest")`} />
 
 ### Hugging Face Trainer
 
-```python
-from transformers import Trainer
+<CodeBlock language="python" code={`from transformers import Trainer
 from roset import Client
 from roset.integrations.huggingface import RosetTrainerCallback
 
-client = Client(api_url="https://api.roset.dev", api_key="rsk_...")
+client = Client(api*url="https://api.roset.dev", api_key="rsk*...")
 
 trainer = Trainer(
-    model=model,
-    args=TrainingArguments(
-        output_dir="/mnt/roset/checkpoints/bert-finetune",
-        save_steps=1000,
-    ),
-    callbacks=[
-        RosetTrainerCallback(
-            client=client,
-            update_ref="latest",
-            async_commit=True,  # Non-blocking for large checkpoints
-        )
-    ],
+model=model,
+args=TrainingArguments(
+output_dir="/mnt/roset/checkpoints/bert-finetune",
+save_steps=1000,
+),
+callbacks=[
+RosetTrainerCallback(
+client=client,
+update_ref="latest",
+async_commit=True, # Non-blocking for large checkpoints
+)
+],
 )
 
-trainer.train()
-```
+trainer.train()`} />
 
 ### Ray Train
 
-```python
-from roset import Client
+<CodeBlock language="python" code={`from roset import Client
 from roset.integrations.ray import RosetRayTrainCallback
 
-client = Client(api_url="https://api.roset.dev", api_key="rsk_...")
+client = Client(api*url="https://api.roset.dev", api_key="rsk*...")
 roset_callback = RosetRayTrainCallback(client=client, update_ref="latest")
 
 # In your Ray Train loop, after saving checkpoint:
+
 checkpoint_path = "/mnt/roset/checkpoints/step-1000"
+
 # ... save your checkpoint files ...
 
 commit = roset_callback.process_checkpoint(checkpoint_path, step=1000)
 if commit:
-    print(f"Committed: {commit.id}")
-```
+print(f"Committed: {commit.id}")`} />
 
 ### Raw API
 
-```python
-import roset
+<CodeBlock language="python" code={`import roset
 
 client = roset.Client(api_url="...", api_key="...")
 
 # 1. Create checkpoint folder
+
 folder = client.create_folder("/checkpoints", f"step-{step}")
 
 # 2. Write files (via FUSE mount)
+
 # ... training code writes to /mnt/roset/checkpoints/step-{step}/
 
 # 3. Commit atomically
+
 commit = client.commit(folder.id, message=f"Step {step}")
 commit = client.wait_for_commit(commit.id)
 
 # 4. Update "latest" pointer
-client.update_ref("latest", commit.id)
-```
+
+client.update_ref("latest", commit.id)`} />
 
 ---
 
@@ -241,23 +242,24 @@ client.update_ref("latest", commit.id)
 
 For cross-folder atomic checkpoints (e.g., committing model + optimizer together):
 
-```python
-# 1. Create a commit group
+<CodeBlock language="python" code={`# 1. Create a commit group
 group = client.create_commit_group(message="Epoch 10 checkpoint")
 
 # 2. Stage individual folders
+
 model_dir = client.create_folder("/checkpoints", "model-epoch-10")
 optim_dir = client.create_folder("/checkpoints", "optim-epoch-10")
 
 # 3. Write files via FUSE mount...
 
 # 4. Commit each folder with the group ID
+
 client.commit(model_dir.id, group_id=group.id)
 client.commit(optim_dir.id, group_id=group.id)
 
 # 5. Seal the group atomically (all-or-nothing)
-client.seal_commit_group(group.id)
-```
+
+client.seal_commit_group(group.id)`} />
 
 **API Endpoints:**
 
@@ -273,18 +275,18 @@ client.seal_commit_group(group.id)
 
 Named pointers to commits for "resume from latest" workflows:
 
-```python
-# Get current "latest" pointer
+<CodeBlock language="python" code={`# Get current "latest" pointer
 latest = client.get_ref("latest")
 if latest:
     print(f"Latest commit: {latest.commit_id}")
 
 # Update pointer atomically
+
 client.update_ref("latest", commit.id)
 
 # Compare-and-swap (CAS) for safe concurrent updates
-client.update_ref("latest", commit.id, expected_commit_id=old_commit_id)
-```
+
+client.update_ref("latest", commit.id, expected_commit_id=old_commit_id)`} />
 
 **API Endpoints:**
 

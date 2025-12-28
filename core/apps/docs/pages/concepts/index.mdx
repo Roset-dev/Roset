@@ -52,14 +52,15 @@ Think of a tenant as a completely separate filesystem, even if multiple tenants 
 
 A **mount** connects a tenant to a storage backend (S3/R2/MinIO):
 
-```typescript
-Mount = {
+<CodeBlock
+  language="typescript"
+  code={`Mount = {
   provider: "s3" | "minio" | "r2",
   bucket: "my-bucket",
   region: "us-east-1",
   basePrefix: "optional/prefix",
-};
-```
+};`}
+/>
 
 Each tenant can have multiple mounts. One is marked as `default`.
 
@@ -67,16 +68,17 @@ Each tenant can have multiple mounts. One is marked as `default`.
 
 Everything in Roset is a **node** : either a file or a folder.
 
-```typescript
-Node = {
+<CodeBlock
+  language="typescript"
+  code={`Node = {
   id: "uuid",
   name: "report.pdf",
   type: "file" | "folder",
   parentId: "parent-uuid" | null,
   tenantId: "tenant-uuid",
   mountId: "mount-uuid",
-};
-```
+};`}
+/>
 
 ### Key Properties
 
@@ -88,15 +90,16 @@ Node = {
 
 Files can have multiple versions:
 
-```typescript
-FileVersion = {
+<CodeBlock
+  language="typescript"
+  code={`FileVersion = {
   nodeId: "file-uuid",
   storageKey: "tenant/file/1234567890",
   etag: "abc123",
   size: 1024000,
   isCurrent: true,
-};
-```
+};`}
+/>
 
 Only one version is `current` at a time.
 
@@ -104,14 +107,15 @@ Only one version is `current` at a time.
 
 Permissions are granted via ACLs with inheritance:
 
-```typescript
-ACL = {
+<CodeBlock
+  language="typescript"
+  code={`ACL = {
   nodeId: "folder-uuid",
   principalId: "user-123",
   permission: "read" | "write" | "admin",
   inheritMode: "inherit" | "override",
-};
-```
+};`}
+/>
 
 ### Inheritance Rules
 
@@ -123,16 +127,17 @@ ACL = {
 
 Share links provide token-based access:
 
-```typescript
-Share = {
+<CodeBlock
+  language="typescript"
+  code={`Share = {
   nodeId: "file-uuid",
   token: "abc123...",
   scope: "read" | "write",
   expiresAt: "2025-01-01T00:00:00Z",
   password: "hashed"(optional),
   maxDownloads: 10(optional),
-};
-```
+};`}
+/>
 
 Shares work independently of user ACLs.
 
@@ -140,14 +145,15 @@ Shares work independently of user ACLs.
 
 Every mutation is recorded:
 
-```typescript
-Op = {
+<CodeBlock
+  language="typescript"
+  code={`Op = {
   tenantId: "...",
   actorId: "user-123",
   action: "node.created" | "upload.completed" | ...,
   targetNodeId: "...",
   payload: { ... }
-}
-```
+}`}
+/>
 
 The ops table is append-only for compliance.

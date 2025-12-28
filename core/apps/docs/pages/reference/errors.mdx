@@ -38,13 +38,14 @@ All errors include a machine-readable `code` and human-readable `message`.
 
 ## Error Response Format
 
-```json
-{
+<CodeBlock
+  language="json"
+  code={`{
   "error": "A node with that name already exists",
   "code": "NAME_CONFLICT",
   "details": {
     "existingNodeId": "abc123...",
     "name": "report.pdf"
   }
-}
-```
+}`}
+/>

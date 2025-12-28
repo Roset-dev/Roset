@@ -157,21 +157,19 @@ The Search API enables finding nodes by name, metadata, and content type across 
 
 ## Example: Searching with Filters
 
-```typescript
-import { RosetClient } from "@roset/sdk";
+<CodeBlock language="typescript" code={`import { RosetClient } from "@roset/sdk";
 
-const client = new RosetClient({ apiKey: "rsk_live_..." });
+const client = new RosetClient({ apiKey: "rsk*live*..." });
 
 // Search for PDFs created this month
 const results = await client.search({
-  q: "quarterly report",
-  type: "file",
-  contentType: "application/pdf",
-  createdAfter: "2025-01-01T00:00:00Z",
-  limit: 20,
+q: "quarterly report",
+type: "file",
+contentType: "application/pdf",
+createdAfter: "2025-01-01T00:00:00Z",
+limit: 20,
 });
 
 for (const item of results.items) {
-  console.log(`${item.name} - ${item.path}`);
-}
-```
+console.log(\`\${item.name} - \${item.path}\`);
+}`} />

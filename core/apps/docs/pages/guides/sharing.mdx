@@ -9,8 +9,7 @@ Roset lets you create secure share links for any file or folder.
 
 ## Create a Share Link
 
-```typescript
-const share = await client.shares.create(nodeId, {
+<CodeBlock language="typescript" code={`const share = await client.shares.create(nodeId, {
   expiresIn: "7d", // Expires in 7 days
   password: "secret", // Optional password
   maxDownloads: 100, // Optional download limit
@@ -18,18 +17,15 @@ const share = await client.shares.create(nodeId, {
 });
 
 console.log(share.url);
-// https://api.roset.dev/v1/s/abc123...
-```
+// https://api.roset.dev/v1/s/abc123...`} />
 
 ## Access a Share
 
-```typescript
-// Without password
+<CodeBlock language="typescript" code={`// Without password
 const content = await client.shares.access(token);
 
 // With password
-const content = await client.shares.access(token, { password: "secret" });
-```
+const content = await client.shares.access(token, { password: "secret" });`} />
 
 ## Folder Shares
 
@@ -41,9 +37,7 @@ When you share a folder, recipients can:
 
 ## Revoke a Share
 
-```typescript
-await client.shares.revoke(token);
-```
+<CodeBlock language="typescript" code={`await client.shares.revoke(token);`} />
 
 The share is immediately invalidated.
 

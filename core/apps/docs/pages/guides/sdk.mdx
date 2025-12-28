@@ -11,20 +11,20 @@ Use the `@roset/sdk` package to interact with Roset.
 
 ## Installation
 
-```bash
-npm install @roset/sdk
+<CodeBlock
+  language="bash"
+  code={`npm install @roset/sdk
 # or
-pnpm add @roset/sdk
-```
+pnpm add @roset/sdk`}
+/>
 
 ## Quick Start
 
-```typescript
-import { RosetClient } from "@roset/sdk";
+<CodeBlock language="typescript" code={`import { RosetClient } from "@roset/sdk";
 
 const client = new RosetClient({
-  baseUrl: "https://api.roset.dev",
-  apiKey: "rk_...",
+baseUrl: "https://api.roset.dev",
+apiKey: "rk\_...",
 });
 
 // Resolve paths
@@ -32,20 +32,19 @@ const nodes = await client.nodes.resolve(["/documents", "/images"]);
 
 // Create a folder
 const folder = await client.nodes.createFolder("Reports", {
-  parentPath: "/documents",
+parentPath: "/documents",
 });
 
 // Upload a file
 const file = await client.uploads.upload(
-  "/documents/Reports/q4.pdf",
-  pdfBuffer,
-  { contentType: "application/pdf" }
+"/documents/Reports/q4.pdf",
+pdfBuffer,
+{ contentType: "application/pdf" }
 );
 
 // Create a share link
 const share = await client.shares.create(file.id, { expiresIn: "7d" });
-console.log(share.url);
-```
+console.log(share.url);`} />
 
 ## Resources
 
@@ -95,19 +94,17 @@ console.log(share.url);
 
 ## Error Handling
 
-```typescript
-import { NotFoundError, ForbiddenError, RosetError } from "@roset/sdk";
+<CodeBlock language="typescript" code={`import { NotFoundError, ForbiddenError, RosetError } from "@roset/sdk";
 
 try {
-  await client.nodes.get("invalid-id");
+await client.nodes.get("invalid-id");
 } catch (error) {
-  if (error instanceof NotFoundError) {
-    console.log("Not found");
-  } else if (error instanceof ForbiddenError) {
-    console.log("Access denied");
-  }
+if (error instanceof NotFoundError) {
+console.log("Not found");
+} else if (error instanceof ForbiddenError) {
+console.log("Access denied");
 }
-```
+}`} />
 
 ## Retries
 
@@ -121,8 +118,9 @@ The SDK automatically retries failed requests:
 
 Mutations auto-generate idempotency keys. To provide your own:
 
-```typescript
-await client.nodes.create("folder", "folder", {
+<CodeBlock
+  language="typescript"
+  code={`await client.nodes.create("folder", "folder", {
   idempotencyKey: "my-unique-key",
-});
-```
+});`}
+/>

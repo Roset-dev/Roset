@@ -35,8 +35,9 @@ While metadata is cached, file data is streamed directly from the underlying obj
 
 Roset provides a Container Storage Interface (CSI) driver for seamless integration with Kubernetes.
 
-```yaml
-apiVersion: v1
+<CodeBlock
+  language="yaml"
+  code={`apiVersion: v1
 kind: Pod
 metadata:
   name: training-job
@@ -55,8 +56,8 @@ spec:
           volumeId: "dataset-uuid"
           apiUrl: "https://api.roset.dev"
         nodePublishSecretRef:
-          name: roset-api-key
-```
+          name: roset-api-key`}
+/>
 
 ## Best Practices for AI/ML
 

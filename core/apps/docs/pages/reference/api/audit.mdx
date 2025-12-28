@@ -210,15 +210,13 @@ The Audit API provides access to the append-only operation log. Every action in 
 
 ## Example: Tracking File Changes
 
-```typescript
-import { RosetClient } from "@roset/sdk";
+<CodeBlock language="typescript" code={`import { RosetClient } from "@roset/sdk";
 
-const client = new RosetClient({ apiKey: "rsk_live_..." });
+const client = new RosetClient({ apiKey: "rsk*live*..." });
 
 // Get the last 10 operations on a file
 const history = await client.audit.getNodeHistory(fileId, { limit: 10 });
 
 for (const op of history.items) {
-  console.log(`${op.timestamp}: ${op.action} by ${op.principalEmail}`);
-}
-```
+console.log(\`\${op.timestamp}: \${op.action} by \${op.principalEmail}\`);
+}`} />

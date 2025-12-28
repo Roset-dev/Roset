@@ -16,38 +16,38 @@ Leases provide advisory locking for concurrent file access. Use them when multip
 
 ## Acquire a Lease
 
-```typescript
-const client = new RosetClient({
+<CodeBlock language="typescript" code={`const client = new RosetClient({
   baseUrl: "https://api.roset.dev",
   apiKey: "rsk_live_...",
 });
 
 // Acquire exclusive lease for 5 minutes
 const lease = await client.leases.acquire(nodeId, {
-  mode: "exclusive",
-  durationSeconds: 300,
+mode: "exclusive",
+durationSeconds: 300,
 });
 
-console.log(lease.expiresAt);
-```
+console.log(lease.expiresAt);`} />
 
 ## Renew a Lease
 
 Extend an existing lease before it expires:
 
-```typescript
-const renewed = await client.leases.renew(nodeId, {
+<CodeBlock
+  language="typescript"
+  code={`const renewed = await client.leases.renew(nodeId, {
   durationSeconds: 300,
-});
-```
+});`}
+/>
 
 ## Release a Lease
 
 Explicitly release when done:
 
-```typescript
-await client.leases.release(nodeId);
-```
+<CodeBlock
+  language="typescript"
+  code={`await client.leases.release(nodeId);`}
+/>
 
 <Callout type="note">
   Leases auto-expire after their duration. Explicit release is optional but
@@ -58,8 +58,9 @@ await client.leases.release(nodeId);
 
 Execute a function while holding a lease, with automatic cleanup:
 
-```typescript
-const result = await client.leases.withLease(
+<CodeBlock
+  language="typescript"
+  code={`const result = await client.leases.withLease(
   nodeId,
   { mode: "exclusive", durationSeconds: 60 },
   async (lease) => {
@@ -68,34 +69,34 @@ const result = await client.leases.withLease(
     return "done";
   }
 );
-// Lease automatically released
-```
+// Lease automatically released`}
+/>
 
 ## Check Existing Leases
 
 List all leases on a file:
 
-```typescript
-const leases = await client.leases.getForNode(nodeId);
-```
+<CodeBlock
+  language="typescript"
+  code={`const leases = await client.leases.getForNode(nodeId);`}
+/>
 
 List all your active leases:
 
-```typescript
-const myLeases = await client.leases.getMine();
-```
+<CodeBlock
+  language="typescript"
+  code={`const myLeases = await client.leases.getMine();`}
+/>
 
 ## Conflict Handling
 
 If a lease conflicts, `acquire()` returns `null`:
 
-```typescript
-const lease = await client.leases.acquire(nodeId, { mode: "exclusive" });
+<CodeBlock language="typescript" code={`const lease = await client.leases.acquire(nodeId, { mode: "exclusive" });
 
 if (!lease) {
-  console.log("File is locked by another process");
-}
-```
+console.log("File is locked by another process");
+}`} />
 
 ## API Endpoints
 

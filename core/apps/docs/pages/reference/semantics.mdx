@@ -29,9 +29,10 @@ Paths are **derived** from the node hierarchy, not stored. The path `/a/b/c.txt`
 
 Renaming a file or folder is **O(1)**. Moving a folder updates the path for all its descendants (Materialized Path pattern). This trade-off enables blazing fast O(1) path resolution and subtree querying.
 
-```http
-PATCH /v1/nodes/:id { name: "new-name", parentId: "new-parent-id" }
-```
+<CodeBlock
+  language="http"
+  code={`PATCH /v1/nodes/:id { name: "new-name", parentId: "new-parent-id" }`}
+/>
 
 ### O(1) Hierarchical Queries
 
