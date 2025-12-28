@@ -36,13 +36,28 @@ export class CommitsResource {
 
   /**
    * List commits for a specific folder
+   * 
+   * @param nodeId - The folder node ID
+   * @param options - Pagination and filtering options
    */
-  async list(nodeId: string, page = 1, pageSize = 50): Promise<PaginatedResult<Commit>> {
+  async list(
+    nodeId: string, 
+    options?: { 
+      page?: number; 
+      pageSize?: number;
+      status?: 'pending' | 'completed' | 'failed';
+    }
+  ): Promise<PaginatedResult<Commit>> {
     const query = new URLSearchParams({
       node_id: nodeId,
-      page: page.toString(),
-      page_size: pageSize.toString()
+      page: (options?.page ?? 1).toString(),
+      page_size: (options?.pageSize ?? 50).toString()
     });
+    
+    if (options?.status) {
+      query.set('status', options.status);
+    }
+    
     return this.http.get<PaginatedResult<Commit>>(`/v1/commits?${query.toString()}`);
   }
 
