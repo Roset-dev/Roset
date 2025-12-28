@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 
 from roset.http_client import HttpClient
-from roset.models import SearchResult
+from roset.models import PaginatedList, SearchResult
 
 
 class SearchResource:
@@ -25,7 +25,7 @@ class SearchResource:
         end_date: datetime | str | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> list[SearchResult]:
+    ) -> PaginatedList[SearchResult]:
         """Search for files and folders."""
         params: dict[str, Any] = {
             "q": query,
@@ -55,4 +55,4 @@ class SearchResource:
             )
 
         data = self.http.request("GET", "/v1/search", params=params)
-        return [SearchResult.model_validate(item) for item in data.get("items", [])]
+        return PaginatedList[SearchResult].model_validate(data)

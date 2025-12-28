@@ -7,9 +7,23 @@ Pydantic models for API responses.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Generic, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict
+
+T = TypeVar("T")
+
+class PaginatedList(BaseModel, Generic[T]):
+    """Generic paginated list response."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    items: list[T]
+    total: int
+    has_more: bool
+    page: int
+    page_size: int
+
 
 
 class Node(BaseModel):

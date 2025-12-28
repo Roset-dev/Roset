@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from roset.http_client import HttpClient
-from roset.models import Node
+from roset.models import Node, PaginatedList
 
 
 class Resource:
@@ -80,7 +80,7 @@ class NodesResource(Resource):
         sort_by: str | None = None,
         sort_order: str | None = None,
         type: Literal["file", "folder"] | None = None,
-    ) -> dict[str, Any]:
+    ) -> PaginatedList[Node]:
         """List children of a folder."""
         params: dict[str, Any] = {"page": page, "pageSize": page_size}
         if sort_by:
@@ -90,7 +90,8 @@ class NodesResource(Resource):
         if type:
             params["type"] = type
 
-        return self.http.request("GET", f"/v1/nodes/{node_id}/children", params=params)
+        data = self.http.request("GET", f"/v1/nodes/{node_id}/children", params=params)
+        return PaginatedList[Node].model_validate(data)
 
     def create(
         self,
@@ -237,7 +238,7 @@ class NodesResource(Resource):
         page_size: int = 50,
         sort_by: str | None = None,
         sort_order: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> PaginatedList[Node]:
         """
         List items in trash.
 
@@ -256,7 +257,8 @@ class NodesResource(Resource):
         if sort_order:
             params["sortOrder"] = sort_order
 
-        return self.http.request("GET", "/v1/trash", params=params)
+        data = self.http.request("GET", "/v1/trash", params=params)
+        return PaginatedList[Node].model_validate(data)
 
     def empty_trash(self) -> dict[str, int]:
         """

@@ -39,6 +39,8 @@ export interface TenantStats {
   activeShares: number;
   /** Number of currently connected devices */
   connectedDevices: number;
+  /** Total number of unique devices (ever connected) */
+  totalDevices: number;
   /** ISO timestamp of when stats were computed */
   computedAt: string;
 }

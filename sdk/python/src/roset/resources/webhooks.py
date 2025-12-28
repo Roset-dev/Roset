@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, List  # noqa: UP035
 
 from roset.http_client import HttpClient
-from roset.models import Webhook, WebhookDelivery
+from roset.models import PaginatedList, Webhook, WebhookDelivery
 
 
 class WebhooksResource:
@@ -80,16 +80,14 @@ class WebhooksResource:
 
     def list_deliveries(
         self, webhook_id: str, page: int = 1, page_size: int = 20
-    ) -> dict[str, Any]:
-        """List recent deliveries. Returns paginated result dict."""
+    ) -> PaginatedList[WebhookDelivery]:
+        """List recent deliveries. Returns paginated result."""
         data = self.http.request(
             "GET",
             f"/v1/webhooks/{webhook_id}/deliveries",
             params={"page": page, "page_size": page_size},
         )
-        # Note: We return the raw dict to preserve pagination metadata (total, has_more).
-        # Future: Introduce a PaginatedResult generic type for Python SDK.
-        return data
+        return PaginatedList[WebhookDelivery].model_validate(data)
 
     def retry_delivery(self, webhook_id: str, delivery_id: str) -> WebhookDelivery:
         """Retry a failed delivery."""
