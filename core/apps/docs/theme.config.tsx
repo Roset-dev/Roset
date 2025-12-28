@@ -12,7 +12,7 @@ const config: DocsThemeConfig = {
   project: {
     link: 'https://github.com/Roset-dev/roset',
   },
-  docsRepositoryBase: 'https://github.com/Roset-dev/roset/tree/main/core/apps/docs',
+  docsRepositoryBase: 'https://github.com/Roset-dev/Roset/tree/main/core/apps/docs',
   footer: {
     text: (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
