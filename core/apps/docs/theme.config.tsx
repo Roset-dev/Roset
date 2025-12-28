@@ -9,6 +9,7 @@ const config: DocsThemeConfig = {
       <span style={{ fontWeight: 700, fontSize: '1.25rem' }}>Roset</span>
     </div>
   ),
+  logoLink: 'https://www.roset.dev',
   project: {
     link: 'https://github.com/Roset-dev/roset',
   },
