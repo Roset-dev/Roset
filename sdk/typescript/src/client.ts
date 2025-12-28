@@ -61,7 +61,6 @@ export class RosetClient {
     // Enforce production URL
     const finalConfig = {
       ...config,
-      baseUrl: "https://api.roset.dev",
     };
 
     this.config = finalConfig;
@@ -89,13 +88,6 @@ export class RosetClient {
   }
 
   /**
-   * Get the configured tenant ID
-   */
-  get tenantId(): string | undefined {
-    return this.config.tenantId;
-  }
-
-  /**
    * Get the configured mount ID
    */
   get mountId(): string | undefined {
@@ -118,14 +110,5 @@ export class RosetClient {
     });
   }
 
-  /**
-   * Create a new client scoped to a specific tenant
-   * Useful for multi-tenant management scenarios
-   */
-  useTenant(tenantId: string): RosetClient {
-    return new RosetClient({
-      ...this.config,
-      tenantId,
-    });
-  }
+
 }

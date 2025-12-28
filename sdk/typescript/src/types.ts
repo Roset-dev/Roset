@@ -7,14 +7,9 @@
 // ============================================================================
 
 export interface RosetClientConfig {
-  /** Base URL of the Roset API (e.g., 'https://api.roset.dev') */
-  baseUrl: string;
 
   /** API key for authentication */
   apiKey: string;
-
-  /** Default tenant ID (optional, derived from API key if not specified) */
-  tenantId?: string;
 
   /** Default mount ID (optional, uses default mount if not specified) */
   mountId?: string;

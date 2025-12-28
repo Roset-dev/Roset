@@ -34,9 +34,7 @@ export class RosetAdmin {
   public readonly tenant: TenantResource;
 
   constructor(config: RosetClientConfig) {
-    if (!config.baseUrl) {
-      throw new Error("baseUrl is required");
-    }
+
     if (!config.apiKey) {
       throw new Error("apiKey is required");
     }

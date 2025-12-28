@@ -13,16 +13,16 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 export class HttpClient {
   private readonly baseUrl: string;
   private readonly apiKey: string;
-  private readonly tenantId?: string;
+
   private readonly mountId?: string;
   private readonly timeout: number;
   private readonly maxRetries: number;
   private readonly fetchFn: typeof globalThis.fetch;
 
   constructor(config: RosetClientConfig) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, ""); // Remove trailing slash
+    this.baseUrl = "https://api.roset.dev";
     this.apiKey = config.apiKey;
-    this.tenantId = config.tenantId;
+
     this.mountId = config.mountId;
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
     this.maxRetries = config.retries ?? DEFAULT_RETRIES;
@@ -79,10 +79,7 @@ export class HttpClient {
       ...options?.headers,
     };
 
-    // Add tenant and mount context headers
-    if (this.tenantId) {
-      headers["X-Roset-Tenant-Id"] = this.tenantId;
-    }
+
     if (this.mountId) {
       headers["X-Roset-Mount-Id"] = this.mountId;
     }
