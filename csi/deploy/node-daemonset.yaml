@@ -31,8 +31,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            - name: ROSET_API_URL
-              value: "https://api.roset.dev"
           securityContext:
             privileged: true
             capabilities:

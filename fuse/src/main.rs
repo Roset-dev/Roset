@@ -28,7 +28,7 @@ fn main() {
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
     info!("Roset FUSE client v{}", env!("CARGO_PKG_VERSION"));
-    info!("API URL: {}", config.api_url);
+    info!("API URL: https://api.roset.dev");
     info!("Mount point: {:?}", config.mountpoint);
 
     // Set up graceful shutdown

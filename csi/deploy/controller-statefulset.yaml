@@ -27,8 +27,6 @@ spec:
           args:
             - "--endpoint=unix:///csi/csi.sock"
           env:
-            - name: ROSET_API_URL
-              value: "https://api.roset.dev"
             - name: ROSET_API_KEY
               valueFrom:
                 secretKeyRef:

@@ -23,8 +23,7 @@ pip install roset[all]         # All integrations`}
 <CodeBlock language="python" code={`import roset
 
 client = roset.Client(
-api*url="https://api.roset.dev",
-api_key="rsk*...",
+api_key="rsk\*...",
 )
 
 # Create a folder
@@ -50,7 +49,7 @@ client.update_ref("latest", commit.id)`} />
 from roset import Client
 from roset.integrations.pytorch import RosetCheckpointIO
 
-client = Client(api_url="...", api_key="...")
+client = Client(api_key="...")
 
 trainer = Trainer(
 plugins=[RosetCheckpointIO(
@@ -70,7 +69,7 @@ trainer.fit(model, ckpt_path="latest")`} />
 from roset import Client
 from roset.integrations.huggingface import RosetTrainerCallback
 
-client = Client(api_url="...", api_key="...")
+client = Client(api_key="...")
 
 trainer = Trainer(
 model=model,
@@ -92,7 +91,7 @@ async_commit=True, # Non-blocking
 <CodeBlock language="python" code={`from roset import Client
 from roset.integrations.ray import RosetRayTrainCallback
 
-client = Client(api_url="...", api_key="...")
+client = Client(api_key="...")
 roset_callback = RosetRayTrainCallback(client=client)
 
 # After saving checkpoint:
@@ -146,7 +145,6 @@ The client automatically retries on transient errors:
 <CodeBlock
   language="python"
   code={`client = roset.Client(
-    api_url="...",
     api_key="...",
     max_retries=5,
     backoff_factor=1.0,

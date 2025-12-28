@@ -60,14 +60,7 @@ func runMount(cmd *cobra.Command, args []string) error {
 	// Build arguments
 	fuseArgs := []string{fusePath, mountpoint}
 
-	// Add API URL and key from config (CLI flags override)
-	url := cfg.APIURL
-	if apiURL != "" {
-		url = apiURL
-	}
-	if url != "" {
-		fuseArgs = append(fuseArgs, "--api-url", url)
-	}
+	// Add API key from config (CLI flags override)
 
 	key := cfg.APIKey
 	if apiKey != "" {

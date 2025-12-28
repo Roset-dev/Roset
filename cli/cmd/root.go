@@ -12,7 +12,6 @@ import (
 var (
 	jsonOutput bool
 	verbose    bool
-	apiURL     string
 	apiKey     string
 )
 
@@ -43,7 +42,6 @@ func init() {
 
 	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Output in JSON format")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "Enable verbose logging")
-	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "", "Roset API URL (overrides config)")
 	rootCmd.PersistentFlags().StringVar(&apiKey, "api-key", "", "Roset API Key (overrides config)")
 }
 

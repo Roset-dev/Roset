@@ -23,7 +23,6 @@ impl ControllerService {
     async fn ensure_path_recursive(
         &self,
         client: &reqwest::Client,
-        api_url: &str,
         api_key: &str,
         path: &str,
     ) -> Result<(), Status> {
@@ -47,7 +46,7 @@ impl ControllerService {
                 "parentPath": parent_path
             });
 
-            let create_node_url = format!("{}/v1/nodes", api_url.trim_end_matches('/'));
+            let create_node_url = "https://api.roset.dev/v1/nodes";
             let resp = client
                 .post(&create_node_url)
                 .header("Authorization", format!("Bearer {}", api_key))
@@ -90,7 +89,6 @@ impl ControllerService {
     async fn create_volume_from_snapshot(
         &self,
         name: &str,
-        api_url: &str,
         api_key: &str,
         mount_id: &str,
         base_path: &str,
@@ -102,7 +100,7 @@ impl ControllerService {
         // Create a ref that points to the snapshot (commit)
         // Ref name: k8s/restore/<pvc-name>
         let ref_name = format!("k8s/restore/{}", name);
-        let ref_url = format!("{}/v1/refs", api_url.trim_end_matches('/'));
+        let ref_url = "https://api.roset.dev/v1/refs";
 
         let body = serde_json::json!({
             "name": ref_name,
@@ -238,9 +236,7 @@ impl Controller for ControllerService {
 
         // 2. Get parameters (API URL, Mount ID, and Base Path)
         let params = req.parameters;
-        let api_url = params.get("apiUrl").ok_or_else(|| {
-            Status::invalid_argument("Missing 'apiUrl' in StorageClass parameters")
-        })?;
+        // apiUrl is removed/ignored
 
         // Mount ID is required for Roset FUSE
         let mount_id = params.get("mountId").ok_or_else(|| {
@@ -261,7 +257,6 @@ impl Controller for ControllerService {
                         return self
                             .create_volume_from_snapshot(
                                 &name,
-                                api_url,
                                 api_key,
                                 mount_id,
                                 base_path,
@@ -281,12 +276,13 @@ impl Controller for ControllerService {
         }
 
         // 4. Setup Client
+        // 4. Setup Client
         let client = reqwest::Client::new();
-        let create_node_url = format!("{}/v1/nodes", api_url.trim_end_matches('/'));
+        let create_node_url = "https://api.roset.dev/v1/nodes";
 
         // 5. Ensure Base Path exists
         if base_path != "/" {
-            self.ensure_path_recursive(&client, api_url, api_key, base_path)
+            self.ensure_path_recursive(&client, api_key, base_path)
                 .await?;
         }
 
@@ -323,7 +319,7 @@ impl Controller for ControllerService {
                 .to_string()
         } else if resp.status().as_u16() == 409 {
             // 7. Handle Conflict: Verify it is a folder
-            let resolve_url = format!("{}/v1/resolve", api_url.trim_end_matches('/'));
+            let resolve_url = "https://api.roset.dev/v1/resolve";
             let resolve_resp = client
                 .post(&resolve_url)
                 .header("Authorization", format!("Bearer {}", api_key))
@@ -406,12 +402,11 @@ impl Controller for ControllerService {
             Status::invalid_argument("Missing 'apiKey' in DeleteVolumeRequest secrets")
         })?;
 
-        // Get API URL from volume context or use default
-        let api_url =
-            std::env::var("ROSET_API_URL").unwrap_or_else(|_| "https://api.roset.dev".to_string());
+        // API URL is hardcoded
+        let api_url = "https://api.roset.dev";
 
         let client = reqwest::Client::new();
-        let delete_url = format!("{}/v1/nodes/{}", api_url.trim_end_matches('/'), node_id);
+        let delete_url = format!("{}/v1/nodes/{}", api_url, node_id);
 
         let resp = client
             .delete(&delete_url)
@@ -496,11 +491,10 @@ impl Controller for ControllerService {
             Status::invalid_argument("Missing 'apiKey' in CreateSnapshotRequest secrets")
         })?;
 
-        let api_url =
-            std::env::var("ROSET_API_URL").unwrap_or_else(|_| "https://api.roset.dev".to_string());
+        let api_url = "https://api.roset.dev";
 
         let client = reqwest::Client::new();
-        let commit_url = format!("{}/v1/commits", api_url.trim_end_matches('/'));
+        let commit_url = format!("{}/v1/commits", api_url);
 
         let body = serde_json::json!({
             "node_id": source_volume_id,
@@ -603,8 +597,7 @@ impl Controller for ControllerService {
             return Err(Status::invalid_argument("Volume ID is required"));
         }
 
-        let api_url =
-            std::env::var("ROSET_API_URL").unwrap_or_else(|_| "https://api.roset.dev".to_string());
+        let api_url = "https://api.roset.dev";
 
         // Note: ControllerGetVolume typically doesn't have secrets in the request
         // We use the ROSET_API_KEY environment variable as fallback
@@ -612,7 +605,7 @@ impl Controller for ControllerService {
             .map_err(|_| Status::internal("ROSET_API_KEY environment variable not set"))?;
 
         let client = reqwest::Client::new();
-        let get_url = format!("{}/v1/nodes/{}", api_url.trim_end_matches('/'), volume_id);
+        let get_url = format!("{}/v1/nodes/{}", api_url, volume_id);
 
         let resp = client
             .get(&get_url)
@@ -666,8 +659,7 @@ impl Controller for ControllerService {
             return Err(Status::invalid_argument("Snapshot ID is required"));
         }
 
-        let api_url =
-            std::env::var("ROSET_API_URL").unwrap_or_else(|_| "https://api.roset.dev".to_string());
+        let api_url = "https://api.roset.dev";
 
         let api_key = std::env::var("ROSET_API_KEY")
             .map_err(|_| Status::internal("ROSET_API_KEY environment variable not set"))?;
@@ -675,7 +667,7 @@ impl Controller for ControllerService {
         let client = reqwest::Client::new();
         let get_url = format!(
             "{}/v1/commits/{}",
-            api_url.trim_end_matches('/'),
+            api_url,
             snapshot_id
         );
 
@@ -747,14 +739,13 @@ impl Controller for ControllerService {
             Status::invalid_argument("Missing 'apiKey' in ControllerModifyVolumeRequest secrets")
         })?;
 
-        let api_url =
-            std::env::var("ROSET_API_URL").unwrap_or_else(|_| "https://api.roset.dev".to_string());
+        let api_url = "https://api.roset.dev";
 
         // Extract mutable parameters (metadata updates)
         let mutable_params = req.mutable_parameters;
 
         let client = reqwest::Client::new();
-        let patch_url = format!("{}/v1/nodes/{}", api_url.trim_end_matches('/'), volume_id);
+        let patch_url = format!("{}/v1/nodes/{}", api_url, volume_id);
 
         // Prepare update body from mutable parameters
         let mut update_body = serde_json::Map::new();

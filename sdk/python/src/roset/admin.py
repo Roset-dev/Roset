@@ -18,7 +18,6 @@ class RosetAdmin:
 
     Example:
         admin = RosetAdmin(
-            api_url="https://api.roset.dev",
             api_key="rsk_...",
         )
         members = admin.org.list_members()
@@ -26,14 +25,13 @@ class RosetAdmin:
 
     def __init__(
         self,
-        api_url: str,
         api_key: str,
         timeout: float = 30.0,
         max_retries: int = 3,
         backoff_factor: float = 0.5,
     ):
         self._http = HttpClient(
-            api_url=api_url,
+            api_url="https://api.roset.dev",
             api_key=api_key,
             timeout=timeout,
             max_retries=max_retries,

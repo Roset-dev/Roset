@@ -16,10 +16,10 @@ type Client struct {
 	HTTPClient *http.Client
 }
 
-// NewClient creates a new API client with the given base URL and API key.
-func NewClient(baseURL, apiKey string) *Client {
+// NewClient creates a new API client with the given API key.
+func NewClient(apiKey string) *Client {
 	return &Client{
-		BaseURL: baseURL,
+		BaseURL: "https://api.roset.dev",
 		APIKey:  apiKey,
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,

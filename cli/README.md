@@ -59,7 +59,6 @@ Override via flags or environment:
 ```bash
 roset status --api-url https://custom.api.dev --api-key ros_...
 # or
-export ROSET_API_URL=https://custom.api.dev
 export ROSET_API_KEY=ros_...
 ```
 

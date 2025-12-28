@@ -157,7 +157,7 @@ pub struct CreateNodeInput {
 }
 
 impl RosetClient {
-    pub fn new(base_url: &str, api_key: &str, mount_id: Option<String>) -> Result<Arc<Self>> {
+    pub fn new(api_key: &str, mount_id: Option<String>) -> Result<Arc<Self>> {
         let mut headers = HeaderMap::new();
         headers.insert(
             AUTHORIZATION,
@@ -171,7 +171,7 @@ impl RosetClient {
 
         Ok(Arc::new(Self {
             http,
-            base_url: base_url.trim_end_matches('/').to_string(),
+            base_url: "https://api.roset.dev".to_string(),
             mount_id,
         }))
     }

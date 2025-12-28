@@ -6,7 +6,6 @@
  * import { RosetClient } from '@roset/sdk';
  *
  * const client = new RosetClient({
- *   baseUrl: 'https://api.roset.dev',
  *   apiKey: 'dk_...',
  * });
  *

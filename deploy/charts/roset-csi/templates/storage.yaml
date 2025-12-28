@@ -22,7 +22,6 @@ metadata:
     storageclass.kubernetes.io/is-default-class: {{ .Values.storageClass.isDefault | quote }}
 provisioner: csi.roset.dev
 parameters:
-  apiUrl: {{ .Values.roset.apiUrl | quote }}
   mountId: {{ required "A valid .Values.storageClass.mountId is required!" .Values.storageClass.mountId | quote }}
   basePath: {{ .Values.storageClass.basePath | quote }}
 reclaimPolicy: Delete

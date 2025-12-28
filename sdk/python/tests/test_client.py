@@ -5,7 +5,7 @@ from roset.exceptions import RosetAPIError, RosetNotFoundError
 
 def test_client_init():
     """Test data plane client initialization."""
-    client = RosetClient(api_url="http://localhost", api_key="test")
+    client = RosetClient(api_key="test")
     
     # Verify Data Plane Resources
     assert client.nodes is not None
@@ -23,7 +23,7 @@ def test_client_init():
 
 def test_admin_init():
     """Test control plane client initialization."""
-    admin = RosetAdmin(api_url="http://localhost", api_key="test")
+    admin = RosetAdmin(api_key="test")
     
     # Verify Control Plane Resources
     assert admin.org is not None

@@ -36,7 +36,7 @@ class RosetCheckpointIO(CheckpointIO):
         from roset.integrations.pytorch import RosetCheckpointIO
         from pytorch_lightning import Trainer
 
-        client = Client(api_url="...", api_key="...")
+        client = Client(api_key="...")
 
         trainer = Trainer(
             plugins=[RosetCheckpointIO(

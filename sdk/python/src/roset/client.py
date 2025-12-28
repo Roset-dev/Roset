@@ -22,7 +22,6 @@ class RosetClient:
 
     Example:
         client = RosetClient(
-            api_url="https://api.roset.dev",
             api_key="rsk_...",
         )
         nodes = client.nodes.resolve("/checkpoints")
@@ -30,7 +29,6 @@ class RosetClient:
 
     def __init__(
         self,
-        api_url: str,
         api_key: str,
         mount_id: str | None = None,
         timeout: float = 30.0,
@@ -38,7 +36,7 @@ class RosetClient:
         backoff_factor: float = 0.5,
     ):
         self._http = HttpClient(
-            api_url=api_url,
+            api_url="https://api.roset.dev",
             api_key=api_key,
             mount_id=mount_id,
             timeout=timeout,

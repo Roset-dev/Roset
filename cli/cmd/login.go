@@ -34,14 +34,16 @@ type loginModel struct {
 
 func initialLoginModel() loginModel {
 	ti := textinput.New()
-	ti.Placeholder = "https://api.roset.dev"
+	ti.Placeholder = "ros_..."
 	ti.Focus()
 	ti.CharLimit = 156
 	ti.Width = 40
+	ti.EchoMode = textinput.EchoPassword
 
 	return loginModel{
 		textInput: ti,
-		state:     0,
+		state:     1, // Start at Key input
+		url:       "https://api.roset.dev",
 	}
 }
 
@@ -104,17 +106,8 @@ func (m loginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil // Ignore while validating
 			}
 
-			if m.state == 0 {
-				m.url = m.textInput.Value()
-				if m.url == "" {
-					m.url = "https://api.roset.dev"
-				}
-				m.state = 1
-				m.textInput.Reset()
-				m.textInput.Placeholder = "ros_..."
-				m.textInput.EchoMode = textinput.EchoPassword
-				return m, nil
-			} else if m.state == 1 {
+			switch m.state {
+			case 1:
 				m.key = m.textInput.Value()
 				if m.key == "" {
 					m.err = fmt.Errorf("API key cannot be empty")
@@ -139,13 +132,6 @@ func (m loginModel) View() string {
 	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 
 	switch m.state {
-	case 0:
-		return fmt.Sprintf(
-			"%s\n\n%s\n\n%s",
-			titleStyle.Render("Enter your Roset API Endpoint:"),
-			m.textInput.View(),
-			"(esc to quit)",
-		) + "\n"
 	case 1:
 		return fmt.Sprintf(
 			"%s\n\n%s\n\n%s",

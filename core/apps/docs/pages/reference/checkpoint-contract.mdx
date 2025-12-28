@@ -155,7 +155,7 @@ pip install roset[ray]           # Ray Train`}
 from roset import Client
 from roset.integrations.pytorch import RosetCheckpointIO
 
-client = Client(api*url="https://api.roset.dev", api_key="rsk*...")
+client = Client(api_key="rsk\*...")
 
 trainer = Trainer(
 plugins=[RosetCheckpointIO(
@@ -176,7 +176,7 @@ trainer.fit(model, ckpt_path="latest")`} />
 from roset import Client
 from roset.integrations.huggingface import RosetTrainerCallback
 
-client = Client(api*url="https://api.roset.dev", api_key="rsk*...")
+client = Client(api_key="rsk\*...")
 
 trainer = Trainer(
 model=model,
@@ -200,7 +200,7 @@ trainer.train()`} />
 <CodeBlock language="python" code={`from roset import Client
 from roset.integrations.ray import RosetRayTrainCallback
 
-client = Client(api*url="https://api.roset.dev", api_key="rsk*...")
+client = Client(api_key="rsk\*...")
 roset_callback = RosetRayTrainCallback(client=client, update_ref="latest")
 
 # In your Ray Train loop, after saving checkpoint:
@@ -217,7 +217,7 @@ print(f"Committed: {commit.id}")`} />
 
 <CodeBlock language="python" code={`import roset
 
-client = roset.Client(api_url="...", api_key="...")
+client = roset.Client(api_key="...")
 
 # 1. Create checkpoint folder
 

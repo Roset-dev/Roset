@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	APIURL string `mapstructure:"api_url"`
+	APIURL string `mapstructure:"-"`
 	APIKey string `mapstructure:"api_key"`
 }
 
@@ -31,9 +31,6 @@ func Init() error {
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ROSET")
 
-	// Set defaults
-	viper.SetDefault("api_url", "https://api.roset.dev")
-
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return fmt.Errorf("error reading config file: %w", err)
@@ -45,11 +42,13 @@ func Init() error {
 		return fmt.Errorf("unable to decode config: %w", err)
 	}
 
+	// Enforce production URL
+	Cfg.APIURL = "https://api.roset.dev"
+
 	return nil
 }
 
 func Save(url, key string) error {
-	viper.Set("api_url", url)
 	viper.Set("api_key", key)
 
 	home, err := os.UserHomeDir()

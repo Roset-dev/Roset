@@ -50,7 +50,6 @@ Mount Roset filesystems natively in Kubernetes.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `apiUrl` | Yes | Roset API endpoint |
 | `mountId` | Yes | Your Roset mount ID |
 | `basePath` | No | Base path for volumes (default: `/volumes`) |
 | `cacheDir` | No | Local cache directory |

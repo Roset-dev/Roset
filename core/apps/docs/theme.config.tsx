@@ -22,7 +22,7 @@ const config: DocsThemeConfig = {
           <span style={{ fontWeight: 600 }}>Roset</span>
         </div>
         <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', opacity: 0.5 }}>
-          © {new Date().getFullYear()} THE FIELD RESOLUTION CORE. ALL RIGHTS RESERVED.
+          © {new Date().getFullYear()} ROSET. ALL RIGHTS RESERVED.
         </span>
       </div>
     ),

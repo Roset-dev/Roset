@@ -36,8 +36,6 @@ metadata:
     storageclass.kubernetes.io/is-default-class: "false"
 provisioner: csi.roset.dev
 parameters:
-  # Required: Roset API endpoint
-  apiUrl: "https://api.roset.dev"
   # Required: Your Roset mount ID (from console or API)
   mountId: "${MOUNT_ID}"
   # Base path for volume folders (default: /volumes)

@@ -16,7 +16,6 @@ serviceAccount:
   name: ""
 
 roset:
-  apiUrl: "https://api.roset.dev"
   # Name of existing secret containing api-key
   secretName: roset-credentials
   secretKey: api-key

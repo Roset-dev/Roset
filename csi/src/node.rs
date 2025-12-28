@@ -129,10 +129,7 @@ impl Node for NodeService {
             .get("mountId")
             .ok_or_else(|| Status::invalid_argument("Missing 'mountId' in volume_context"))?;
 
-        let api_url = volume_context
-            .get("apiUrl")
-            .cloned()
-            .unwrap_or_else(|| "https://api.roset.dev".to_string());
+        let api_url = "https://api.roset.dev".to_string();
 
         // Optional: ref for mounting a specific commit/ref
         let ref_name = volume_context.get("ref");
@@ -170,8 +167,6 @@ impl Node for NodeService {
         let mut cmd = Command::new("roset-fuse");
         cmd.arg("--mountpoint")
             .arg(&staging_path)
-            .arg("--api-url")
-            .arg(&api_url)
             .arg("--api-key-file")
             .arg(&key_file)
             .arg("--mount-id")

@@ -39,7 +39,7 @@ from transformers import Trainer, TrainingArguments
 from roset import Client
 from roset.integrations.huggingface import RosetTrainerCallback
 
-client = Client(api_url="...", api_key="...")
+client = Client(api_key="...")
 
 trainer = Trainer(
     model=model,
@@ -71,7 +71,7 @@ trainer.train()
 from roset import Client
 from roset.integrations.ray import RosetRayTrainCallback
 
-client = Client(api_url="...", api_key="...")
+client = Client(api_key="...")
 callback = RosetRayTrainCallback(client=client, update_ref="latest")
 
 # In your training function, after saving:
@@ -106,7 +106,6 @@ Roset enforces a strict contract that prevents partial checkpoints:
 
 ```python
 client = roset.Client(
-    api_url="https://api.roset.dev",
     api_key="rsk_...",
     mount_id=None,        # Optional: specific mount
     timeout=30.0,         # Request timeout
@@ -143,7 +142,6 @@ client.seal_commit_group(group.id)
 ## Environment Variables
 
 ```bash
-ROSET_API_URL=https://api.roset.dev
 ROSET_API_KEY=rsk_...
 ROSET_MOUNT_ID=mount_...  # Optional
 ```

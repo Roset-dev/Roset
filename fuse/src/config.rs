@@ -8,9 +8,7 @@ use std::path::PathBuf;
 #[command(name = "roset-fuse")]
 #[command(about = "Mount Roset-managed storage as a local filesystem")]
 pub struct Config {
-    /// Roset API base URL
-    #[arg(long, env = "ROSET_API_URL", default_value = "https://api.roset.dev")]
-    pub api_url: String,
+pub struct Config {
 
     /// Roset API key
     #[arg(long, env = "ROSET_API_KEY")]

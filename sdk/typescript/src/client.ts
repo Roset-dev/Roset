@@ -46,26 +46,29 @@ export class RosetClient {
   public readonly search: SearchResource;
 
   constructor(config: RosetClientConfig) {
-    if (!config.baseUrl) {
-      throw new Error("baseUrl is required");
-    }
     if (!config.apiKey) {
       throw new Error("apiKey is required");
     }
 
-    this.config = config;
-    this.http = new HttpClient(config);
+    // Enforce production URL
+    const finalConfig = {
+      ...config,
+      baseUrl: "https://api.roset.dev",
+    };
+
+    this.config = finalConfig;
+    this.http = new HttpClient(finalConfig);
 
     // Initialize resources
-    this.nodes = new NodesResource(this.http, config);
-    this.uploads = new UploadsResource(this.http, config);
-    this.shares = new SharesResource(this.http, config);
-    this.audit = new AuditResource(this.http, config);
-    this.mounts = new MountsResource(this.http, config);
-    this.leases = new LeasesResource(this.http, config);
-    this.commits = new CommitsResource(this.http, config);
-    this.refs = new RefsResource(this.http, config);
-    this.search = new SearchResource(this.http, config);
+    this.nodes = new NodesResource(this.http, finalConfig);
+    this.uploads = new UploadsResource(this.http, finalConfig);
+    this.shares = new SharesResource(this.http, finalConfig);
+    this.audit = new AuditResource(this.http, finalConfig);
+    this.mounts = new MountsResource(this.http, finalConfig);
+    this.leases = new LeasesResource(this.http, finalConfig);
+    this.commits = new CommitsResource(this.http, finalConfig);
+    this.refs = new RefsResource(this.http, finalConfig);
+    this.search = new SearchResource(this.http, finalConfig);
   }
 
   /**
