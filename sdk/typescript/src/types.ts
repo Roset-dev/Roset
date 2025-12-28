@@ -7,6 +7,8 @@
 // ============================================================================
 
 export interface RosetClientConfig {
+  /** Base URL of the Roset API (e.g., 'https://api.roset.dev') */
+  baseUrl: string;
 
   /** API key for authentication */
   apiKey: string;

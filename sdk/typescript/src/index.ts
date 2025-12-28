@@ -24,7 +24,7 @@
 
 // Resources
 export { RosetClient } from "./client.js";
-export { NodesResource } from "./resources/nodes.js";
+export { NodesResource, type FileVersionInfo } from "./resources/nodes.js";
 export { UploadsResource } from "./resources/uploads.js";
 export { SharesResource } from "./resources/shares.js";
 export { AuditResource } from "./resources/audit.js";
@@ -35,6 +35,9 @@ export { RefsResource } from "./resources/refs.js";
 export { OrgResource } from "./resources/org.js";
 export { IntegrationsResource } from "./resources/integrations.js";
 export { SearchResource } from "./resources/search.js";
+export { TenantResource, type TenantStats } from "./resources/tenant.js";
+export { UserResource, type UserProfile, type UserProfileUpdate } from "./resources/user.js";
+export { NotificationsResource, type Notification, type NotificationsListResult } from "./resources/notifications.js";
 
 // Types
 export type {

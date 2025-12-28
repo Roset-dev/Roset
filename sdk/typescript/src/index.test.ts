@@ -3,7 +3,7 @@ import { RosetClient } from './index.js';
 import { RosetAdmin } from './admin-index.js';
 
 describe('Roset SDK', () => {
-  const config = { apiKey: 'test' };
+  const config = { apiKey: 'test', baseUrl: 'https://api.roset.test' };
 
   describe('RosetClient (Data Plane)', () => {
     it('should be instantiable', () => {

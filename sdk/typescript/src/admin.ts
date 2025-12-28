@@ -4,6 +4,7 @@ import { IntegrationsResource } from "./resources/integrations.js";
 import { WebhooksResource } from "./resources/webhooks.js";
 import { SharesResource } from "./resources/shares.js";
 import { BillingResource } from "./resources/billing.js";
+import { TenantResource } from "./resources/tenant.js";
 import type { RosetClientConfig } from "./types.js";
 
 /**
@@ -29,6 +30,9 @@ export class RosetAdmin {
   /** Billing resource - plan, usage, and limits */
   public readonly billing: BillingResource;
 
+  /** Tenant resource - stats and metadata */
+  public readonly tenant: TenantResource;
+
   constructor(config: RosetClientConfig) {
     if (!config.baseUrl) {
       throw new Error("baseUrl is required");
@@ -46,6 +50,7 @@ export class RosetAdmin {
     this.webhooks = new WebhooksResource(this.http, config);
     this.shares = new SharesResource(this.http, config);
     this.billing = new BillingResource(this.http, config);
+    this.tenant = new TenantResource(this.http, config);
   }
 }
 

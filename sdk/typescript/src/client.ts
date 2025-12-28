@@ -12,6 +12,8 @@ import { LeasesResource } from "./resources/leases.js";
 import { CommitsResource } from "./resources/commits.js";
 import { RefsResource } from "./resources/refs.js";
 import { SearchResource } from "./resources/search.js";
+import { UserResource } from "./resources/user.js";
+import { NotificationsResource } from "./resources/notifications.js";
 import type { RosetClientConfig } from "./types.js";
 
 export class RosetClient {
@@ -45,6 +47,12 @@ export class RosetClient {
   /** Search resource - discovery and metadata queries */
   public readonly search: SearchResource;
 
+  /** User resource - current user profile and preferences */
+  public readonly user: UserResource;
+
+  /** Notifications resource - in-app notifications */
+  public readonly notifications: NotificationsResource;
+
   constructor(config: RosetClientConfig) {
     if (!config.apiKey) {
       throw new Error("apiKey is required");
@@ -69,6 +77,8 @@ export class RosetClient {
     this.commits = new CommitsResource(this.http, finalConfig);
     this.refs = new RefsResource(this.http, finalConfig);
     this.search = new SearchResource(this.http, finalConfig);
+    this.user = new UserResource(this.http, finalConfig);
+    this.notifications = new NotificationsResource(this.http, finalConfig);
   }
 
   /**

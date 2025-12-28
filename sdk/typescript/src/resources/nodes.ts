@@ -258,6 +258,31 @@ export class NodesResource {
     );
   }
 
+  /**
+   * Copy a node to a new location
+   * 
+   * Creates a copy of the node (file or folder) in the destination folder.
+   * For files, content is not copied - only the node structure.
+   * 
+   * @example
+   * ```typescript
+   * const result = await client.nodes.copy('source-id', 'dest-folder-id');
+   * console.log(result.node.id); // New node ID
+   * ```
+   */
+  async copy(
+    nodeId: string,
+    destinationParentId: string,
+    newName?: string,
+    options?: RequestOptions
+  ): Promise<{ node: Node; message: string }> {
+    return this.http.post<{ node: Node; message: string }>(
+      "/v1/nodes/copy",
+      { nodeId, destinationParentId, newName },
+      options
+    );
+  }
+
   // ============================================================================
   // Trash Management
   // ============================================================================
@@ -422,5 +447,56 @@ export class NodesResource {
 
     return lastNode;
   }
+
+  // ===========================================================================
+  // FILE VERSIONS
+  // ===========================================================================
+
+  /**
+   * List all versions of a file
+   * 
+   * @example
+   * ```typescript
+   * const { versions } = await client.nodes.listVersions('file-id');
+   * versions.forEach(v => console.log(v.createdAt, v.size));
+   * ```
+   */
+  async listVersions(nodeId: string, options?: RequestOptions): Promise<{ versions: FileVersionInfo[] }> {
+    return this.http.get<{ versions: FileVersionInfo[] }>(`/v1/nodes/${nodeId}/versions`, options);
+  }
+
+  /**
+   * Restore a file to a specific version
+   * 
+   * Creates a new version that is a copy of the target version.
+   * 
+   * @example
+   * ```typescript
+   * await client.nodes.restoreVersion('file-id', 42);
+   * ```
+   */
+  async restoreVersion(
+    nodeId: string, 
+    versionId: number, 
+    options?: RequestOptions
+  ): Promise<{ message: string; restoredVersionId: number; newVersionId: number }> {
+    return this.http.post<{ message: string; restoredVersionId: number; newVersionId: number }>(
+      `/v1/nodes/${nodeId}/versions/${versionId}/restore`,
+      {},
+      options
+    );
+  }
 }
 
+export interface FileVersionInfo {
+  id: number;
+  nodeId: string;
+  storageKey: string;
+  etag: string | null;
+  size: number;
+  contentType: string | null;
+  sha256: string | null;
+  isCurrent: boolean;
+  createdAt: string;
+  createdBy: string | null;
+}
