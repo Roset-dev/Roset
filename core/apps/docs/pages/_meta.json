@@ -1,10 +1,7 @@
 {
-  "index": {
-    "display": "hidden"
-  },
-  "start": "Start",
+  "index": "What is Roset",
+  "start": "Quickstart",
   "guides": "Guides",
-  "agent": "Roset Agent",
   "reference": "Reference",
   "changelog": "Changelog"
 }

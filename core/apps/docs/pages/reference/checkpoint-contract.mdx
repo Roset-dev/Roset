@@ -127,13 +127,6 @@ Every checkpoint folder supports a **latest** pointer concept:
 | Checksums verified                  | SHA256 stored per-file                          |
 | **Sub-second commit latency**       | Async Two-Phase Commit (~50ms)                  |
 
-### ❌ Explicit Limitations
-
-| Limitation               | Reason                                      |
-| ------------------------ | ------------------------------------------- |
-| Byte-range modifications | Append-only; full file replacement required |
-| Sync across regions      | Single-region consistency only (for now)    |
-
 ---
 
 ## Framework Adapters

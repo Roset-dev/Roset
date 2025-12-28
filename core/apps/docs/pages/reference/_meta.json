@@ -2,5 +2,8 @@
   "api": "API Reference",
   "cli": "CLI",
   "fuse": "FUSE Client",
-  "csi": "CSI Driver"
+  "csi": "CSI Driver",
+  "checkpoint-contract": "Checkpoint Contract",
+  "errors": "Error Codes",
+  "semantics": "Semantics"
 }
