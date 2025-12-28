@@ -4,6 +4,9 @@
   "uploads": "Uploads",
   "shares": "Shares",
   "mounts": "Mounts",
+  "org": "Organization",
+  "integrations": "Integrations",
+  "ml": "ML & Commit",
   "leases": "Leases",
   "search": "Search",
   "audit": "Audit"

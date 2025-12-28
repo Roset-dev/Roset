@@ -1,0 +1,239 @@
+# ML & Checkpoints API
+
+Atomic checkpoint management for Machine Learning workloads.
+
+## List Commits
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/commits"
+  description="List commit history for a tenant."
+>
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "mountId",
+        type: "uuid",
+        required: false,
+        description: "Filter by mount",
+      },
+      { name: "limit", type: "number", required: false, default: "50" },
+      { name: "cursor", type: "string", required: false },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          id: "commit_123",
+          node_id: "node_456",
+          status: "committed",
+          message: "Step 1000",
+          created_at: "2025-01-01T10:00:00Z",
+          sealed_at: "2025-01-01T10:00:05Z",
+        },
+      ],
+    }}
+  />
+</ApiEndpoint>
+
+## Get Commit
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/commits/:id"
+  description="Get detailed status of a commit."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Commit ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      commit: {
+        id: "commit_123",
+        status: "committed",
+        manifest_hash: "sha256:abc...",
+        total_files: 1500,
+        total_size: 104857600,
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## Compare Commits (Diff)
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/commits/:id/compare"
+  description="Compute metadata diff between two checkpoints."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "id",
+        type: "uuid",
+        required: true,
+        description: "Target Commit ID",
+      },
+    ]}
+  />
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "base_id",
+        type: "uuid",
+        required: true,
+        description: "Base Commit ID",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      base_commit: "commit_old",
+      target_commit: "commit_new",
+      changes: {
+        added: 5,
+        modified: 2,
+        deleted: 0,
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## List Refs
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/refs"
+  description="List all release pointers (e.g. 'latest', 'production')."
+>
+  <ResponseExample
+    status={200}
+    json={{
+      refs: [
+        {
+          name: "latest",
+          commit_id: "commit_123",
+          updated_at: "2025-01-01T10:00:00Z",
+        },
+      ],
+    }}
+  />
+</ApiEndpoint>
+
+## Update Ref (CAS)
+
+<ApiEndpoint
+  method="PUT"
+  path="/v1/refs/:name"
+  description="Create or update a named reference pointer. Supports Compare-and-Swap."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "name",
+        type: "string",
+        required: true,
+        description: "Ref name (e.g. 'latest')",
+      },
+    ]}
+  />
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "commit_id",
+        type: "uuid",
+        required: true,
+        description: "Commit ID to point to",
+      },
+      {
+        name: "expected_commit_id",
+        type: "uuid",
+        required: false,
+        description: "Previous commit ID (for CAS safety)",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      commit_id: "commit_999",
+      expected_commit_id: "commit_888",
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      ref: {
+        name: "latest",
+        commit_id: "commit_999",
+      },
+      message: "Ref updated successfully",
+    }}
+  />
+</ApiEndpoint>
+
+## Create Commit Group
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/commit-groups"
+  description="Create a group for atomic multi-folder commits."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "message",
+        type: "string",
+        required: false,
+        description: "Group description",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={201}
+    json={{
+      group: {
+        id: "grp_123",
+        status: "pending",
+        created_at: "2025-01-01T10:00:00Z",
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## Seal Commit Group
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/commit-groups/:id/seal"
+  description="Atomically finalize all commits in the group."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Group ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      group: {
+        id: "grp_123",
+        status: "committed",
+      },
+      message: "Commit group sealed successfully",
+    }}
+  />
+</ApiEndpoint>

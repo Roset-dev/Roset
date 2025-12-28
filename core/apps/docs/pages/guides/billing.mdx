@@ -1,0 +1,68 @@
+---
+title: Billing & Usage
+description: Access plan information and usage metrics via the SDK
+---
+
+# Billing & Usage
+
+The Billing resource provides programmatic access to your Roset plan information, current usage metrics, and limits. This is useful for monitoring consumption or implementing usage-based logic in your application.
+
+## Methods
+
+### Get Usage
+
+Retrieves the current billing dashboard, including your plan tier, usage metrics across all meters, and enforced limits.
+
+<CodeBlock
+  language="typescript"
+  code={`const billing = await client.billing.getUsage();
+
+console.log(billing.plan); // "pro", "enterprise"
+console.log(billing.usage.storage); // Bytes used
+console.log(billing.limits.storage); // Bytes limit (or null/infinity)`}
+/>
+
+<CodeBlock
+  language="python"
+  code={`billing = client.billing.get_usage()
+
+print(billing.plan) # "pro", "enterprise"
+print(billing.usage.storage) # Bytes used
+print(billing.limits.storage) # Bytes limit`}
+/>
+
+### Check Quota
+
+A helper method to calculate quota status for a specific "meter" (like storage or bandwidth). It handles infinity logic for you.
+
+<CodeBlock
+  language="typescript"
+  code={`const quota = await client.billing.checkQuota("storage");
+
+if (quota.isExceeded) {
+console.warn("Storage limit exceeded!");
+}
+
+console.log(\`Used: \${quota.percentUsed}%\`);
+console.log(\`Remaining: \${quota.remaining} bytes\`);`}
+/>
+
+<CodeBlock
+  language="python"
+  code={`quota = client.billing.check_quota("storage")
+
+if quota.is_exceeded:
+print("Storage limit exceeded!")
+
+print(f"Used: {quota.percent_used}%")
+print(f"Remaining: {quota.remaining} bytes")`}
+/>
+
+## Meters
+
+Common meters you can check:
+
+- `storage`: Total storage used in bytes
+- `bandwidth`: Egress bandwidth used in bytes
+- `api_calls`: Number of API operations
+- `seats`: Number of user seats used
