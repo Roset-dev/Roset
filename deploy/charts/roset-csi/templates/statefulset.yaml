@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "roset-csi.fullname" . }}-controller
+  labels:
+    {{- include "roset-csi.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "roset-csi.fullname" . }}-controller
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "roset-csi.name" . }}-controller
+      {{- include "roset-csi.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "roset-csi.name" . }}-controller
+        {{- include "roset-csi.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "roset-csi.serviceAccountName" . }}
+      containers:
+        - name: roset-csi-driver
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--endpoint=unix:///csi/csi.sock"
+          env:
+            - name: ROSET_API_URL
+              value: {{ .Values.roset.apiUrl | quote }}
+            - name: ROSET_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.roset.secretName }}
+                  key: {{ .Values.roset.secretKey }}
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+
+        - name: csi-provisioner
+          image: {{ .Values.sidecars.provisioner.image | quote }}
+          args:
+            - "--csi-address=/csi/csi.sock"
+            - "--feature-gates=Topology=true"
+            - "--timeout=60s"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+
+        - name: csi-snapshotter
+          image: {{ .Values.sidecars.snapshotter.image | quote }}
+          args:
+            - "--csi-address=/csi/csi.sock"
+            - "--timeout=60s"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+
+      volumes:
+        - name: socket-dir
+          emptyDir: {}

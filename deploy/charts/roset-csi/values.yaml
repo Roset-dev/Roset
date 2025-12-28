@@ -1,0 +1,45 @@
+image:
+  repository: ghcr.io/roset/roset-agent
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+roset:
+  apiUrl: "https://api.roset.dev"
+  # Name of existing secret containing api-key
+  secretName: roset-credentials
+  secretKey: api-key
+
+storageClass:
+  create: true
+  name: roset
+  isDefault: false
+  mountId: "" # Required if storage class is created
+  basePath: "/volumes"
+
+sidecars:
+  registrar:
+    image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.9.0
+  provisioner:
+    image: registry.k8s.io/sig-storage/csi-provisioner:v3.6.0
+  snapshotter:
+    image: registry.k8s.io/sig-storage/csi-snapshotter:v6.3.0
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

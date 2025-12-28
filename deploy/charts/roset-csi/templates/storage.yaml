@@ -1,0 +1,40 @@
+apiVersion: storage.k8s.io/v1
+kind: CSIDriver
+metadata:
+  name: csi.roset.dev
+  labels:
+    {{- include "roset-csi.labels" . | nindent 4 }}
+spec:
+  attachRequired: false
+  podInfoOnMount: true
+  fsGroupPolicy: ReadWriteOnceWithFSType
+  volumeLifecycleModes:
+    - Persistent
+---
+{{- if .Values.storageClass.create -}}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.storageClass.name }}
+  labels:
+    {{- include "roset-csi.labels" . | nindent 4 }}
+  annotations:
+    storageclass.kubernetes.io/is-default-class: {{ .Values.storageClass.isDefault | quote }}
+provisioner: csi.roset.dev
+parameters:
+  apiUrl: {{ .Values.roset.apiUrl | quote }}
+  mountId: {{ required "A valid .Values.storageClass.mountId is required!" .Values.storageClass.mountId | quote }}
+  basePath: {{ .Values.storageClass.basePath | quote }}
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: false
+{{- end }}
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: roset-snapshots
+  labels:
+    {{- include "roset-csi.labels" . | nindent 4 }}
+driver: csi.roset.dev
+deletionPolicy: Retain
