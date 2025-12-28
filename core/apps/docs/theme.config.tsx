@@ -12,9 +12,6 @@ const config: DocsThemeConfig = {
   project: {
     link: 'https://github.com/Roset-dev/roset',
   },
-  chat: {
-    link: 'https://discord.gg/roset',
-  },
   docsRepositoryBase: 'https://github.com/Roset-dev/roset/tree/main/core/apps/docs',
   footer: {
     text: (
@@ -62,6 +59,9 @@ const config: DocsThemeConfig = {
   },
   editLink: {
     text: 'Edit this page on GitHub →',
+  },
+  feedback: {
+    content: null,
   },
   navigation: {
     prev: true,

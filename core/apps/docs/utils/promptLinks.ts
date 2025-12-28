@@ -8,12 +8,6 @@ export function cursorPromptWebLink(text: string) {
   return `https://cursor.com/link/prompt?text=${encodeURIComponent(text)}`;
 }
 
-export function cursorMcpInstallDeeplink(name: string, config: unknown) {
-  // MCP install deeplink pattern
-  const json = JSON.stringify(config);
-  const b64 = Buffer.from(json, "utf8").toString("base64");
-  return `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(name)}&config=${encodeURIComponent(b64)}`;
-}
 
 export function generateContextPrompt(code: string, language: string) {
   return [

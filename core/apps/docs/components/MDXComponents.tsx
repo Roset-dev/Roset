@@ -3,10 +3,9 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell, CodeBlock,
   Button, Card, CardHeader, CardTitle, CardContent, Badge, Alert,
   ApiEndpoint, ParameterTable, ResponseExample, RequestExample,
-  Accordion, AccordionItem
+  Accordion, AccordionItem, ChangeItem
 } from './ui';
 import { PromptActions } from './PromptActions';
-import { InstallInCursor } from './InstallInCursor';
 
 export const MDXComponents = {
   Button: (props: any) => <Button {...props} />,
@@ -23,6 +22,7 @@ export const MDXComponents = {
   RequestExample,
   Accordion,
   AccordionItem,
+  ChangeItem,
   CodeBlock,
   table: (props: any) => (
     <Table className="my-6">
@@ -83,5 +83,4 @@ export const MDXComponents = {
   },
   Pre: (props: any) => MDXComponents.pre(props),
   PromptActions,
-  InstallInCursor,
 };

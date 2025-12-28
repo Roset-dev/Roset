@@ -8,12 +8,22 @@ This is the initial preview version of Roset.
 
 <Accordion>
   <AccordionItem title="Features" count={5} defaultOpen={true}>
-    <div>
-      - **Filesystem Semantics**: Roset resolves anonymous data blobs into high-fidelity filesystem semantics. This includes a true folder hierarchy that is stored as metadata, not simulated with prefixes.
-      - **Instant Rename/Move**: Renaming a folder with a million objects updates a single metadata record. Roset enables O(1) atomic moves and renames across your entire object storage namespace.
-      - **Sharing & ACLs**: Create expiring, revocable share links with fine-grained permissions. ACLs inherit through the directory tree, independent of underlying cloud IAM policies.
-      - **Audit Logging & Trash**: A complete, append-only operation log for every action. Deleted items move to a virtual Trash with configurable retention and instant restore capabilities.
-      - **Roset Agent (FUSE/CSI)**: A unified binary that provides a high-performance FUSE client, a Kubernetes CSI driver for dynamic provisioning, and a technical CLI for field management.
+    <div className="flex flex-col gap-2">
+      <ChangeItem title="Filesystem Semantics">
+        Roset resolves anonymous data blobs into high-fidelity filesystem semantics. This includes a true folder hierarchy that is stored as metadata, not simulated with prefixes.
+      </ChangeItem>
+      <ChangeItem title="Instant Rename/Move">
+        Renaming a folder with a million objects updates a single metadata record. Roset enables O(1) atomic moves and renames across your entire object storage namespace.
+      </ChangeItem>
+      <ChangeItem title="Sharing & ACLs">
+        Create expiring, revocable share links with fine-grained permissions. ACLs inherit through the directory tree, independent of underlying cloud IAM policies.
+      </ChangeItem>
+      <ChangeItem title="Audit Logging & Trash">
+        A complete, append-only operation log for every action. Deleted items move to a virtual Trash with configurable retention and instant restore capabilities.
+      </ChangeItem>
+      <ChangeItem title="Roset Agent (FUSE/CSI)">
+        A unified binary that provides a high-performance FUSE client, a Kubernetes CSI driver for dynamic provisioning, and a technical CLI for field management.
+      </ChangeItem>
     </div>
   </AccordionItem>
 
