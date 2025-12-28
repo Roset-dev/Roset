@@ -87,14 +87,8 @@ class WebhooksResource:
             f"/v1/webhooks/{webhook_id}/deliveries",
             params={"page": page, "page_size": page_size},
         )
-        # Note: In TS this returns PaginatedResult<WebhookDelivery>.
-        # Here we return the raw dict wrapper but validate items if needed
-        # For parity with other lists, we might want a PaginatedResult model.
-        # But existing org.list_members returns list[Member].
-        # Let's keep it raw dict for pagination metadata for now, or match TS strictly.
-        # Python SDK seems to generally return list[T] and hide pagination or return raw.
-        # Given the explicit page params, returning the raw paginated structure
-        # (items, total, has_more) is best.
+        # Note: We return the raw dict to preserve pagination metadata (total, has_more).
+        # Future: Introduce a PaginatedResult generic type for Python SDK.
         return data
 
     def retry_delivery(self, webhook_id: str, delivery_id: str) -> WebhookDelivery:

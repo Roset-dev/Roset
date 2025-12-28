@@ -322,10 +322,12 @@ async fn process_upload(client: &RosetClient, job: &mut UploadJob) -> Result<()>
         let part = res?;
         job.completed_parts.push(part);
 
-        // Persist every part (or could batch every 5)
+        // Persist every part using atomic write (write to temp + rename)
         let job_json = serde_json::to_vec(&job)?;
-        // Use atomic write? For now simple overwrite is better than nothing
-        fs::write(&job_file_path, job_json).await?;
+        let temp_file_path = job_file_path.with_extension("tmp");
+        
+        fs::write(&temp_file_path, job_json).await?;
+        fs::rename(&temp_file_path, &job_file_path).await?;
     }
 
     job.completed_parts.sort_by_key(|p| p.part_number);

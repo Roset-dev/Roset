@@ -46,7 +46,6 @@ def test_hf_callback_on_save(mock_path, mock_client):
     args = MagicMock(spec=TrainingArguments)
     args.output_dir = "/mnt/output"
     
-    # Mock Path behavior
-    # This is tricky to mock correctly for relative_to without fs
-    # Skipping deep logic test for now, focusing on structure
-    pass
+    # This requires mocking the filesystem behavior for relative_to which is complex
+    # without a real filesystem or pyfakefs. Tracking issue: SDK-123
+    pytest.skip("Skipping deep path logic test until pyfakefs integration")

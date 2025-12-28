@@ -94,6 +94,32 @@ export class SharesResource {
   }
 
   /**
+   * Update a share (extend expiry)
+   *
+   * @example
+   * ```typescript
+   * // Extend by 7 days from now
+   * await client.shares.update(shareId, { expiresIn: '7d' });
+   *
+   * // Set specific expiry
+   * await client.shares.update(shareId, { expiresAt: '2024-12-31T23:59:59Z' });
+   * ```
+   */
+  async update(
+    shareId: string,
+    options: { expiresAt?: string | Date; expiresIn?: string } & RequestOptions
+  ): Promise<Share> {
+    const body = {
+      expiresAt: options.expiresAt instanceof Date 
+        ? options.expiresAt.toISOString() 
+        : options.expiresAt,
+      expiresIn: options.expiresIn,
+    };
+
+    return this.http.patch<Share>(`/v1/shares/${shareId}`, body, options);
+  }
+
+  /**
    * Access shared content (public endpoint, no auth required)
    *
    * @example

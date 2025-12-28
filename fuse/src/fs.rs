@@ -338,9 +338,8 @@ impl Filesystem for RosetFs {
         }
 
         // Handle mtime update via metadata API
-        if mtime.is_some() {
-            // We could update mtime via metadata, but for now just acknowledge
-            // since we don't have a dedicated mtime field in the API
+        if let Some(time) = mtime {
+            debug!("Request to update mtime to {:?}, but backend metadata update is not yet mapped", time);
         }
 
         // Return current attributes
