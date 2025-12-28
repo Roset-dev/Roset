@@ -102,14 +102,32 @@ commit = roset_callback.process_checkpoint("/mnt/roset/checkpoints/step-1000", s
 
 ## API Reference
 
-### RosetClient
+### client.nodes
+
+| Method                       | Description            |
+| ---------------------------- | ---------------------- |
+| `get(node_id)`               | Get node by ID         |
+| `resolve(path)`              | Resolve path to node   |
+| `resolve_many(paths)`        | Batch resolve paths    |
+| `stat_many(ids)`             | Batch get nodes by ID  |
+| `list_children(node_id)`     | List folder contents   |
+| `create(name, type, opts)`   | Create file or folder  |
+| `create_folder(name, opts)`  | Create folder          |
+| `update(node_id, opts)`      | Rename/move node       |
+| `delete(node_id)`            | Soft delete            |
+| `delete_many(ids)`           | Batch soft delete      |
+| `move_many(ids, parent_id)`  | Batch move             |
+| `restore(node_id)`           | Restore from trash     |
+| `list_trash(opts)`           | List trash items       |
+| `empty_trash()`              | Empty all trash        |
+| `permanent_delete(node_id)`  | Permanently delete     |
+| `permanent_delete_many(ids)` | Batch permanent delete |
+
+### client (core)
 
 | Method                               | Description                      |
 | ------------------------------------ | -------------------------------- |
 | `create_folder(parent, name)`        | Create a folder                  |
-| `get_node(id)`                       | Get node by ID                   |
-| `resolve_path(path)`                 | Resolve path to node             |
-| `delete_node(id)`                    | Soft delete node                 |
 | `commit(node_id, message, group_id)` | Commit folder atomically         |
 | `get_commit(id)`                     | Get commit status                |
 | `wait_for_commit(id, timeout)`       | Wait for commit to complete      |

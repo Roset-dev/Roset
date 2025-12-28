@@ -49,18 +49,26 @@ console.log(share.url);`} />
 
 ### client.nodes
 
-| Method                     | Description          |
-| -------------------------- | -------------------- |
-| `resolve(paths)`           | Batch resolve paths  |
-| `get(id)`                  | Get by ID            |
-| `listChildren(id)`         | List folder contents |
-| `create(name, type, opts)` | Create file/folder   |
-| `createFolder(name, opts)` | Create folder        |
-| `update(id, updates)`      | Rename/move          |
-| `rename(id, name)`         | Rename               |
-| `move(id, parentId)`       | Move                 |
-| `delete(id)`               | Soft delete          |
-| `restore(id)`              | Restore              |
+| Method                     | Description            |
+| -------------------------- | ---------------------- |
+| `resolve(paths)`           | Batch resolve paths    |
+| `resolvePath(path)`        | Resolve single path    |
+| `get(id)`                  | Get by ID              |
+| `statMany(ids)`            | Batch get by IDs       |
+| `listChildren(id)`         | List folder contents   |
+| `create(name, type, opts)` | Create file/folder     |
+| `createFolder(name, opts)` | Create folder          |
+| `update(id, updates)`      | Rename/move            |
+| `rename(id, name)`         | Rename                 |
+| `move(id, parentId)`       | Move                   |
+| `delete(id)`               | Soft delete            |
+| `deleteMany(ids)`          | Batch soft delete      |
+| `moveMany(ids, parentId)`  | Batch move             |
+| `restore(id)`              | Restore from trash     |
+| `listTrash(opts)`          | List trash items       |
+| `emptyTrash()`             | Empty all trash        |
+| `permanentDelete(id)`      | Permanently delete     |
+| `permanentDeleteMany(ids)` | Batch permanent delete |
 
 ### client.uploads
 

@@ -81,6 +81,27 @@ export class NodesResource {
   }
 
   /**
+   * Get multiple nodes by ID in a single request (batch stat)
+   *
+   * @example
+   * ```typescript
+   * const result = await client.nodes.statMany(['id1', 'id2', 'id3']);
+   * // result = { 'id1': {...}, 'id2': {...}, 'id3': null }
+   * ```
+   */
+  async statMany(
+    ids: string[],
+    options?: RequestOptions
+  ): Promise<Record<string, Node | null>> {
+    return this.http.post<Record<string, Node | null>>(
+      "/v1/nodes/batch/stat",
+      { ids },
+      options
+    );
+  }
+
+
+  /**
    * List children of a folder
    */
   async listChildren(

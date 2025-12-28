@@ -294,3 +294,214 @@ The Nodes API provides operations for managing files and folders in the Roset fi
     }}
   />
 </ApiEndpoint>
+
+## Batch Operations
+
+### Batch Stat
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/nodes/batch/stat"
+  description="Get metadata for multiple nodes by ID in a single request."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "ids",
+        type: "uuid[]",
+        required: true,
+        description: "Array of node IDs (max 100)",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      ids: [
+        "550e8400-e29b-41d4-a716-446655440000",
+        "550e8400-e29b-41d4-a716-446655440001",
+      ],
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      "550e8400-e29b-41d4-a716-446655440000": {
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        name: "report.pdf",
+        type: "file",
+      },
+      "550e8400-e29b-41d4-a716-446655440001": null,
+    }}
+  />
+</ApiEndpoint>
+
+### Batch Delete
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/nodes/batch/delete"
+  description="Soft delete multiple nodes atomically. All nodes are moved to trash."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "ids",
+        type: "uuid[]",
+        required: true,
+        description: "Array of node IDs to delete (max 100)",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      ids: ["id1", "id2", "id3"],
+    }}
+  />
+  <ResponseExample status={204} description="No content" json={{}} />
+</ApiEndpoint>
+
+### Batch Move
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/nodes/batch/move"
+  description="Move multiple nodes to a new parent folder atomically."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "ids",
+        type: "uuid[]",
+        required: true,
+        description: "Array of node IDs to move (max 100)",
+      },
+      {
+        name: "parentId",
+        type: "uuid",
+        required: true,
+        description: "Destination parent folder ID",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      ids: ["id1", "id2"],
+      parentId: "folder-id",
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={[
+      { id: "id1", name: "file1.pdf", parent_id: "folder-id" },
+      { id: "id2", name: "file2.pdf", parent_id: "folder-id" },
+    ]}
+  />
+</ApiEndpoint>
+
+## Trash Management
+
+### List Trash
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/trash"
+  description="List items in trash with pagination."
+>
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "pageSize",
+        type: "number",
+        required: false,
+        description: "Items per page",
+        default: "50",
+      },
+      {
+        name: "cursor",
+        type: "string",
+        required: false,
+        description: "Pagination cursor",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          id: "node1",
+          name: "deleted-file.pdf",
+          deleted_at: "2025-01-15T10:00:00Z",
+        },
+      ],
+      total: 1,
+      hasMore: false,
+    }}
+  />
+</ApiEndpoint>
+
+### Empty Trash
+
+<ApiEndpoint
+  method="DELETE"
+  path="/v1/trash"
+  description="Permanently delete all items in trash."
+>
+  <ResponseExample
+    status={200}
+    json={{
+      deletedCount: 42,
+    }}
+  />
+</ApiEndpoint>
+
+### Permanent Delete
+
+<ApiEndpoint
+  method="DELETE"
+  path="/v1/nodes/:id/permanent"
+  description="Permanently delete a single node from trash."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "id",
+        type: "uuid",
+        required: true,
+        description: "Trashed node ID",
+      },
+    ]}
+  />
+  <ResponseExample status={204} description="No content" json={{}} />
+</ApiEndpoint>
+
+### Batch Permanent Delete
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/nodes/batch/permanent-delete"
+  description="Permanently delete multiple nodes from trash atomically."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "ids",
+        type: "uuid[]",
+        required: true,
+        description: "Array of trashed node IDs (max 100)",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      ids: ["id1", "id2"],
+    }}
+  />
+  <ResponseExample status={204} description="No content" json={{}} />
+</ApiEndpoint>
