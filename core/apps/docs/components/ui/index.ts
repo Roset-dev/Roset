@@ -6,3 +6,4 @@ export * from './CodeBlock';
 export * from './Alert';
 export * from './Toast/ToastContext';
 export * from './ApiDocs';
+export * from './Accordion';

@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell, CodeBlock,
   Button, Card, CardHeader, CardTitle, CardContent, Badge, Alert,
-  ApiEndpoint, ParameterTable, ResponseExample, RequestExample
+  ApiEndpoint, ParameterTable, ResponseExample, RequestExample,
+  Accordion, AccordionItem
 } from './ui';
 import { PromptActions } from './PromptActions';
 import { InstallInCursor } from './InstallInCursor';
@@ -20,6 +21,8 @@ export const MDXComponents = {
   ParameterTable,
   ResponseExample,
   RequestExample,
+  Accordion,
+  AccordionItem,
   CodeBlock,
   table: (props: any) => (
     <Table className="my-6">

@@ -1,7 +1,11 @@
 {
+  "index": {
+    "display": "hidden"
+  },
   "start": "Start",
   "guides": "Guides",
   "integrations": "Integrations",
   "agent": "Roset Agent",
-  "reference": "Reference"
+  "reference": "Reference",
+  "changelog": "Changelog"
 }

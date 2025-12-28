@@ -63,10 +63,6 @@ const config: DocsThemeConfig = {
   editLink: {
     text: 'Edit this page on GitHub →',
   },
-  feedback: {
-    content: 'Questions? Give us feedback →',
-    labels: 'feedback',
-  },
   navigation: {
     prev: true,
     next: true,
