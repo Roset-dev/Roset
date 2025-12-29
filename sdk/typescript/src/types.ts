@@ -8,8 +8,22 @@
 
 export interface RosetClientConfig {
 
-  /** API key for authentication */
-  apiKey: string;
+  /** API key for authentication (mutually exclusive with getAccessToken) */
+  apiKey?: string;
+
+  /** 
+   * Callback to get a fresh access token for Bearer auth.
+   * Called before each request. Should return a JWT/session token.
+   * Mutually exclusive with apiKey.
+   * 
+   * @example
+   * ```ts
+   * const client = new RosetClient({
+   *   getAccessToken: async () => await authProvider.getToken(),
+   * });
+   * ```
+   */
+  getAccessToken?: () => Promise<string | null> | string | null;
 
   /** Default mount ID (optional, uses default mount if not specified) */
   mountId?: string;

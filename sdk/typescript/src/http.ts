@@ -12,7 +12,8 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 export class HttpClient {
   private readonly baseUrl: string;
-  private readonly apiKey: string;
+  private readonly apiKey?: string;
+  private readonly getAccessToken?: () => Promise<string | null> | string | null;
 
   private readonly mountId?: string;
   private readonly timeout: number;
@@ -22,11 +23,12 @@ export class HttpClient {
   constructor(config: RosetClientConfig) {
     this.baseUrl = "https://api.roset.dev";
     this.apiKey = config.apiKey;
+    this.getAccessToken = config.getAccessToken;
 
     this.mountId = config.mountId;
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
     this.maxRetries = config.retries ?? DEFAULT_RETRIES;
-    this.fetchFn = config.fetch ?? globalThis.fetch;
+    this.fetchFn = config.fetch ?? globalThis.fetch.bind(globalThis);
   }
 
   /**
@@ -73,12 +75,23 @@ export class HttpClient {
     const url = `${this.baseUrl}${path}`;
     const timeout = options?.timeout ?? this.timeout;
 
+    // Get auth token - either from callback or static API key
+    let authToken: string | null = null;
+    if (this.getAccessToken) {
+      authToken = await this.getAccessToken();
+    } else if (this.apiKey) {
+      authToken = this.apiKey;
+    }
+
+    if (!authToken) {
+      throw new RosetError("No authentication configured", "NO_AUTH", 401);
+    }
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${this.apiKey}`,
+      Authorization: `Bearer ${authToken}`,
       ...options?.headers,
     };
-
 
     if (this.mountId) {
       headers["X-Roset-Mount-Id"] = this.mountId;

@@ -54,8 +54,8 @@ export class RosetClient {
   public readonly notifications: NotificationsResource;
 
   constructor(config: RosetClientConfig) {
-    if (!config.apiKey) {
-      throw new Error("apiKey is required");
+    if (!config.apiKey && !config.getAccessToken) {
+      throw new Error("Either apiKey or getAccessToken is required");
     }
 
     // Enforce production URL
