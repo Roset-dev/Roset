@@ -20,14 +20,15 @@ export class IntegrationsResource {
   }
 
   /**
-   * Connect a new cloud provider
+   * Start a connection flow for a cloud provider.
+   * Returns an action plan (OAuth URL, install link, or manual setup instructions).
    */
-  async connect(provider: string, config: Record<string, unknown>): Promise<Integration> {
-    const { integration } = await this.http.post<{ integration: Integration }>(
-      "/v1/integrations",
-      { provider, ...config }
+  async startConnect(provider: string): Promise<import("../types.js").StartConnectResponse> {
+    const response = await this.http.post<import("../types.js").StartConnectResponse>(
+      `/v1/integrations/${provider}/start`,
+      {}
     );
-    return integration;
+    return response;
   }
 
   /**

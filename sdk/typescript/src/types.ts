@@ -201,6 +201,16 @@ export interface Integration {
 // Mount Types
 // ============================================================================
 
+export type StartConnectResult =
+  | { kind: 'oauth'; authUrl: string }
+  | { kind: 'install'; launchUrl: string; afterInstall?: { verifyEndpoint: string } }
+  | { kind: 'manual'; setupPath: string; fields?: unknown[] };
+
+export interface StartConnectResponse {
+  integration_id: string;
+  action: StartConnectResult;
+}
+
 export type Mount = Exclude<components["schemas"]["Mount"], null>;
 
 export interface MountRetentionInfo {

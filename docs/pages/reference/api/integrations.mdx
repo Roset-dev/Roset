@@ -16,6 +16,7 @@ Manage cloud provider connections and imported buckets. Roset supports both OAut
         {
           id: "int_123",
           provider: "aws",
+          connectMethod: "install",
           status: "connected",
           bucketCount: 5,
           createdAt: "2025-01-01T00:00:00Z",
@@ -54,151 +55,34 @@ Manage cloud provider connections and imported buckets. Roset supports both OAut
   />
 </ApiEndpoint>
 
-## Verify Cloudflare R2 Token
+## Verify Integration
 
 <ApiEndpoint
   method="POST"
-  path="/v1/integrations/r2/verify-token"
-  description="Manually connect Cloudflare R2 using an API Token."
+  path="/v1/integrations/:id/verify"
+  description="Verify updated credentials or configuration for an integration. Used for Manual and Install flows."
 >
   <ParameterTable
-    type="body"
+    type="path"
     params={[
       {
-        name: "integration_id",
+        name: "id",
         type: "uuid",
         required: true,
-        description: "Integration ID (from start)",
-      },
-      {
-        name: "account_id",
-        type: "string",
-        required: true,
-        description: "Cloudflare Account ID",
-      },
-      {
-        name: "api_token",
-        type: "string",
-        required: true,
-        description: "R2 API Token",
-      },
-      {
-        name: "parent_access_key_id",
-        type: "string",
-        required: false,
-        description: "For vendoring temp credentials",
+        description: "Integration ID",
       },
     ]}
   />
-  <ResponseExample
-    status={200}
-    json={{ success: true, integration_id: "int_123" }}
-  />
-</ApiEndpoint>
-
-## Verify MinIO Credentials
-
-<ApiEndpoint
-  method="POST"
-  path="/v1/integrations/minio/verify-key"
-  description="Manually connect a MinIO instance."
->
   <ParameterTable
     type="body"
     params={[
-      { name: "integration_id", type: "uuid", required: true },
       {
-        name: "endpoint_url",
-        type: "string",
+        name: "...",
+        type: "object",
         required: true,
-        description: "MinIO Server URL",
+        description:
+          "Provider-specific credential fields (e.g. role_arn for AWS, json_key for GCP, api_token for Cloudflare)",
       },
-      {
-        name: "bucket",
-        type: "string",
-        required: true,
-        description: "Bucket to verify access",
-      },
-      { name: "access_key_id", type: "string", required: true },
-      { name: "secret_access_key", type: "string", required: true },
-      { name: "region", type: "string", required: false, default: "us-east-1" },
-    ]}
-  />
-  <ResponseExample
-    status={200}
-    json={{ success: true, integration_id: "int_123" }}
-  />
-</ApiEndpoint>
-
-## Verify AWS Role
-
-<ApiEndpoint
-  method="POST"
-  path="/v1/integrations/aws/verify-role"
-  description="Connect AWS using a Role ARN."
->
-  <ParameterTable
-    type="body"
-    params={[
-      { name: "integration_id", type: "uuid", required: true },
-      {
-        name: "role_arn",
-        type: "string",
-        required: true,
-        description: "IAM Role ARN",
-      },
-    ]}
-  />
-  <ResponseExample
-    status={200}
-    json={{ success: true, integration_id: "int_123" }}
-  />
-</ApiEndpoint>
-
-## Verify GCP Service Account
-
-<ApiEndpoint
-  method="POST"
-  path="/v1/integrations/gcp/verify-key"
-  description="Connect GCP using a Service Account JSON Key."
->
-  <ParameterTable
-    type="body"
-    params={[
-      { name: "integration_id", type: "uuid", required: true },
-      {
-        name: "json_key",
-        type: "string",
-        required: true,
-        description: "JSON Key string",
-      },
-      {
-        name: "bucket_name",
-        type: "string",
-        required: false,
-        description: "Optional bucket to test",
-      },
-    ]}
-  />
-  <ResponseExample
-    status={200}
-    json={{ success: true, integration_id: "int_123" }}
-  />
-</ApiEndpoint>
-
-## Verify Azure Service Principal
-
-<ApiEndpoint
-  method="POST"
-  path="/v1/integrations/azure/verify"
-  description="Connect Azure using Service Principal credentials."
->
-  <ParameterTable
-    type="body"
-    params={[
-      { name: "integration_id", type: "uuid", required: true },
-      { name: "tenant_id", type: "string", required: true },
-      { name: "subscription_ids", type: "array", required: false },
     ]}
   />
   <ResponseExample
