@@ -32,6 +32,16 @@ export class IntegrationsResource {
   }
 
   /**
+   * Verify an integration (Manual/Install flow)
+   */
+  async verify(id: string, data: Record<string, unknown>): Promise<{ success: boolean; integration_id: string }> {
+    return await this.http.post<{ success: boolean; integration_id: string }>(
+      `/v1/integrations/${id}/verify`,
+      data
+    );
+  }
+
+  /**
    * Disconnect/Revoke an integration
    */
   async disconnect(id: string): Promise<void> {

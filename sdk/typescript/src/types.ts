@@ -191,8 +191,9 @@ export type ApiKeyWithSecret = Exclude<components["schemas"]["ApiKeyWithSecret"]
 
 export interface Integration {
   id: string;
-  provider: 'aws' | 'gcp' | 'azure' | 'supabase';
-  status: 'connected' | 'pending' | 'errored';
+  provider: 'aws' | 'gcp' | 'azure' | 'supabase' | 'cloudflare' | 'minio';
+  connectMethod: 'oauth' | 'install' | 'manual';
+  status: 'connected' | 'pending' | 'errored' | 'revoked';
   lastSyncedAt: string | null;
   createdAt: string;
 }
