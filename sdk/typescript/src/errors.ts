@@ -113,6 +113,11 @@ export function parseApiError(
         return new QuotaExceededError(message, body.details);
       }
       return new RateLimitError(message, undefined, { ...options, retryable: true });
+    case 500:
+    case 502:
+    case 503:
+    case 504:
+      return new RosetError(message, code, statusCode, body.details, { ...options, retryable: true });
     default:
       return new RosetError(message, code, statusCode, body.details, options);
   }
