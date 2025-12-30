@@ -42,10 +42,10 @@ describe('Roset SDK', () => {
       expect(scopedClient.mountId).toBe('mount-2');
     });
 
-    it('should NOT have admin resources', () => {
+    it('should have admin resources', () => {
       const client = new RosetClient(config);
-      expect((client as unknown as Record<string, unknown>).org).toBeUndefined();
-      expect((client as unknown as Record<string, unknown>).integrations).toBeUndefined();
+      expect(client.org).toBeDefined();
+      expect(client.integrations).toBeDefined();
     });
   });
 

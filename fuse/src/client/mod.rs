@@ -6,10 +6,10 @@ pub use models::*;
 
 use anyhow::Result;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
+use serde::Deserialize;
 use std::sync::Arc;
 use std::time::Duration;
-use tracing::{warn, instrument};
-use serde::Deserialize;
+use tracing::{instrument, warn};
 
 /// Client configuration
 #[derive(Clone, Debug)]
@@ -65,10 +65,7 @@ impl RosetClient {
             .timeout(config.timeout)
             .build()?;
 
-        Ok(Arc::new(Self {
-            http,
-            config,
-        }))
+        Ok(Arc::new(Self { http, config }))
     }
 
     /// Execute a request with centralized retry logic
@@ -83,7 +80,7 @@ impl RosetClient {
 
         loop {
             attempt += 1;
-            
+
             // Build and send the request
             let req = request_builder();
             let result = req.send().await;
@@ -95,10 +92,13 @@ impl RosetClient {
                         let data = resp.json::<T>().await?;
                         return Ok(data);
                     }
-                    
+
                     let status = resp.status();
                     if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
-                        warn!("Rate limited (attempt {}/{})", attempt, self.config.max_retries);
+                        warn!(
+                            "Rate limited (attempt {}/{})",
+                            attempt, self.config.max_retries
+                        );
                         if attempt >= self.config.max_retries {
                             return Err(ApiError::RateLimited);
                         }
@@ -109,7 +109,10 @@ impl RosetClient {
 
                     // Handle server errors (5xx) with retry
                     if status.is_server_error() {
-                        warn!("Server error {} (attempt {}/{})", status, attempt, self.config.max_retries);
+                        warn!(
+                            "Server error {} (attempt {}/{})",
+                            status, attempt, self.config.max_retries
+                        );
                         if attempt >= self.config.max_retries {
                             let text = resp.text().await.unwrap_or_default();
                             return Err(ApiError::from_status(status, &text));
@@ -125,7 +128,10 @@ impl RosetClient {
                 }
                 Err(e) => {
                     // Network errors - retry
-                    warn!("Network error: {} (attempt {}/{})", e, attempt, self.config.max_retries);
+                    warn!(
+                        "Network error: {} (attempt {}/{})",
+                        e, attempt, self.config.max_retries
+                    );
                     if attempt >= self.config.max_retries {
                         return Err(ApiError::NetworkError(e));
                     }
@@ -151,15 +157,15 @@ impl RosetClient {
         if let Some(ref mount_id) = self.config.mount_id {
             body["mountId"] = serde_json::json!(mount_id);
         }
-        
+
         // Need to clone body for retry closure
         let client = &self.http;
         let body = body.clone();
         let url = url.clone();
 
-        let resp: ResolveResponse = self.execute_request(|| {
-            client.post(&url).json(&body)
-        }).await?;
+        let resp: ResolveResponse = self
+            .execute_request(|| client.post(&url).json(&body))
+            .await?;
 
         Ok(resp.nodes.into_values().next().flatten())
     }
@@ -170,10 +176,8 @@ impl RosetClient {
         let client = &self.http;
         let url = url.clone();
 
-        let wrapper: NodeWrapper = self.execute_request(|| {
-            client.get(&url)
-        }).await?;
-        
+        let wrapper: NodeWrapper = self.execute_request(|| client.get(&url)).await?;
+
         Ok(wrapper.node)
     }
 
@@ -191,9 +195,7 @@ impl RosetClient {
         let client = &self.http;
         let url = url.clone();
 
-        self.execute_request(|| {
-            client.get(&url)
-        }).await
+        self.execute_request(|| client.get(&url)).await
     }
 
     /// List all children (handles pagination)
@@ -225,9 +227,7 @@ impl RosetClient {
         let client = &self.http;
         let url = url.clone();
 
-        self.execute_request(|| {
-            client.get(&url)
-        }).await
+        self.execute_request(|| client.get(&url)).await
     }
 
     /// Get manifest for a node (dataset/commit)
@@ -236,9 +236,7 @@ impl RosetClient {
         let client = &self.http;
         let url = url.clone();
 
-        self.execute_request(|| {
-            client.get(&url)
-        }).await
+        self.execute_request(|| client.get(&url)).await
     }
 
     /// Download file content via signed URL with range (custom retry logic needed for raw bytes)
@@ -257,8 +255,8 @@ impl RosetClient {
         loop {
             attempt += 1;
 
-            // Use a fresh client for the signed URL to avoid auth headers if they conflict 
-            // (Signed URLs usually don't need the Bearer token, but sometimes it doesn't hurt. 
+            // Use a fresh client for the signed URL to avoid auth headers if they conflict
+            // (Signed URLs usually don't need the Bearer token, but sometimes it doesn't hurt.
             // Ideally we use a plain client to avoid sending Roset auth to S3/GCS if that's where the URL points)
             // But here we use a simple default client
             let resp = reqwest::Client::new()
@@ -274,11 +272,18 @@ impl RosetClient {
                     }
 
                     if r.status().as_u16() == 404 || r.status().as_u16() == 403 {
-                        return Err(ApiError::ServerError(format!("Download error: {}", r.status())));
+                        return Err(ApiError::ServerError(format!(
+                            "Download error: {}",
+                            r.status()
+                        )));
                     }
 
                     if attempt >= self.config.max_retries {
-                         return Err(ApiError::ServerError(format!("Download error after {} retries: {}", self.config.max_retries, r.status())));
+                        return Err(ApiError::ServerError(format!(
+                            "Download error after {} retries: {}",
+                            self.config.max_retries,
+                            r.status()
+                        )));
                     }
                 }
                 Err(e) => {
@@ -308,21 +313,22 @@ impl RosetClient {
         let client = &self.http;
         let url = url.clone();
         // Clone input for retry
-        let input_clone = input; // Input needs to be Clone-able or we reconstruct. 
-        // NOTE: CreateNodeInput needs Clone derive. Added it in models.rs (implied, let's check) specific update might be needed if Input structs aren't Clone.
-        // Wait, models.rs has `derive(Debug, Serialize)` only for input structs.
-        // We need to implement Clone for inputs or construct body inside closure. 
-        // Serde structs usually can be cloned if fields are cloneable.
-        // Let's rely on serde_json::Value for body to be safe or ensure inputs are Clone.
-        // For now, let's serialize to Value to clone cheap(er) reference or just make inputs Clone.
-        // The models.rs generated previously has `derive(Debug, Serialize)` but maybe not Clone.
-        // Let's assume we can clone the input if we update models.rs or just serialize here.
-        
-        let body_value = serde_json::to_value(&input_clone).map_err(|e| ApiError::Other(e.to_string()))?;
+        let input_clone = input; // Input needs to be Clone-able or we reconstruct.
+                                 // NOTE: CreateNodeInput needs Clone derive. Added it in models.rs (implied, let's check) specific update might be needed if Input structs aren't Clone.
+                                 // Wait, models.rs has `derive(Debug, Serialize)` only for input structs.
+                                 // We need to implement Clone for inputs or construct body inside closure.
+                                 // Serde structs usually can be cloned if fields are cloneable.
+                                 // Let's rely on serde_json::Value for body to be safe or ensure inputs are Clone.
+                                 // For now, let's serialize to Value to clone cheap(er) reference or just make inputs Clone.
+                                 // The models.rs generated previously has `derive(Debug, Serialize)` but maybe not Clone.
+                                 // Let's assume we can clone the input if we update models.rs or just serialize here.
 
-        let wrapper: NodeWrapper = self.execute_request(|| {
-            client.post(&url).json(&body_value)
-        }).await?;
+        let body_value =
+            serde_json::to_value(&input_clone).map_err(|e| ApiError::Other(e.to_string()))?;
+
+        let wrapper: NodeWrapper = self
+            .execute_request(|| client.post(&url).json(&body_value))
+            .await?;
 
         Ok(wrapper.node)
     }
@@ -338,37 +344,40 @@ impl RosetClient {
         // Actually, execute_request parses JSON. Delete usually returns 200 OK with maybe empty body or data.
         // If body is empty, execute_request might fail to parse T.
         // Let's use customized logic for Delete to avoid parsing error on empty body.
-        
+
         let mut attempt = 0;
         let mut delay_ms = self.config.initial_backoff_ms;
-        
+
         loop {
             attempt += 1;
             let resp = client.delete(&url).send().await;
-             match resp {
+            match resp {
                 Ok(r) => {
                     let status = r.status();
                     if status.is_success() {
                         return Ok(());
                     }
                     if attempt >= self.config.max_retries {
-                         let text = r.text().await.unwrap_or_default();
-                         return Err(ApiError::from_status(status, &text));
+                        let text = r.text().await.unwrap_or_default();
+                        return Err(ApiError::from_status(status, &text));
                     }
-                    if status.is_server_error() || status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                    if status.is_server_error() || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+                    {
                         // retry
                     } else {
                         // 4xx fatal
-                         let text = r.text().await.unwrap_or_default();
-                         return Err(ApiError::from_status(status, &text));
+                        let text = r.text().await.unwrap_or_default();
+                        return Err(ApiError::from_status(status, &text));
                     }
                 }
                 Err(e) => {
-                    if attempt >= self.config.max_retries { return Err(ApiError::NetworkError(e)); }
+                    if attempt >= self.config.max_retries {
+                        return Err(ApiError::NetworkError(e));
+                    }
                 }
-             }
-             tokio::time::sleep(Duration::from_millis(delay_ms)).await;
-             delay_ms = std::cmp::min(delay_ms * 2, 10000);
+            }
+            tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+            delay_ms = std::cmp::min(delay_ms * 2, 10000);
         }
     }
 
@@ -384,11 +393,11 @@ impl RosetClient {
 
         let client = &self.http;
         let url = url.clone();
-        let body_value = serde_json::to_value(&input).map_err(|e| ApiError::Other(e.to_string()))?;
+        let body_value =
+            serde_json::to_value(&input).map_err(|e| ApiError::Other(e.to_string()))?;
 
-        self.execute_request(|| {
-            client.post(&url).json(&body_value)
-        }).await
+        self.execute_request(|| client.post(&url).json(&body_value))
+            .await
     }
 
     /// Update node metadata
@@ -401,14 +410,14 @@ impl RosetClient {
         let body = serde_json::json!({
             "metadata": metadata
         });
-        
+
         let client = &self.http;
         let url = url.clone();
         let body = body.clone();
 
-        let wrapper: NodeWrapper = self.execute_request(|| {
-           client.patch(&url).json(&body)
-        }).await?;
+        let wrapper: NodeWrapper = self
+            .execute_request(|| client.patch(&url).json(&body))
+            .await?;
 
         Ok(wrapper.node)
     }
@@ -423,10 +432,16 @@ impl RosetClient {
         let url = format!("{}/v1/nodes/{}", self.config.api_url, node_id);
         let mut body_map = serde_json::Map::new();
         if let Some(parent_id) = new_parent_id {
-            body_map.insert("parentId".to_string(), serde_json::Value::String(parent_id.to_string()));
+            body_map.insert(
+                "parentId".to_string(),
+                serde_json::Value::String(parent_id.to_string()),
+            );
         }
         if let Some(name) = new_name {
-            body_map.insert("name".to_string(), serde_json::Value::String(name.to_string()));
+            body_map.insert(
+                "name".to_string(),
+                serde_json::Value::String(name.to_string()),
+            );
         }
         let body = serde_json::Value::Object(body_map);
 
@@ -434,9 +449,9 @@ impl RosetClient {
         let url = url.clone();
         let body = body.clone();
 
-        let wrapper: NodeWrapper = self.execute_request(|| {
-            client.patch(&url).json(&body)
-        }).await?;
+        let wrapper: NodeWrapper = self
+            .execute_request(|| client.patch(&url).json(&body))
+            .await?;
         Ok(wrapper.node)
     }
 
@@ -453,10 +468,8 @@ impl RosetClient {
         let client = &self.http;
         let url = url.clone();
 
-        let data: PartResponse = self.execute_request(|| {
-            client.post(&url)
-        }).await?;
-        
+        let data: PartResponse = self.execute_request(|| client.post(&url)).await?;
+
         Ok(data.url)
     }
 
@@ -466,15 +479,16 @@ impl RosetClient {
         upload_token: &str,
         parts: Vec<Part>,
     ) -> Result<CommitUploadResponse, ApiError> {
-        let url = format!("{}/v1/uploads/{}/complete", self.config.api_url, upload_token);
+        let url = format!(
+            "{}/v1/uploads/{}/complete",
+            self.config.api_url, upload_token
+        );
         let body = serde_json::json!({ "parts": parts });
 
         let client = &self.http;
         let url = url.clone();
         let body = body.clone();
 
-        self.execute_request(|| {
-            client.post(&url).json(&body)
-        }).await
+        self.execute_request(|| client.post(&url).json(&body)).await
     }
 }

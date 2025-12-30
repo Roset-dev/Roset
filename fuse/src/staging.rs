@@ -325,7 +325,7 @@ async fn process_upload(client: &RosetClient, job: &mut UploadJob) -> Result<()>
         // Persist every part using atomic write (write to temp + rename)
         let job_json = serde_json::to_vec(&job)?;
         let temp_file_path = job_file_path.with_extension("tmp");
-        
+
         fs::write(&temp_file_path, job_json).await?;
         fs::rename(&temp_file_path, &job_file_path).await?;
     }

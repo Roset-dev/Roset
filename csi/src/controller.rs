@@ -342,9 +342,12 @@ impl Controller for ControllerService {
                 return Err(Status::internal("Failed to resolve existing volume node"));
             }
 
-            let resolved: serde_json::Value = resolve_resp.json::<serde_json::Value>().await.map_err(|e| {
-                Status::internal(format!("Failed to parse resolve response: {}", e))
-            })?;
+            let resolved: serde_json::Value = resolve_resp
+                .json::<serde_json::Value>()
+                .await
+                .map_err(|e| {
+                    Status::internal(format!("Failed to parse resolve response: {}", e))
+                })?;
 
             let node = &resolved[&full_path];
             if node.is_null() {
@@ -673,11 +676,7 @@ impl Controller for ControllerService {
             .map_err(|_| Status::internal("ROSET_API_KEY environment variable not set"))?;
 
         let client = reqwest::Client::new();
-        let get_url = format!(
-            "{}/v1/commits/{}",
-            api_url,
-            snapshot_id
-        );
+        let get_url = format!("{}/v1/commits/{}", api_url, snapshot_id);
 
         let resp = client
             .get(&get_url)

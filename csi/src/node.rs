@@ -1,11 +1,10 @@
 use crate::csi::{
     node_server::Node, node_service_capability, volume_usage, NodeExpandVolumeRequest,
     NodeExpandVolumeResponse, NodeGetCapabilitiesRequest, NodeGetCapabilitiesResponse,
-    NodeGetInfoRequest, NodeGetInfoResponse, NodeGetVolumeStatsRequest,
-    NodeGetVolumeStatsResponse, NodePublishVolumeRequest, NodePublishVolumeResponse,
-    NodeStageVolumeRequest, NodeStageVolumeResponse, NodeUnpublishVolumeRequest,
-    NodeUnpublishVolumeResponse, NodeUnstageVolumeRequest, NodeUnstageVolumeResponse,
-    VolumeUsage,
+    NodeGetInfoRequest, NodeGetInfoResponse, NodeGetVolumeStatsRequest, NodeGetVolumeStatsResponse,
+    NodePublishVolumeRequest, NodePublishVolumeResponse, NodeStageVolumeRequest,
+    NodeStageVolumeResponse, NodeUnpublishVolumeRequest, NodeUnpublishVolumeResponse,
+    NodeUnstageVolumeRequest, NodeUnstageVolumeResponse, VolumeUsage,
 };
 use crate::supervisor::{Supervisor, SupervisorConfig};
 use std::collections::HashMap;
@@ -38,8 +37,12 @@ impl NodeService {
     /// Write API key to a temp file instead of passing via CLI args
     /// Returns the path to the key file
     fn write_temp_api_key(volume_id: &str, api_key: &str) -> Result<String, Box<Status>> {
-        std::fs::create_dir_all(SECRETS_DIR)
-            .map_err(|e| Box::new(Status::internal(format!("Failed to create secrets dir: {}", e))))?;
+        std::fs::create_dir_all(SECRETS_DIR).map_err(|e| {
+            Box::new(Status::internal(format!(
+                "Failed to create secrets dir: {}",
+                e
+            )))
+        })?;
 
         // Use volume_id hash for unique filename
         let key_file = format!("{}/{}.key", SECRETS_DIR, volume_id.replace(':', "_"));
@@ -48,8 +51,14 @@ impl NodeService {
             .map_err(|e| Box::new(Status::internal(format!("Failed to write API key: {}", e))))?;
 
         // Set restrictive permissions (0600)
-        std::fs::set_permissions(&key_file, std::fs::Permissions::from_mode(0o600))
-            .map_err(|e| Box::new(Status::internal(format!("Failed to set permissions: {}", e))))?;
+        std::fs::set_permissions(&key_file, std::fs::Permissions::from_mode(0o600)).map_err(
+            |e| {
+                Box::new(Status::internal(format!(
+                    "Failed to set permissions: {}",
+                    e
+                )))
+            },
+        )?;
 
         Ok(key_file)
     }
@@ -114,9 +123,12 @@ impl NodeService {
         }
 
         // Spawn FUSE process (detached)
-        let child = cmd
-            .spawn()
-            .map_err(|e| Box::new(Status::internal(format!("Failed to spawn fuse mount: {}", e))))?;
+        let child = cmd.spawn().map_err(|e| {
+            Box::new(Status::internal(format!(
+                "Failed to spawn fuse mount: {}",
+                e
+            )))
+        })?;
 
         Ok(child.id())
     }
@@ -692,6 +704,8 @@ impl Node for NodeService {
         &self,
         _request: Request<NodeExpandVolumeRequest>,
     ) -> Result<Response<NodeExpandVolumeResponse>, Status> {
-        Ok(Response::new(NodeExpandVolumeResponse { capacity_bytes: 0 }))
+        Ok(Response::new(NodeExpandVolumeResponse {
+            capacity_bytes: 0,
+        }))
     }
 }

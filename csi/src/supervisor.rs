@@ -211,7 +211,6 @@ impl Supervisor {
     }
 
     /// Get the current state of a supervised process
-
     pub fn get_state(&self, volume_id: &str) -> Option<FuseProcessState> {
         if let Ok(processes) = self.processes.lock() {
             processes.get(volume_id).cloned()
@@ -221,7 +220,6 @@ impl Supervisor {
     }
 
     /// Update the PID for a volume after restart
-
     pub fn update_pid(&self, volume_id: &str, new_pid: u32) {
         if let Ok(mut processes) = self.processes.lock() {
             if let Some(state) = processes.get_mut(volume_id) {
@@ -233,7 +231,6 @@ impl Supervisor {
 
     /// Run a single health check iteration for all processes
     /// Returns list of (volume_id, needs_restart)
-
     pub fn health_check(&self) -> Vec<(String, bool)> {
         let mut results = Vec::new();
 
@@ -267,7 +264,6 @@ impl Supervisor {
     }
 
     /// Record a restart attempt
-
     pub fn record_restart(&self, volume_id: &str) -> bool {
         if let Ok(mut processes) = self.processes.lock() {
             if let Some(state) = processes.get_mut(volume_id) {
@@ -278,7 +274,6 @@ impl Supervisor {
     }
 
     /// Get backoff duration for a volume
-
     pub fn get_backoff(&self, volume_id: &str) -> Duration {
         if let Ok(processes) = self.processes.lock() {
             if let Some(state) = processes.get(volume_id) {

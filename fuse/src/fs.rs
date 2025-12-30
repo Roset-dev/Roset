@@ -73,7 +73,7 @@ const TTL: Duration = Duration::from_secs(60);
 impl RosetFs {
     pub fn new(config: &Config) -> Result<Self> {
         use crate::config::DurabilityMode;
-        
+
         let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()?;
@@ -93,14 +93,18 @@ impl RosetFs {
         let gid = unsafe { libc::getgid() };
 
         // Determine effective durability mode (--write-back-cache is deprecated alias for async)
-        let durability_mode = if config.write_back_cache && config.durability == DurabilityMode::Sync {
-            DurabilityMode::Async // Legacy flag overrides default
-        } else {
-            config.durability
-        };
+        let durability_mode =
+            if config.write_back_cache && config.durability == DurabilityMode::Sync {
+                DurabilityMode::Async // Legacy flag overrides default
+            } else {
+                config.durability
+            };
 
         // Create staging manager for async or sync-on-fsync modes
-        let needs_staging = matches!(durability_mode, DurabilityMode::Async | DurabilityMode::SyncOnFsync);
+        let needs_staging = matches!(
+            durability_mode,
+            DurabilityMode::Async | DurabilityMode::SyncOnFsync
+        );
         let staging_manager = if needs_staging {
             let staging_dir = config
                 .staging_dir
@@ -246,7 +250,8 @@ impl RosetFs {
             }
             None => {
                 // Not found - cache negative result to avoid repeated API calls
-                self.cache.put_negative(&parent_id_for_cache, &name_for_cache);
+                self.cache
+                    .put_negative(&parent_id_for_cache, &name_for_cache);
                 Ok(None)
             }
         }
@@ -373,7 +378,10 @@ impl Filesystem for RosetFs {
 
         // Handle mtime update via metadata API
         if let Some(time) = mtime {
-            debug!("Request to update mtime to {:?}, but backend metadata update is not yet mapped", time);
+            debug!(
+                "Request to update mtime to {:?}, but backend metadata update is not yet mapped",
+                time
+            );
         }
 
         // Return current attributes
@@ -965,9 +973,13 @@ impl Filesystem for RosetFs {
             debug!("URL near expiry for node {}, refreshing", node_id);
             let client = self.client.clone();
             let id = node_id.clone();
-            match self.rt.block_on(async move { client.get_download_url(&id).await }) {
+            match self
+                .rt
+                .block_on(async move { client.get_download_url(&id).await })
+            {
                 Ok(resp) => {
-                    let new_expires = Some(SystemTime::now() + Duration::from_secs(resp.expires_in));
+                    let new_expires =
+                        Some(SystemTime::now() + Duration::from_secs(resp.expires_in));
                     download_url = Some(resp.url.clone());
                     // Update handle with new URL and expiry
                     let mut handles = self.handles.lock();
@@ -994,9 +1006,11 @@ impl Filesystem for RosetFs {
         // Download the range with retry-on-403
         let client = self.client.clone();
         let url_clone = url.clone();
-        
+
         match self.rt.block_on(async move {
-            client.download_range(&url_clone, offset as u64, actual_size).await
+            client
+                .download_range(&url_clone, offset as u64, actual_size)
+                .await
         }) {
             Ok(data) => {
                 reply.data(&data);
@@ -1006,9 +1020,11 @@ impl Filesystem for RosetFs {
                 debug!("Got 403, refreshing URL for node {}", node_id);
                 let client = self.client.clone();
                 let id = node_id.clone();
-                match self.rt.block_on(async move { 
+                match self.rt.block_on(async move {
                     let resp = client.get_download_url(&id).await?;
-                    client.download_range(&resp.url, offset as u64, actual_size).await
+                    client
+                        .download_range(&resp.url, offset as u64, actual_size)
+                        .await
                 }) {
                     Ok(data) => {
                         reply.data(&data);
