@@ -73,7 +73,7 @@ func runStatus(cmd *cobra.Command, args []string) {
 
 	// Check API connectivity and auth
 	if config.Cfg.APIKey != "" {
-		client := api.NewClient(config.Cfg.APIKey)
+		client := api.NewClient(config.GetAPIURL(), config.Cfg.APIKey)
 		_, latency, err := client.Whoami()
 		output.Connection.LatencyMs = latency.Milliseconds()
 

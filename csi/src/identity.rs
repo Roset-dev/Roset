@@ -34,13 +34,23 @@ impl Identity for IdentityService {
         _request: Request<GetPluginCapabilitiesRequest>,
     ) -> Result<Response<GetPluginCapabilitiesResponse>, Status> {
         Ok(Response::new(GetPluginCapabilitiesResponse {
-            capabilities: vec![crate::csi::PluginCapability {
-                r#type: Some(plugin_capability::Type::Service(
-                    plugin_capability::Service {
-                        r#type: plugin_capability::service::Type::ControllerService as i32,
-                    },
-                )),
-            }],
+            capabilities: vec![
+                crate::csi::PluginCapability {
+                    r#type: Some(plugin_capability::Type::Service(
+                        plugin_capability::Service {
+                            r#type: plugin_capability::service::Type::ControllerService as i32,
+                        },
+                    )),
+                },
+                crate::csi::PluginCapability {
+                    r#type: Some(plugin_capability::Type::Service(
+                        plugin_capability::Service {
+                            r#type: plugin_capability::service::Type::VolumeAccessibilityConstraints
+                                as i32,
+                        },
+                    )),
+                },
+            ],
         }))
     }
 

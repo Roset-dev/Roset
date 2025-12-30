@@ -43,6 +43,10 @@ pub struct RosetFs {
     max_dir_entries: u32,
     /// Staging manager for background uploads
     staging_manager: Option<StagingManager>,
+    /// Durability mode for writes
+    durability_mode: crate::config::DurabilityMode,
+    /// URL refresh buffer in seconds
+    url_refresh_buffer: Duration,
 }
 
 // Add imports
@@ -54,11 +58,11 @@ struct OpenFile {
     node_id: String,
     // Read fields
     download_url: Option<String>,
+    expires_at: Option<SystemTime>, // URL expiry timestamp
     size: u64,
     // Write fields
     write_mode: bool,
     upload_token: Option<String>,
-    upload_url: Option<String>,
     temp_file: Option<NamedTempFile>, // Replaces buffer
     dirty: bool,
 }
@@ -68,6 +72,8 @@ const TTL: Duration = Duration::from_secs(60);
 
 impl RosetFs {
     pub fn new(config: &Config) -> Result<Self> {
+        use crate::config::DurabilityMode;
+        
         let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()?;
@@ -80,6 +86,28 @@ impl RosetFs {
         let uid = unsafe { libc::getuid() };
         let gid = unsafe { libc::getgid() };
 
+        // Determine effective durability mode (--write-back-cache is deprecated alias for async)
+        let durability_mode = if config.write_back_cache && config.durability == DurabilityMode::Sync {
+            DurabilityMode::Async // Legacy flag overrides default
+        } else {
+            config.durability
+        };
+
+        // Create staging manager for async or sync-on-fsync modes
+        let needs_staging = matches!(durability_mode, DurabilityMode::Async | DurabilityMode::SyncOnFsync);
+        let staging_manager = if needs_staging {
+            let staging_dir = config
+                .staging_dir
+                .clone()
+                .unwrap_or_else(|| PathBuf::from(".roset/staging"));
+            Some(StagingManager::new(
+                RosetClient::new(&config.api_url, &config.api_key, config.mount_id.clone())?,
+                staging_dir,
+            ))
+        } else {
+            None
+        };
+
         Ok(Self {
             client,
             inodes,
@@ -91,18 +119,9 @@ impl RosetFs {
             uid,
             gid,
             max_dir_entries: 10000,
-            staging_manager: if config.write_back_cache {
-                let staging_dir = config
-                    .staging_dir
-                    .clone()
-                    .unwrap_or_else(|| PathBuf::from(".roset/staging"));
-                Some(StagingManager::new(
-                    RosetClient::new(&config.api_url, &config.api_key, config.mount_id.clone())?,
-                    staging_dir,
-                ))
-            } else {
-                None
-            },
+            staging_manager,
+            durability_mode,
+            url_refresh_buffer: Duration::from_secs(config.url_refresh_buffer),
         })
     }
 
@@ -191,30 +210,39 @@ impl RosetFs {
 
     /// Resolve a child by name in a parent directory, with API fallback
     fn resolve_child(&self, parent_id: &str, name: &str) -> Result<Option<Node>, ApiError> {
-        // 1. Try cache first
+        // 1. Check negative cache first (avoid repeated API calls for non-existent files)
+        if self.cache.is_negative(parent_id, name) {
+            return Ok(None);
+        }
+
+        // 2. Try positive cache
         if let Some(children) = self.cache.get_children(parent_id) {
             if let Some(child) = children.iter().find(|c| c.name == name) {
                 return Ok(Some(child.clone()));
             }
         }
 
-        // 2. Resolve via API (targeted lookup relative to parent_id)
+        // 3. Resolve via API (targeted lookup relative to parent_id)
         let client = self.client.clone();
         let pid = parent_id.to_string();
         let n = name.to_string();
+        let parent_id_for_cache = parent_id.to_string();
+        let name_for_cache = name.to_string();
 
         match self
             .rt
             .block_on(async move { client.resolve(&n, Some(&pid)).await })?
         {
             Some(node) => {
-                // Node found, but we don't put it in children cache here
-                // because it's a single node, not a full listing.
-                // We do put it in nodes cache.
+                // Node found, cache it
                 self.cache.put_node(node.clone());
                 Ok(Some(node))
             }
-            None => Ok(None),
+            None => {
+                // Not found - cache negative result to avoid repeated API calls
+                self.cache.put_negative(&parent_id_for_cache, &name_for_cache);
+                Ok(None)
+            }
         }
     }
 }
@@ -491,15 +519,17 @@ impl Filesystem for RosetFs {
                 let fh = self
                     .next_fh
                     .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                // Calculate expiry time from expiresIn
+                let expires_at = Some(SystemTime::now() + Duration::from_secs(resp.expires_in));
                 self.handles.lock().insert(
                     fh,
                     OpenFile {
                         node_id,
                         download_url: Some(resp.url),
+                        expires_at,
                         size: resp.size,
                         write_mode: false,
                         upload_token: None,
-                        upload_url: None,
                         temp_file: None,
                         dirty: false,
                     },
@@ -557,6 +587,7 @@ impl Filesystem for RosetFs {
         {
             Ok(node) => {
                 self.cache.invalidate_children(&parent_id);
+                self.cache.invalidate_negative(&parent_id, &name_str); // Clear negative cache
                 let ino = self.inodes.get_or_create(&node.id);
                 self.cache.put_node(node.clone());
                 let attr = self.node_to_attr(&node, ino);
@@ -777,6 +808,7 @@ impl Filesystem for RosetFs {
                 };
 
                 let ino = self.inodes.get_or_create(&resp.node_id);
+                self.cache.invalidate_negative(&parent_id, &name_str); // Clear negative cache
                 let fh = self
                     .next_fh
                     .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
@@ -796,10 +828,10 @@ impl Filesystem for RosetFs {
                     OpenFile {
                         node_id: resp.node_id,
                         download_url: None,
+                        expires_at: None, // Write-only handles don't need URL expiry
                         size: 0,
                         write_mode: true,
                         upload_token: Some(resp.upload_token),
-                        upload_url: Some(resp.upload_url), // Might be None for multipart
                         temp_file: Some(temp_file),
                         dirty: false,
                     },
@@ -888,19 +920,16 @@ impl Filesystem for RosetFs {
             ino, fh, offset, size
         );
 
-        let handle = {
+        // Get handle info including expires_at
+        let (node_id, mut download_url, expires_at, file_size) = {
             let handles = self.handles.lock();
             match handles.get(&fh) {
-                Some(h) => OpenFile {
-                    node_id: h.node_id.clone(),
-                    download_url: h.download_url.clone(),
-                    size: h.size,
-                    write_mode: h.write_mode,
-                    upload_token: h.upload_token.clone(),
-                    upload_url: h.upload_url.clone(),
-                    temp_file: None, // Don't clone NamedTempFile
-                    dirty: h.dirty,
-                },
+                Some(h) => (
+                    h.node_id.clone(),
+                    h.download_url.clone(),
+                    h.expires_at,
+                    h.size,
+                ),
                 None => {
                     reply.error(libc::EBADF);
                     return;
@@ -909,31 +938,80 @@ impl Filesystem for RosetFs {
         };
 
         // Check bounds
-        if offset as u64 >= handle.size {
+        if offset as u64 >= file_size {
             reply.data(&[]);
             return;
         }
 
-        let actual_size = std::cmp::min(size as u64, handle.size - offset as u64) as u32;
+        let actual_size = std::cmp::min(size as u64, file_size - offset as u64) as u32;
 
-        // Download the range
-        let client = self.client.clone();
-        let url = match handle.download_url {
+        // Check if URL needs refresh (near expiry)
+        let needs_refresh = match expires_at {
+            Some(exp) => {
+                let refresh_threshold = SystemTime::now() + self.url_refresh_buffer;
+                refresh_threshold > exp
+            }
+            None => false,
+        };
+
+        // Refresh URL if near expiry
+        if needs_refresh {
+            debug!("URL near expiry for node {}, refreshing", node_id);
+            let client = self.client.clone();
+            let id = node_id.clone();
+            match self.rt.block_on(async move { client.get_download_url(&id).await }) {
+                Ok(resp) => {
+                    let new_expires = Some(SystemTime::now() + Duration::from_secs(resp.expires_in));
+                    download_url = Some(resp.url.clone());
+                    // Update handle with new URL and expiry
+                    let mut handles = self.handles.lock();
+                    if let Some(h) = handles.get_mut(&fh) {
+                        h.download_url = Some(resp.url);
+                        h.expires_at = new_expires;
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to refresh URL: {}", e);
+                    // Continue with old URL, will fail if truly expired
+                }
+            }
+        }
+
+        let url = match download_url {
             Some(u) => u,
             None => {
-                // If no download URL, it might be a new file being written
-                // Return zeros or error
                 reply.error(libc::EIO);
                 return;
             }
         };
+
+        // Download the range with retry-on-403
+        let client = self.client.clone();
+        let url_clone = url.clone();
+        
         match self.rt.block_on(async move {
-            client
-                .download_range(&url, offset as u64, actual_size)
-                .await
+            client.download_range(&url_clone, offset as u64, actual_size).await
         }) {
             Ok(data) => {
                 reply.data(&data);
+            }
+            Err(ApiError::ServerError(msg)) if msg.contains("403") => {
+                // URL expired, try refresh and retry once
+                debug!("Got 403, refreshing URL for node {}", node_id);
+                let client = self.client.clone();
+                let id = node_id.clone();
+                match self.rt.block_on(async move { 
+                    let resp = client.get_download_url(&id).await?;
+                    client.download_range(&resp.url, offset as u64, actual_size).await
+                }) {
+                    Ok(data) => {
+                        reply.data(&data);
+                    }
+                    Err(e) => {
+                        error!("Retry after 403 failed: {}", e);
+                        reply.error(Self::api_error_to_errno(&e));
+                    }
+                }
             }
             Err(e) => {
                 error!("Download error in read: {}", e);
@@ -1149,7 +1227,10 @@ impl Filesystem for RosetFs {
                     // 1. Try Write-Back Staging
                     let mut staged = false;
                     if let Some(staging) = &self.staging_manager {
-                        info!("Staging background upload for node {}", nid);
+                        info!(
+                            "Staging background upload for node {} (mode: {:?})",
+                            nid, self.durability_mode
+                        );
                         match self.rt.block_on(async {
                             staging
                                 .stage_file(&path, nid.clone(), token.clone(), total_size)

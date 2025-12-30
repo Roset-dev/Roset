@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"runtime/debug"
 
 	"github.com/charmbracelet/lipgloss"
@@ -13,6 +15,16 @@ var (
 	commit    = "none"
 	buildDate = "unknown"
 )
+
+// VersionInfo is the JSON output for version command.
+type VersionInfo struct {
+	Version   string `json:"version"`
+	Commit    string `json:"commit"`
+	BuildDate string `json:"buildDate"`
+	GoVersion string `json:"goVersion"`
+	OS        string `json:"os"`
+	Arch      string `json:"arch"`
+}
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
@@ -44,6 +56,22 @@ func init() {
 }
 
 func runVersion(cmd *cobra.Command, args []string) {
+	info := VersionInfo{
+		Version:   version,
+		Commit:    commit,
+		BuildDate: buildDate,
+		GoVersion: goVersion(),
+		OS:        goos(),
+		Arch:      goarch(),
+	}
+
+	if jsonOutput {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		_ = enc.Encode(info)
+		return
+	}
+
 	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#4DA3FF"))
 	label := lipgloss.NewStyle().Bold(true).Width(12)
 
@@ -54,4 +82,33 @@ func runVersion(cmd *cobra.Command, args []string) {
 	fmt.Printf("%s %s\n", label.Render("Commit:"), commit)
 	fmt.Printf("%s %s\n", label.Render("Built:"), buildDate)
 	fmt.Println()
+}
+
+func goVersion() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		return info.GoVersion
+	}
+	return "unknown"
+}
+
+func goos() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, s := range info.Settings {
+			if s.Key == "GOOS" {
+				return s.Value
+			}
+		}
+	}
+	return "unknown"
+}
+
+func goarch() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, s := range info.Settings {
+			if s.Key == "GOARCH" {
+				return s.Value
+			}
+		}
+	}
+	return "unknown"
 }

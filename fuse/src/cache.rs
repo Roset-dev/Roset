@@ -36,8 +36,12 @@ pub struct Cache {
     children: Mutex<LruCache<String, CachedChildren>>,
     /// Parents cache (node_id → parent_id) for reverse lookups
     parents: Mutex<LruCache<String, String>>,
+    /// Negative lookup cache ("not found" results: (parent_id, name) → expiry)
+    negative: Mutex<LruCache<(String, String), Instant>>,
     /// Cache TTL
     ttl: Duration,
+    /// Negative cache TTL (60 seconds)
+    negative_ttl: Duration,
 }
 
 impl Cache {
@@ -47,7 +51,9 @@ impl Cache {
             nodes: Mutex::new(LruCache::new(size)),
             children: Mutex::new(LruCache::new(NonZeroUsize::new(1000).unwrap())),
             parents: Mutex::new(LruCache::new(size)),
+            negative: Mutex::new(LruCache::new(NonZeroUsize::new(5000).unwrap())),
             ttl: Duration::from_secs(ttl_secs),
+            negative_ttl: Duration::from_secs(60),
         }
     }
 
@@ -168,5 +174,32 @@ impl Cache {
     /// Bulk load nodes into cache as immutable
     pub fn bulk_load(&self, parent_id: &str, children: Vec<Node>) {
         self.put_children_with_policy(parent_id, children, CachePolicy::Immutable);
+    }
+
+    /// Cache a "not found" result for a name in a parent directory
+    pub fn put_negative(&self, parent_id: &str, name: &str) {
+        let key = (parent_id.to_string(), name.to_string());
+        let expires_at = Instant::now() + self.negative_ttl;
+        self.negative.lock().put(key, expires_at);
+    }
+
+    /// Check if a name was previously not found in a parent directory
+    /// Returns true if the entry is in the negative cache (and not expired)
+    pub fn is_negative(&self, parent_id: &str, name: &str) -> bool {
+        let key = (parent_id.to_string(), name.to_string());
+        let mut cache = self.negative.lock();
+        if let Some(&expires_at) = cache.get(&key) {
+            if expires_at > Instant::now() {
+                return true;
+            }
+            cache.pop(&key);
+        }
+        false
+    }
+
+    /// Invalidate negative cache entries for a parent (e.g., after create)
+    pub fn invalidate_negative(&self, parent_id: &str, name: &str) {
+        let key = (parent_id.to_string(), name.to_string());
+        self.negative.lock().pop(&key);
     }
 }

@@ -48,7 +48,7 @@ impl ControllerService {
 
             let create_node_url = "https://api.roset.dev/v1/nodes";
             let resp = client
-                .post(&create_node_url)
+                .post(create_node_url)
                 .header("Authorization", format!("Bearer {}", api_key))
                 .json(&body)
                 .send()
@@ -108,7 +108,7 @@ impl ControllerService {
         });
 
         let resp = client
-            .post(&ref_url)
+            .post(ref_url)
             .header("Authorization", format!("Bearer {}", api_key))
             .json(&body)
             .send()
@@ -124,6 +124,7 @@ impl ControllerService {
         }
 
         // Get the commit to find the source node
+        let api_url = "https://api.roset.dev";
         let commit_url = format!(
             "{}/v1/commits/{}",
             api_url.trim_end_matches('/'),
@@ -294,7 +295,7 @@ impl Controller for ControllerService {
         });
 
         let resp = client
-            .post(&create_node_url)
+            .post(create_node_url)
             .header("Authorization", format!("Bearer {}", api_key))
             .json(&body)
             .send()
@@ -321,7 +322,7 @@ impl Controller for ControllerService {
             // 7. Handle Conflict: Verify it is a folder
             let resolve_url = "https://api.roset.dev/v1/resolve";
             let resolve_resp = client
-                .post(&resolve_url)
+                .post(resolve_url)
                 .header("Authorization", format!("Bearer {}", api_key))
                 .json(&serde_json::json!({ "paths": [full_path] }))
                 .send()

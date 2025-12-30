@@ -181,6 +181,15 @@ export type CompareResult = components["schemas"]["CompareResult"];
 
 export type TenantStats = Exclude<components["schemas"]["TenantStats"], null>;
 
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type Member = Exclude<components["schemas"]["Member"], null>;
 export type Invitation = Exclude<components["schemas"]["Invite"], null>;
 export type InvitationInfo = Exclude<components["schemas"]["InviteInfo"], null>;

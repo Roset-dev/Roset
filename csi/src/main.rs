@@ -13,6 +13,7 @@ pub mod csi {
 mod controller;
 mod identity;
 mod node;
+mod supervisor;
 
 use controller::ControllerService;
 use csi::controller_server::ControllerServer;

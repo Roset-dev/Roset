@@ -157,7 +157,7 @@ pub struct CreateNodeInput {
 }
 
 impl RosetClient {
-    pub fn new(api_key: &str, mount_id: Option<String>) -> Result<Arc<Self>> {
+    pub fn new(api_url: &str, api_key: &str, mount_id: Option<String>) -> Result<Arc<Self>> {
         let mut headers = HeaderMap::new();
         headers.insert(
             AUTHORIZATION,
@@ -171,7 +171,7 @@ impl RosetClient {
 
         Ok(Arc::new(Self {
             http,
-            base_url: "https://api.roset.dev".to_string(),
+            base_url: api_url.to_string(),
             mount_id,
         }))
     }
@@ -632,8 +632,6 @@ impl RosetClient {
 
 #[derive(Debug, Deserialize)]
 pub struct InitUploadResponse {
-    #[serde(rename = "uploadUrl")]
-    pub upload_url: String,
     #[serde(rename = "uploadToken")]
     pub upload_token: String,
     #[serde(rename = "nodeId")]
