@@ -11,7 +11,7 @@ use tracing::{error, info, warn};
 
 /// Configuration for the supervisor
 #[derive(Clone)]
-#[allow(dead_code)] // Infrastructure for supervisor loop (not yet implemented)
+
 pub struct SupervisorConfig {
     /// Interval between health checks
     pub health_check_interval: Duration,
@@ -39,7 +39,7 @@ impl Default for SupervisorConfig {
 
 /// State of a supervised FUSE process
 #[derive(Clone)]
-#[allow(dead_code)] // Infrastructure for supervisor loop
+
 pub struct FuseProcessState {
     /// Process ID (if running)
     pub pid: Option<u32>,
@@ -63,7 +63,6 @@ pub struct FuseProcessState {
     pub last_health_check: Option<Instant>,
 }
 
-#[allow(dead_code)] // Infrastructure methods for supervisor loop
 impl FuseProcessState {
     pub fn new(
         pid: u32,
@@ -212,7 +211,7 @@ impl Supervisor {
     }
 
     /// Get the current state of a supervised process
-    #[allow(dead_code)]
+
     pub fn get_state(&self, volume_id: &str) -> Option<FuseProcessState> {
         if let Ok(processes) = self.processes.lock() {
             processes.get(volume_id).cloned()
@@ -222,7 +221,7 @@ impl Supervisor {
     }
 
     /// Update the PID for a volume after restart
-    #[allow(dead_code)]
+
     pub fn update_pid(&self, volume_id: &str, new_pid: u32) {
         if let Ok(mut processes) = self.processes.lock() {
             if let Some(state) = processes.get_mut(volume_id) {
@@ -234,7 +233,7 @@ impl Supervisor {
 
     /// Run a single health check iteration for all processes
     /// Returns list of (volume_id, needs_restart)
-    #[allow(dead_code)]
+
     pub fn health_check(&self) -> Vec<(String, bool)> {
         let mut results = Vec::new();
 
@@ -268,7 +267,7 @@ impl Supervisor {
     }
 
     /// Record a restart attempt
-    #[allow(dead_code)]
+
     pub fn record_restart(&self, volume_id: &str) -> bool {
         if let Ok(mut processes) = self.processes.lock() {
             if let Some(state) = processes.get_mut(volume_id) {
@@ -279,7 +278,7 @@ impl Supervisor {
     }
 
     /// Get backoff duration for a volume
-    #[allow(dead_code)]
+
     pub fn get_backoff(&self, volume_id: &str) -> Duration {
         if let Ok(processes) = self.processes.lock() {
             if let Some(state) = processes.get(volume_id) {

@@ -37,20 +37,19 @@ impl NodeService {
 
     /// Write API key to a temp file instead of passing via CLI args
     /// Returns the path to the key file
-    #[allow(clippy::result_large_err)]
-    fn write_temp_api_key(volume_id: &str, api_key: &str) -> Result<String, Status> {
+    fn write_temp_api_key(volume_id: &str, api_key: &str) -> Result<String, Box<Status>> {
         std::fs::create_dir_all(SECRETS_DIR)
-            .map_err(|e| Status::internal(format!("Failed to create secrets dir: {}", e)))?;
+            .map_err(|e| Box::new(Status::internal(format!("Failed to create secrets dir: {}", e))))?;
 
         // Use volume_id hash for unique filename
         let key_file = format!("{}/{}.key", SECRETS_DIR, volume_id.replace(':', "_"));
 
         std::fs::write(&key_file, api_key)
-            .map_err(|e| Status::internal(format!("Failed to write API key: {}", e)))?;
+            .map_err(|e| Box::new(Status::internal(format!("Failed to write API key: {}", e))))?;
 
         // Set restrictive permissions (0600)
         std::fs::set_permissions(&key_file, std::fs::Permissions::from_mode(0o600))
-            .map_err(|e| Status::internal(format!("Failed to set permissions: {}", e)))?;
+            .map_err(|e| Box::new(Status::internal(format!("Failed to set permissions: {}", e))))?;
 
         Ok(key_file)
     }
@@ -74,13 +73,12 @@ impl NodeService {
     }
 
     /// Spawn the roset-fuse process and return its PID
-    #[allow(clippy::result_large_err)]
     fn spawn_fuse_process(
         staging_path: &str,
         key_file: &str,
         mount_id: &str,
         volume_context: &HashMap<String, String>,
-    ) -> Result<u32, Status> {
+    ) -> Result<u32, Box<Status>> {
         let mut cmd = Command::new("roset-fuse");
         cmd.arg("--mountpoint")
             .arg(staging_path)
@@ -117,10 +115,72 @@ impl NodeService {
 
         // Spawn FUSE process (detached)
         let child = cmd
+        let child = cmd
             .spawn()
-            .map_err(|e| Status::internal(format!("Failed to spawn fuse mount: {}", e)))?;
+            .map_err(|e| Box::new(Status::internal(format!("Failed to spawn fuse mount: {}", e))))?;
 
         Ok(child.id())
+    }
+
+    /// Start the background supervisor monitor loop
+    pub fn start_monitor(&self) {
+        let supervisor = self.supervisor.clone();
+
+        tokio::spawn(async move {
+            info!("Starting supervisor monitor loop");
+            loop {
+                tokio::time::sleep(supervisor.config.health_check_interval).await;
+
+                let issues = supervisor.health_check();
+                for (volume_id, needs_restart) in issues {
+                    if needs_restart {
+                        // Check active state
+                        if let Some(state) = supervisor.get_state(&volume_id) {
+                            // Apply backoff
+                            let backoff = supervisor.get_backoff(&volume_id);
+                            info!(
+                                "Volume {} needs restart. Backing off for {:?}",
+                                volume_id, backoff
+                            );
+
+                            // We spawn a recovery task to avoid blocking the main loop
+                            let sup_clone = supervisor.clone();
+                            let vol_id_clone = volume_id.clone();
+                            let state_clone = state.clone();
+
+                            tokio::spawn(async move {
+                                tokio::time::sleep(backoff).await;
+
+                                info!("Restarting mount for volume {}", vol_id_clone);
+                                match Self::spawn_fuse_process(
+                                    &state_clone.staging_path,
+                                    &state_clone.key_file,
+                                    &state_clone.mount_id,
+                                    &state_clone.volume_context,
+                                ) {
+                                    Ok(pid) => {
+                                        info!(
+                                            "Successfully restarted roset-fuse (PID {}) for {}",
+                                            pid, vol_id_clone
+                                        );
+                                        sup_clone.update_pid(&vol_id_clone, pid);
+                                        sup_clone.record_restart(&vol_id_clone);
+                                    }
+                                    Err(e) => {
+                                        error!(
+                                            "Failed to restart mount for {}: {}",
+                                            vol_id_clone, e
+                                        );
+                                        // Record restart simply to increase backoff/count towards crash loop
+                                        sup_clone.record_restart(&vol_id_clone);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        });
     }
 }
 
@@ -234,7 +294,7 @@ impl Node for NodeService {
         }
 
         // Write API key to temp file (security: not in CLI args)
-        let key_file = Self::write_temp_api_key(&volume_id, &api_key)?;
+        let key_file = Self::write_temp_api_key(&volume_id, &api_key).map_err(|e| *e)?;
 
         // Spawn roset-fuse
         match Self::spawn_fuse_process(&staging_path, &key_file, mount_id, &volume_context) {
@@ -265,7 +325,7 @@ impl Node for NodeService {
                 error!("Failed to spawn roset-fuse: {}", e);
                 // Cleanup key file on failure
                 Self::cleanup_temp_api_key(&volume_id);
-                Err(e)
+                Err(*e)
             }
         }
     }

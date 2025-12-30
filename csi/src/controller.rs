@@ -13,6 +13,17 @@ use crate::csi::{
 };
 use tonic::{Request, Response, Status};
 
+use tonic::{Request, Response, Status};
+
+struct SnapshotConfig<'a> {
+    name: &'a str,
+    api_key: &'a str,
+    mount_id: &'a str,
+    base_path: &'a str,
+    snapshot_id: &'a str,
+    params: &'a std::collections::HashMap<String, String>,
+}
+
 pub struct ControllerService {}
 
 impl ControllerService {
@@ -74,8 +85,8 @@ impl ControllerService {
     }
 
     /// Parse opaque volume_id format: `roset-vol:<node_id>` -> node_id
-    #[allow(clippy::result_large_err)]
-    fn parse_volume_id(volume_id: &str) -> Result<String, Status> {
+    /// Parse opaque volume_id format: `roset-vol:<node_id>` -> node_id
+    fn parse_volume_id(volume_id: &str) -> Result<String, Box<Status>> {
         if let Some(node_id) = volume_id.strip_prefix("roset-vol:") {
             Ok(node_id.to_string())
         } else {
@@ -85,16 +96,17 @@ impl ControllerService {
     }
 
     /// Create a volume from a snapshot (commit) by creating a ref to the commit
-    #[allow(clippy::too_many_arguments)]
+    /// Create a volume from a snapshot (commit) by creating a ref to the commit
     async fn create_volume_from_snapshot(
         &self,
-        name: &str,
-        api_key: &str,
-        mount_id: &str,
-        base_path: &str,
-        snapshot_id: &str,
-        params: &std::collections::HashMap<String, String>,
+        config: SnapshotConfig<'_>,
     ) -> Result<Response<CreateVolumeResponse>, Status> {
+        let name = config.name;
+        let api_key = config.api_key;
+        let mount_id = config.mount_id;
+        let base_path = config.base_path;
+        let snapshot_id = config.snapshot_id;
+        let params = config.params;
         let client = reqwest::Client::new();
 
         // Create a ref that points to the snapshot (commit)
@@ -256,14 +268,15 @@ impl Controller for ControllerService {
                 match source_type {
                     crate::csi::volume_content_source::Type::Snapshot(snap_source) => {
                         return self
-                            .create_volume_from_snapshot(
-                                &name,
+                        return self
+                            .create_volume_from_snapshot(SnapshotConfig {
+                                name: &name,
                                 api_key,
                                 mount_id,
                                 base_path,
-                                &snap_source.snapshot_id,
-                                &params,
-                            )
+                                snapshot_id: &snap_source.snapshot_id,
+                                params: &params,
+                            })
                             .await;
                     }
                     crate::csi::volume_content_source::Type::Volume(vol_source) => {
@@ -396,7 +409,7 @@ impl Controller for ControllerService {
         }
 
         // Parse opaque volume_id to get actual node_id
-        let node_id = Self::parse_volume_id(&volume_id)?;
+        let node_id = Self::parse_volume_id(&volume_id).map_err(|e| *e)?;
 
         let secrets = req.secrets;
         let api_key = secrets.get("apiKey").ok_or_else(|| {

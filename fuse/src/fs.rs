@@ -1,7 +1,7 @@
 //! FUSE Filesystem Implementation
 
 use crate::cache::Cache;
-use crate::client::{ApiError, Node, NodeType, Part, RosetClient};
+use crate::client::{ApiError, ClientConfig, Node, NodeType, Part, RosetClient};
 use crate::config::Config;
 use crate::inode::InodeMap;
 use crate::staging::StagingManager;
@@ -78,7 +78,13 @@ impl RosetFs {
             .enable_all()
             .build()?;
 
-        let client = RosetClient::new(&config.api_url, &config.api_key, config.mount_id.clone())?;
+        let client_config = ClientConfig {
+            api_url: config.api_url.clone(),
+            api_key: config.api_key.clone(),
+            mount_id: config.mount_id.clone(),
+            ..Default::default()
+        };
+        let client = RosetClient::new(client_config.clone())?;
         let cache = Cache::new(config.cache_ttl);
         let inodes = InodeMap::new();
 
@@ -101,7 +107,7 @@ impl RosetFs {
                 .clone()
                 .unwrap_or_else(|| PathBuf::from(".roset/staging"));
             Some(StagingManager::new(
-                RosetClient::new(&config.api_url, &config.api_key, config.mount_id.clone())?,
+                RosetClient::new(client_config)?,
                 staging_dir,
             ))
         } else {
@@ -578,7 +584,7 @@ impl Filesystem for RosetFs {
             parent_id: Some(pid),
             parent_path: None,
             metadata: None,
-            mount_id: None, // Will use default from client
+            mount_id: None,
         };
 
         match self
@@ -795,7 +801,7 @@ impl Filesystem for RosetFs {
                 // Create a placeholder Node struct for the reply
                 let node = Node {
                     id: resp.node_id.clone(),
-                    tenant_id: "".to_string(), // Unknown context here but not needed for attr
+                    tenant_id: "".to_string(),
                     mount_id: "".to_string(),
                     parent_id: Some(parent_id.clone()),
                     name: n,
@@ -1158,7 +1164,7 @@ impl Filesystem for RosetFs {
                 })
                 .buffer_unordered(CONCURRENCY);
 
-            let mut parts_vec = bodies.try_collect::<Vec<Part>>().await?;
+            let mut parts_vec: Vec<Part> = bodies.try_collect().await?;
             parts_vec.sort_by_key(|p| p.part_number);
 
             // Complete multipart upload
@@ -1318,7 +1324,7 @@ impl Filesystem for RosetFs {
                                 .buffer_unordered(CONCURRENCY);
 
                             // Collect results
-                            let mut parts_vec = bodies.try_collect::<Vec<Part>>().await?;
+                            let mut parts_vec: Vec<Part> = bodies.try_collect().await?;
                             parts_vec.sort_by_key(|p| p.part_number);
 
                             // 2. Complete Multipart

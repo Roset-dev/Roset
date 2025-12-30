@@ -63,6 +63,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeService::new(args.node_id);
     let controller = ControllerService::new();
 
+    // Start background supervisor loop
+    node.start_monitor();
+
     info!("Listening on {}", socket_path);
 
     Server::builder()
