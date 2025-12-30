@@ -60,6 +60,7 @@ export class SharesResource {
         expiresAt: expiresAt instanceof Date ? expiresAt.toISOString() : expiresAt,
         password: options?.password,
         maxDownloads: options?.maxDownloads,
+        recipient: options?.recipient,
       },
       {
         idempotencyKey: options?.idempotencyKey ?? generateIdempotencyKey(),

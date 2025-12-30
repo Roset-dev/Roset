@@ -174,6 +174,9 @@ export interface CreateShareOptions {
 
   /** Maximum number of downloads */
   maxDownloads?: number;
+
+  /** Recipient email (optional) */
+  recipient?: string;
 }
 
 export interface ShareAccessResult {
@@ -381,6 +384,7 @@ export interface BillingUsage {
   mountOps: number;
   connectors: number;
   activeDevices: number;
+  mounts: number;
   teamMembers: number;
 }
 
@@ -389,6 +393,7 @@ export interface BillingLimits {
   managedFiles: number;
   connectors: number;
   activeDevices: number;
+  mounts: number;
   mountOps: number;
   teamMembers: number;
 }

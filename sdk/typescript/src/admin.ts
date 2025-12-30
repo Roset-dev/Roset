@@ -5,6 +5,7 @@ import { WebhooksResource } from "./resources/webhooks.js";
 import { SharesResource } from "./resources/shares.js";
 import { BillingResource } from "./resources/billing.js";
 import { TenantResource } from "./resources/tenant.js";
+import { UserResource } from "./resources/user.js";
 import type { RosetClientConfig } from "./types.js";
 
 /**
@@ -33,6 +34,9 @@ export class RosetAdmin {
   /** Tenant resource - stats and metadata */
   public readonly tenant: TenantResource;
 
+  /** User resource - profile and preferences */
+  public readonly user: UserResource;
+
   constructor(config: RosetClientConfig) {
 
     if (!config.apiKey && !config.getAccessToken) {
@@ -49,6 +53,7 @@ export class RosetAdmin {
     this.shares = new SharesResource(this.http, config);
     this.billing = new BillingResource(this.http, config);
     this.tenant = new TenantResource(this.http, config);
+    this.user = new UserResource(this.http, config);
   }
 }
 

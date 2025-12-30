@@ -28,7 +28,15 @@ export class HttpClient {
     this.mountId = config.mountId;
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
     this.maxRetries = config.retries ?? DEFAULT_RETRIES;
-    this.fetchFn = config.fetch ?? globalThis.fetch.bind(globalThis);
+    this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
+    this.maxRetries = config.retries ?? DEFAULT_RETRIES;
+    
+    // Ensure fetch is bound to correct context to prevent "Illegal invocation"
+    const defaultFetch = typeof window !== 'undefined' && window.fetch 
+      ? window.fetch.bind(window) 
+      : globalThis.fetch.bind(globalThis);
+      
+    this.fetchFn = config.fetch ?? defaultFetch;
   }
 
   /**
