@@ -161,108 +161,33 @@ export interface AuditQueryOptions extends PaginationOptions {
 // ML Control Plane Types
 // ============================================================================
 
-export interface Commit {
-  id: string;
-  nodeId: string;
-  manifestStorageKey: string;
-  message: string | null;
-  stats: {
-    fileCount: number;
-    totalSize: number;
-    metrics?: Record<string, number>;
-  };
-  status: 'pending' | 'completed' | 'failed';
-  createdAt: string;
-}
+export type Commit = components["schemas"]["Commit"];
+export type CommitSummary = Exclude<components["schemas"]["CommitSummary"], null>;
 
 export interface CommitOptions {
   message?: string;
   metadata?: Record<string, unknown>;
 }
 
-export interface Ref {
-  name: string;
-  targetNodeId: string;
-  commitId: string | null;
-  updatedAt: string;
-}
+export type Ref = components["schemas"]["Ref"];
 
-export interface FileDiff {
-  path: string;
-  name: string;
-  status: 'added' | 'removed' | 'changed' | 'unchanged';
-  sizeA?: number;
-  sizeB?: number;
-  checksumA?: string;
-  checksumB?: string;
-  isTextFile: boolean;
-}
+export type FileDiff = components["schemas"]["FileDiff"];
 
-export interface CompareResult {
-  summary: {
-    added: number;
-    removed: number;
-    changed: number;
-    sizeDelta: number;
-    sizeDeltaPercent: number;
-  };
-  files: FileDiff[];
-  metrics?: Record<string, { valA: number; valB: number; delta: number; improved: boolean | null }>;
-}
+export type CompareResult = components["schemas"]["CompareResult"];
 
 // ============================================================================
 // Org Management Types
 // ============================================================================
 
-export interface Tenant {
-  id: string;
-  name: string;
-  slug: string;
-  clerkOrgId: string | null;
-  effectivePlan: string;
-  billingStatus: string;
-  periodEnd: string | null;
-  settings: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-}
+export type TenantStats = Exclude<components["schemas"]["TenantStats"], null>;
 
-export interface Member {
-  id: string;
-  tenantId: string;
-  principalId: string;
-  email: string | null;
-  name: string | null;
-  role: string;
-  invitedBy: string | null;
-  joinedAt: string;
-  createdAt: string;
-}
+export type Member = Exclude<components["schemas"]["Member"], null>;
+export type Invitation = Exclude<components["schemas"]["Invite"], null>;
+export type InvitationInfo = Exclude<components["schemas"]["InviteInfo"], null>;
+export type InvitationResult = Exclude<components["schemas"]["InviteResult"], null>;
 
-export interface Invitation {
-  id: string;
-  tenantId: string;
-  email: string;
-  role: string;
-  invitedBy: string | null;
-  expiresAt: string;
-  acceptedAt: string | null;
-  createdAt: string;
-  url?: string;
-}
-
-export interface ApiKey {
-  id: string;
-  tenantId: string;
-  name: string;
-  keyPrefix: string;
-  scopes: string[];
-  lastUsedAt: string | null;
-  expiresAt: string | null;
-  revokedAt: string | null;
-  createdBy: string | null;
-  createdAt: string;
-}
+export type ApiKey = Exclude<components["schemas"]["ApiKey"], null>;
+export type ApiKeyWithSecret = Exclude<components["schemas"]["ApiKeyWithSecret"], null>;
 
 export interface Integration {
   id: string;
@@ -323,46 +248,7 @@ export interface SearchFilters {
 // Billing Types
 // ============================================================================
 
-export type PlanTier = "free" | "starter" | "team" | "scale" | "enterprise";
-
-export interface BillingUsage {
-  managedFiles: number;
-  apiCalls: number;
-  mountOps: number;
-  connectors: number;
-  activeDevices: number;
-  mounts: number;
-  teamMembers: number;
-}
-
-export interface BillingLimits {
-  apiCalls: number;
-  managedFiles: number;
-  connectors: number;
-  activeDevices: number;
-  mounts: number;
-  mountOps: number;
-  teamMembers: number;
-}
-
-export interface BillingTrend {
-  managedFiles?: {
-    growth: number;
-    history: number[];
-  };
-  apiCalls?: {
-    growth: number;
-    history: number[];
-  };
-}
-
-export interface BillingInfo {
-  plan: PlanTier;
-  usage: BillingUsage;
-  limits: BillingLimits;
-  trend?: BillingTrend;
-  periodEnd: string;
-}
+export type BillingInfo = Exclude<components["schemas"]["BillingUsage"], null>;
 
 export interface QuotaStatus {
   used: number;
@@ -373,11 +259,16 @@ export interface QuotaStatus {
 }
 
 // ============================================================================
+// User & Notifications
+// ============================================================================
+
+export type UserProfile = Exclude<components["schemas"]["UserProfile"], null>;
+export type Notification = Exclude<components["schemas"]["Notification"], null>;
+export type NotificationList = Exclude<components["schemas"]["NotificationList"], null>;
+export type NotificationSettings = Exclude<components["schemas"]["NotificationSettings"], null>;
+
+// ============================================================================
 // API Response Types
 // ============================================================================
 
-export interface ApiErrorResponse {
-  error: string;
-  code?: string;
-  details?: Record<string, unknown>;
-}
+export type ApiErrorResponse = Exclude<components["schemas"]["ErrorResponse"], null>;

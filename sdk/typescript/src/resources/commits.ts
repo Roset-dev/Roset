@@ -17,11 +17,9 @@ export class CommitsResource {
    */
   async create(nodeId: string, options?: CommitOptions): Promise<Commit> {
     const { commit } = await this.http.post<{ commit: Commit }>(
-      "/v1/commits", 
+      `/v1/nodes/${nodeId}/commit`, 
       { 
-        node_id: nodeId, 
         message: options?.message,
-        metadata: options?.metadata 
       }
     );
     return commit;
@@ -49,15 +47,11 @@ export class CommitsResource {
       status?: 'pending' | 'completed' | 'failed';
     }
   ): Promise<PaginatedResult<Commit>> {
-    const query = new URLSearchParams({
-      node_id: nodeId,
-      page: (options?.page ?? 1).toString(),
-      page_size: (options?.pageSize ?? 50).toString()
-    });
-    
-    if (options?.status) {
-      query.set('status', options.status);
-    }
+    const query = new URLSearchParams();
+    if (nodeId) query.set('nodeId', nodeId);
+    if (options?.page) query.set('page', options.page.toString());
+    if (options?.pageSize) query.set('pageSize', options.pageSize.toString());
+    if (options?.status) query.set('status', options.status);
     
     return this.http.get<PaginatedResult<Commit>>(`/v1/commits?${query.toString()}`);
   }

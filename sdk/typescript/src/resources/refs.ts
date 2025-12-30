@@ -20,12 +20,12 @@ export class RefsResource {
   }
 
   /**
-   * Update or create a reference to point to a target node
+   * Update or create a reference to point to a target commit
    */
-  async update(name: string, targetNodeId: string): Promise<Ref> {
+  async update(name: string, commitId: string): Promise<Ref> {
     const { ref } = await this.http.put<{ ref: Ref }>(
       `/v1/refs/${name}`,
-      { target_node_id: targetNodeId }
+      { commit_id: commitId }
     );
     return ref;
   }

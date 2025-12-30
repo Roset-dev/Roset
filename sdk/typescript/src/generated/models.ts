@@ -1089,7 +1089,10 @@ export interface paths {
             requestBody?: {
                 content: {
                     "application/json": {
-                        /** @description Description of the commit (e.g., 'v1 release') */
+                        /**
+                         * @description Description of the commit (e.g., 'v1 release')
+                         * @example Initial commit
+                         */
                         message?: string;
                     };
                 };
@@ -1257,7 +1260,9 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
                 };
             };
         };
@@ -1302,7 +1307,9 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
                 };
             };
         };
@@ -2314,6 +2321,1255 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get current plan and usage */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current plan and usage details */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BillingUsage"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/org/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all members */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of members */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            members: components["schemas"]["Member"][];
+                            /** @example 1 */
+                            count: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/org/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get member details */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    memberId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Member details */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Member"];
+                    };
+                };
+                /** @description Member not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Remove member */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    memberId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Member removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Update member role */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    memberId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateMemberRoleInput"];
+                };
+            };
+            responses: {
+                /** @description Member updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Member"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/org/transfer-ownership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transfer ownership */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["TransferOwnershipInput"];
+                };
+            };
+            responses: {
+                /** @description Ownership transferred */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/org/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all API keys */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of API keys */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            keys: components["schemas"]["ApiKey"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create API key */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateApiKeyInput"];
+                };
+            };
+            responses: {
+                /** @description API key created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiKeyWithSecret"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/org/api-keys/{keyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get API key details */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    keyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description API key details */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiKey"];
+                    };
+                };
+                /** @description API key not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Revoke API key */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    keyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description API key revoked */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/org/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pending invites */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of pending invites */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            invites: components["schemas"]["Invite"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create invite */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateInviteInput"];
+                };
+            };
+            responses: {
+                /** @description Invite created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["InviteResult"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/org/invites/{inviteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke invite */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    inviteId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Invite revoked */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invites/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get invite info */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Invite info */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["InviteInfo"];
+                    };
+                };
+                /** @description Invalid invite */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invite not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invites/{token}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept invite */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Invite accepted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            memberId: string;
+                            tenantId: string;
+                            role: components["schemas"]["OrgRole"];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tenant overview statistics */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Tenant statistics overview */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TenantStats"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get current user's profile */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description User profile details */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserProfile"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update current user's profile */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateUserProfileInput"];
+                };
+            };
+            responses: {
+                /** @description Updated user profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserProfile"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List notifications for current user */
+        get: {
+            parameters: {
+                query?: {
+                    unreadOnly?: "true" | "false";
+                    limit?: number;
+                    offset?: number | null;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of notifications */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NotificationList"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark notification as read */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Notification marked as read */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark all notifications as read */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description All notifications marked as read */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            markedCount: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notifications/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get user notification preferences */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description User notification settings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NotificationSettings"];
+                    };
+                };
+            };
+        };
+        /** Update user notification preferences */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Updated settings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NotificationSettings"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/refs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all refs */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of refs */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RefList"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/refs/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get latest ref */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Latest ref and commit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ref: components["schemas"]["Ref"] & unknown;
+                            commit: components["schemas"]["CommitSummary"];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/refs/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get ref details */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Ref name (e.g., 'latest', 'production') */
+                    name: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Ref and commit details */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ref: components["schemas"]["Ref"];
+                            commit: components["schemas"]["CommitSummary"];
+                        };
+                    };
+                };
+                /** @description Ref not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /** Create or update ref */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Ref name (e.g., 'latest', 'production') */
+                    name: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateRefInput"];
+                };
+            };
+            responses: {
+                /** @description Ref updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ref: components["schemas"]["Ref"];
+                            message: string;
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        /** Delete ref */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Ref name (e.g., 'latest', 'production') */
+                    name: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Ref deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Ref not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/commits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List commits */
+        get: {
+            parameters: {
+                query?: {
+                    page?: number;
+                    pageSize?: number;
+                    sortBy?: string;
+                    sortOrder?: "asc" | "desc";
+                    nodeId?: string;
+                    groupId?: string;
+                    status?: components["schemas"]["CommitStatus"];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of commits */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CommitList"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/commits/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get commit status */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Commit details */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            commit: components["schemas"]["Commit"];
+                        };
+                    };
+                };
+                /** @description Commit not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/commits/{id}/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Diff two checkpoints */
+        get: {
+            parameters: {
+                query: {
+                    base_id: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Difference between checkpoints */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CompareResult"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/commit-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a new commit group */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateCommitGroupInput"];
+                };
+            };
+            responses: {
+                /** @description Commit group created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            group: components["schemas"]["CommitGroup"];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/commit-groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get group status and commits */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Commit group UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Commit group and member commits */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CommitGroupWithCommits"];
+                    };
+                };
+                /** @description Commit group not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/commit-groups/{id}/seal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Finalize/seal the commit group */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Commit group UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Commit group sealed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            group: components["schemas"]["CommitGroup"];
+                            message: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2439,6 +3695,16 @@ export interface components {
             pageSize: number;
             /** @example true */
             hasMore: boolean;
+        };
+        ErrorResponse: {
+            /** @example Resource not found */
+            error: string;
+            /** @example NOT_FOUND */
+            code: string;
+            /** @example {} */
+            details?: {
+                [key: string]: unknown;
+            };
         };
         QuickSearch: {
             /**
@@ -2755,6 +4021,463 @@ export interface components {
             page: number;
             pageSize: number;
             hasMore: boolean;
+        };
+        BillingUsage: {
+            /** @example free */
+            plan: string;
+            usage: {
+                /** @example 1000 */
+                managedFiles: number;
+                /** @example 500 */
+                apiCalls: number;
+                /** @example 50 */
+                mountOps: number;
+                /** @example 2 */
+                connectors: number;
+                /** @example 1 */
+                activeDevices: number;
+                /** @example 5 */
+                mounts: number;
+                /** @example 3 */
+                teamMembers: number;
+            };
+            limits: {
+                /** @example 100000 */
+                managedFiles: number;
+                /** @example 10000 */
+                apiCalls: number;
+                /** @example 1000 */
+                mountOps: number;
+                /** @example 5 */
+                teamMembers: number;
+            };
+            trend: {
+                managedFiles: {
+                    /** @example 5 */
+                    growth: number;
+                    /**
+                     * @example [
+                     *       1000,
+                     *       1005,
+                     *       1010
+                     *     ]
+                     */
+                    history: number[];
+                };
+            };
+            /** @example 2024-02-01T00:00:00.000Z */
+            periodEnd: string;
+        };
+        /** @enum {string} */
+        OrgRole: "owner" | "admin" | "member" | "viewer";
+        Member: {
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            id: string;
+            /** @example tenant_123 */
+            tenantId: string;
+            /** @example user_123 */
+            principalId: string;
+            role: components["schemas"]["OrgRole"];
+            /**
+             * Format: email
+             * @example user@example.com
+             */
+            email: string | null;
+            /** @example John Doe */
+            name: string | null;
+            /** @example 2024-01-01T12:00:00Z */
+            joinedAt: string;
+        };
+        /** @enum {string} */
+        InviteRole: "admin" | "member" | "viewer";
+        UpdateMemberRoleInput: {
+            role: components["schemas"]["InviteRole"];
+        };
+        TransferOwnershipInput: {
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440001
+             */
+            newOwnerId: string;
+        };
+        ApiKey: {
+            /** @example ak_123 */
+            id: string;
+            /** @example Production Key */
+            name: string;
+            /**
+             * @example [
+             *       "*"
+             *     ]
+             */
+            scopes: string[];
+            /** @example 2024-01-01T12:00:00Z */
+            lastUsedAt: string | null;
+            /** @example 2024-12-31T23:59:59Z */
+            expiresAt: string | null;
+            /** @example 2024-01-01T12:00:00Z */
+            createdAt: string;
+        };
+        ApiKeyWithSecret: components["schemas"]["ApiKey"] & {
+            /** @example rk_live_... */
+            secret: string;
+        };
+        CreateApiKeyInput: {
+            /** @example Production Key */
+            name: string;
+            /**
+             * @default [
+             *       "*"
+             *     ]
+             */
+            scopes: string[];
+            /** @example 2024-12-31T23:59:59Z */
+            expiresAt?: string | null;
+        };
+        Invite: {
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            id: string;
+            /**
+             * Format: email
+             * @example invitee@example.com
+             */
+            email: string;
+            role: components["schemas"]["InviteRole"];
+            /** @example 2024-01-08T12:00:00Z */
+            expiresAt: string;
+            /** @example 2024-01-01T12:00:00Z */
+            createdAt: string;
+        };
+        InviteResult: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["InviteRole"];
+            expiresAt: string;
+            /**
+             * Format: uri
+             * @example https://roset.dev/invite/token123
+             */
+            inviteUrl: string;
+        };
+        CreateInviteInput: {
+            /**
+             * Format: email
+             * @example invitee@example.com
+             */
+            email: string;
+            role?: components["schemas"]["InviteRole"] & unknown;
+        };
+        InviteInfo: {
+            /**
+             * Format: email
+             * @example invitee@example.com
+             */
+            email: string;
+            role: components["schemas"]["InviteRole"];
+            /** @example 2024-01-08T12:00:00Z */
+            expiresAt: string;
+        };
+        TenantStats: {
+            /**
+             * @description Total number of files
+             * @example 1542
+             */
+            files: number;
+            /**
+             * @description Total storage used in bytes
+             * @example 1073741824
+             */
+            storage: number;
+            /**
+             * @description Number of active shares
+             * @example 5
+             */
+            activeShares: number;
+            /**
+             * @description Number of currently connected devices
+             * @example 12
+             */
+            connectedDevices: number;
+            /**
+             * @description Total unique devices ever connected
+             * @example 25
+             */
+            totalDevices: number;
+            /** @example 2024-01-01T12:00:00Z */
+            computedAt: string;
+        };
+        UserProfile: {
+            /** @example user_123 */
+            id: string;
+            /**
+             * Format: email
+             * @example user@example.com
+             */
+            email: string | null;
+            /** @example John Doe */
+            displayName: string | null;
+            /**
+             * Format: uri
+             * @example https://example.com/avatar.jpg
+             */
+            avatarUrl: string | null;
+            /**
+             * @example {
+             *       "theme": "dark"
+             *     }
+             */
+            preferences: {
+                [key: string]: unknown;
+            };
+            /** @example 2024-01-01T12:00:00Z */
+            createdAt: string;
+            /** @example 2024-01-01T12:00:00Z */
+            updatedAt: string;
+        };
+        UpdateUserProfileInput: {
+            /** @example John Doe */
+            displayName?: string;
+            /**
+             * @example {
+             *       "theme": "light"
+             *     }
+             */
+            preferences?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: uri
+             * @example https://example.com/avatar.jpg
+             */
+            avatarUrl?: string;
+        };
+        Notification: {
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            id: string;
+            /** @example system_alert */
+            type: string;
+            /** @example Security Update */
+            title: string;
+            /** @example Your password has been changed. */
+            message: string;
+            /**
+             * @example {
+             *       "action_url": "/settings/security"
+             *     }
+             */
+            data: {
+                [key: string]: unknown;
+            } | null;
+            /** @example 2024-01-01T12:00:00Z */
+            createdAt: string;
+            /** @example 2024-01-01T12:05:00Z */
+            readAt: string | null;
+        };
+        NotificationList: {
+            items: components["schemas"]["Notification"][];
+            /** @example 3 */
+            unreadCount: number;
+            pagination: {
+                /** @example 50 */
+                limit: number;
+                /** @example 0 */
+                offset: number;
+            };
+        };
+        NotificationSettings: {
+            /**
+             * @example {
+             *       "system_alerts": true,
+             *       "activity_updates": false
+             *     }
+             */
+            settings: {
+                [key: string]: boolean;
+            };
+        };
+        Ref: {
+            /** @example tenant_123 */
+            tenantId: string;
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440001
+             */
+            mountId: string;
+            /** @example latest */
+            name: string;
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            commitId: string;
+            /**
+             * Format: date-time
+             * @example 2024-01-01T12:00:00Z
+             */
+            updatedAt: string;
+            /** @example user_123 */
+            updatedBy: string | null;
+        };
+        RefList: {
+            refs: components["schemas"]["Ref"][];
+        };
+        /** @enum {string} */
+        CommitStatus: "pending" | "completed" | "failed";
+        CommitSummary: {
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440001
+             */
+            nodeId: string;
+            status: components["schemas"]["CommitStatus"];
+            /** @example Updated config */
+            message: string | null;
+            /**
+             * Format: date-time
+             * @example 2024-01-01T12:00:00Z
+             */
+            createdAt: string;
+        } | null;
+        UpdateRefInput: {
+            /**
+             * Format: uuid
+             * @description Commit UUID to point to
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            commit_id: string;
+            /**
+             * Format: uuid
+             * @description For CAS: only update if current commit matches this value
+             * @example 550e8400-e29b-41d4-a716-446655440001
+             */
+            expected_commit_id?: string;
+        };
+        Commit: {
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            id: string;
+            /** @example tenant_123 */
+            tenantId: string;
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440001
+             */
+            nodeId: string;
+            /** @example user_123 */
+            actorId: string | null;
+            /** @example Updated config */
+            message: string | null;
+            /**
+             * @example {
+             *       "added": 5,
+             *       "deleted": 2
+             *     }
+             */
+            stats: {
+                [key: string]: unknown;
+            };
+            status: components["schemas"]["CommitStatus"];
+            /** @example null */
+            errorMessage: string | null;
+            /**
+             * Format: date-time
+             * @example 2024-01-01T12:00:00Z
+             */
+            createdAt: string;
+        };
+        CommitList: {
+            items: components["schemas"]["Commit"][];
+            /** @example 100 */
+            total: number;
+            /** @example 1 */
+            page: number;
+            /** @example 50 */
+            pageSize: number;
+        };
+        FileDiff: {
+            /** @example src/main.ts */
+            path: string;
+            /** @example main.ts */
+            name: string;
+            /** @enum {string} */
+            status: "added" | "removed" | "changed" | "unchanged";
+            sizeA?: number;
+            sizeB?: number;
+            checksumA?: string;
+            checksumB?: string;
+            isTextFile: boolean;
+        };
+        CompareResult: {
+            summary: {
+                added: number;
+                removed: number;
+                changed: number;
+                sizeDelta: number;
+                sizeDeltaPercent: number;
+            };
+            files: components["schemas"]["FileDiff"][];
+            metrics?: {
+                [key: string]: {
+                    valA: number;
+                    valB: number;
+                    delta: number;
+                    improved: boolean | null;
+                };
+            };
+        };
+        CommitGroup: {
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            id: string;
+            /** @example tenant_123 */
+            tenantId: string;
+            /** @example Batch update */
+            message: string | null;
+            /** @example pending */
+            status: string;
+            /** @example user_123 */
+            createdBy: string | null;
+            /**
+             * Format: date-time
+             * @example 2024-01-01T12:00:00Z
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @example 2024-01-01T12:05:00Z
+             */
+            committedAt: string | null;
+        };
+        CreateCommitGroupInput: {
+            /**
+             * @description Optional description for the commit group
+             * @example Batch update
+             */
+            message?: string;
+        };
+        CommitGroupWithCommits: {
+            group: components["schemas"]["CommitGroup"];
+            commits: components["schemas"]["CommitSummary"][];
         };
     };
     responses: never;
