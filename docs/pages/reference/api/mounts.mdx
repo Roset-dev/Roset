@@ -250,8 +250,20 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
 <ApiEndpoint
   method="DELETE"
   path="/v1/mounts/:id"
-  description="Delete a mount. All nodes in this mount must be deleted first."
+  description="Delete a mount. All nodes in this mount must be deleted first, unless force is true."
 >
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "force",
+        type: "boolean",
+        required: false,
+        description: "Force delete even if mount is not empty",
+        default: "false",
+      },
+    ]}
+  />
   <ParameterTable
     type="path"
     params={[

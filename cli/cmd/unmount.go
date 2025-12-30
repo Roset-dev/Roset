@@ -27,7 +27,10 @@ Example:
 
 func init() {
 	rootCmd.AddCommand(unmountCmd)
+	unmountCmd.Flags().BoolVarP(&unmountForce, "force", "f", false, "Force unmount (lazy unmount on Linux)")
 }
+
+var unmountForce bool
 
 func runUnmount(cmd *cobra.Command, args []string) error {
 	mountpoint := args[0]
@@ -36,7 +39,7 @@ func runUnmount(cmd *cobra.Command, args []string) error {
 	errorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
 
 	// Check if mountpoint exists
-	if _, err := os.Stat(mountpoint); os.IsNotExist(err) {
+	if _, err := os.Stat(mountpoint); os.IsNotExist(err) && !unmountForce {
 		fmt.Fprintf(os.Stderr, "%s Mountpoint does not exist: %s\n", errorStyle.Render("✗"), mountpoint)
 		return fmt.Errorf("mountpoint does not exist: %s", mountpoint)
 	}
@@ -47,14 +50,26 @@ func runUnmount(cmd *cobra.Command, args []string) error {
 	case "linux":
 		// Try fusermount first (FUSE-specific), fall back to umount
 		if _, err := exec.LookPath("fusermount"); err == nil {
-			unmountErr = exec.Command("fusermount", "-u", mountpoint).Run()
+			args := []string{"-u", mountpoint}
+			if unmountForce {
+				args = append(args, "-z") // Lazy unmount
+			}
+			unmountErr = exec.Command("fusermount", args...).Run()
 		} else {
-			unmountErr = exec.Command("umount", mountpoint).Run()
+			args := []string{mountpoint}
+			if unmountForce {
+				args = append([]string{"-f"}, args...)
+			}
+			unmountErr = exec.Command("umount", args...).Run()
 		}
 
 	case "darwin":
 		// macOS uses umount
-		unmountErr = exec.Command("umount", mountpoint).Run()
+		args := []string{mountpoint}
+		if unmountForce {
+			args = append([]string{"-f"}, args...)
+		}
+		unmountErr = exec.Command("umount", args...).Run()
 
 	case "windows":
 		fmt.Fprintf(os.Stderr, "%s FUSE unmount is not supported on Windows\n", errorStyle.Render("✗"))
