@@ -42,8 +42,8 @@ export interface RequestOptions {
   /** Override timeout for this request */
   timeout?: number;
 
-  /** Idempotency key for mutation requests */
-  idempotencyKey?: string;
+  /** Idempotency key for mutation requests. Pass null to disable auto-generated key. */
+  idempotencyKey?: string | null;
 
   /** Abort signal for request cancellation */
   signal?: AbortSignal;
@@ -90,21 +90,24 @@ export interface Node {
   name: string;
   type: "file" | "folder";
   path?: string;
-  size?: number;
+  size?: number | null;
   contentType?: string | null;
   metadata?: Record<string, unknown>;
+  isImmutable?: boolean;
+  commitStatus?: string;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
 }
 
 export interface FileVersion {
-  id: string;
+  id: number;
   nodeId: string;
   storageKey: string;
   etag: string | null;
   size: number;
   contentType: string | null;
+  sha256?: string | null;
   isCurrent: boolean;
   createdAt: string;
   createdBy?: string | null;
@@ -151,11 +154,17 @@ export interface UploadOptions {
 
 export interface Share {
   id: string;
+  tenantId: string;
   nodeId: string;
   token: string;
   scope: "read" | "write";
-  url: string;
+  url?: string;
+  hasPassword: boolean;
+  maxDownloads: number | null;
+  downloadCount: number;
   expiresAt: string | null;
+  revokedAt: string | null;
+  createdBy: string | null;
   createdAt: string;
 }
 
@@ -193,10 +202,11 @@ export interface AuditOp {
   id: string;
   tenantId: string;
   actorId: string | null;
-  actorType: string;
+  actorType: "user" | "api_key" | "system" | "share" | "agent";
   action: string;
-  targetNodeId: string | null;
+  targetId: string | null;
   targetType: string | null;
+  requestId?: string | null;
   payload: Record<string, unknown>;
   createdAt: string;
 }
@@ -270,32 +280,49 @@ export interface Tenant {
   id: string;
   name: string;
   slug: string;
+  clerkOrgId: string | null;
+  effectivePlan: string;
+  billingStatus: string;
+  periodEnd: string | null;
   settings: Record<string, unknown>;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Member {
   id: string;
+  tenantId: string;
+  principalId: string;
   email: string | null;
   name: string | null;
   role: string;
+  invitedBy: string | null;
   joinedAt: string;
+  createdAt: string;
 }
 
 export interface Invitation {
+  id: string;
+  tenantId: string;
   email: string;
   role: string;
+  invitedBy: string | null;
   expiresAt: string;
-  status: 'pending' | 'accepted' | 'expired';
+  acceptedAt: string | null;
+  createdAt: string;
+  url?: string;
 }
 
 export interface ApiKey {
   id: string;
+  tenantId: string;
   name: string;
-  prefix: string;
+  keyPrefix: string;
   scopes: string[];
   lastUsedAt: string | null;
   expiresAt: string | null;
+  revokedAt: string | null;
+  createdBy: string | null;
   createdAt: string;
 }
 

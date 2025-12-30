@@ -38,6 +38,8 @@ export { SearchResource } from "./resources/search.js";
 export { TenantResource, type TenantStats } from "./resources/tenant.js";
 export { UserResource, type UserProfile, type UserProfileUpdate } from "./resources/user.js";
 export { NotificationsResource, type Notification, type NotificationsListResult, type NotificationSettings } from "./resources/notifications.js";
+export { WebhooksResource, type Webhook, type WebhookEvent, type WebhookDelivery, type CreateWebhookOptions, type UpdateWebhookOptions } from "./resources/webhooks.js";
+export { BillingResource } from "./resources/billing.js";
 
 // Types
 export type {

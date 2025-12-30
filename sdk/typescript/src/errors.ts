@@ -6,18 +6,28 @@ export class RosetError extends Error {
   public readonly code: string;
   public readonly statusCode: number;
   public readonly details?: Record<string, unknown>;
+  /** Request ID from X-Request-Id header for debugging/support */
+  public readonly requestId?: string;
+  /** Whether this error is safe to retry */
+  public readonly retryable: boolean;
+  /** Original error that caused this error */
+  public readonly cause?: unknown;
 
   constructor(
     message: string,
     code: string = "ROSET_ERROR",
     statusCode: number = 500,
-    details?: Record<string, unknown>
+    details?: Record<string, unknown>,
+    options?: { requestId?: string; retryable?: boolean; cause?: unknown }
   ) {
     super(message);
     this.name = "RosetError";
     this.code = code;
     this.statusCode = statusCode;
     this.details = details;
+    this.requestId = options?.requestId;
+    this.retryable = options?.retryable ?? false;
+    this.cause = options?.cause;
 
     // Maintains proper stack trace for where our error was thrown
     if (Error.captureStackTrace) {

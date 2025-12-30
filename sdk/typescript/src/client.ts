@@ -14,6 +14,11 @@ import { RefsResource } from "./resources/refs.js";
 import { SearchResource } from "./resources/search.js";
 import { UserResource } from "./resources/user.js";
 import { NotificationsResource } from "./resources/notifications.js";
+import { WebhooksResource } from "./resources/webhooks.js";
+import { OrgResource } from "./resources/org.js";
+import { IntegrationsResource } from "./resources/integrations.js";
+import { BillingResource } from "./resources/billing.js";
+import { TenantResource } from "./resources/tenant.js";
 import type { RosetClientConfig } from "./types.js";
 
 export class RosetClient {
@@ -53,6 +58,21 @@ export class RosetClient {
   /** Notifications resource - in-app notifications */
   public readonly notifications: NotificationsResource;
 
+  /** Webhooks resource - webhook endpoints and delivery */
+  public readonly webhooks: WebhooksResource;
+
+  /** Org resource - workspace settings, members, API keys */
+  public readonly org: OrgResource;
+
+  /** Integrations resource - cloud provider integrations */
+  public readonly integrations: IntegrationsResource;
+
+  /** Billing resource - usage and quotas */
+  public readonly billing: BillingResource;
+
+  /** Tenant resource - tenant statistics */
+  public readonly tenant: TenantResource;
+
   constructor(config: RosetClientConfig) {
     if (!config.apiKey && !config.getAccessToken) {
       throw new Error("Either apiKey or getAccessToken is required");
@@ -78,6 +98,11 @@ export class RosetClient {
     this.search = new SearchResource(this.http, finalConfig);
     this.user = new UserResource(this.http, finalConfig);
     this.notifications = new NotificationsResource(this.http, finalConfig);
+    this.webhooks = new WebhooksResource(this.http, finalConfig);
+    this.org = new OrgResource(this.http, finalConfig);
+    this.integrations = new IntegrationsResource(this.http, finalConfig);
+    this.billing = new BillingResource(this.http, finalConfig);
+    this.tenant = new TenantResource(this.http, finalConfig);
   }
 
   /**

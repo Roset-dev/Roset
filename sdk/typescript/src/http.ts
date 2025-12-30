@@ -5,6 +5,8 @@
 import type { RosetClientConfig, RequestOptions } from "./types.js";
 import { RosetError, parseApiError, RateLimitError } from "./errors.js";
 
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 const DEFAULT_TIMEOUT = 30000;
 const DEFAULT_RETRIES = 3;
 const RETRY_DELAYS = [100, 500, 1000]; // Exponential-ish backoff
@@ -26,8 +28,6 @@ export class HttpClient {
     this.getAccessToken = config.getAccessToken;
 
     this.mountId = config.mountId;
-    this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
-    this.maxRetries = config.retries ?? DEFAULT_RETRIES;
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
     this.maxRetries = config.retries ?? DEFAULT_RETRIES;
     
@@ -105,8 +105,17 @@ export class HttpClient {
       headers["X-Roset-Mount-Id"] = this.mountId;
     }
 
-    if (options?.idempotencyKey) {
-      headers["Idempotency-Key"] = options.idempotencyKey;
+    // Auto-generate idempotency key for mutating requests (unless explicitly disabled with null)
+    if (MUTATING_METHODS.has(method)) {
+      if (options?.idempotencyKey !== undefined) {
+        // User provided explicit key (or null to disable)
+        if (options.idempotencyKey !== null) {
+          headers["Idempotency-Key"] = options.idempotencyKey;
+        }
+      } else {
+        // Auto-generate for safe retries
+        headers["Idempotency-Key"] = generateIdempotencyKey();
+      }
     }
 
     let lastError: Error | undefined;

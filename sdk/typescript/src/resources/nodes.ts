@@ -28,8 +28,8 @@ export interface CreateNodeOptions {
   /** Custom metadata */
   metadata?: Record<string, unknown>;
 
-  /** Idempotency key */
-  idempotencyKey?: string;
+  /** Idempotency key. Pass null to disable auto-generated key. */
+  idempotencyKey?: string | null;
 }
 
 export interface UpdateNodeOptions {
@@ -42,8 +42,8 @@ export interface UpdateNodeOptions {
   /** Updated metadata */
   metadata?: Record<string, unknown>;
 
-  /** Idempotency key */
-  idempotencyKey?: string;
+  /** Idempotency key. Pass null to disable auto-generated key. */
+  idempotencyKey?: string | null;
 }
 
 export class NodesResource {
