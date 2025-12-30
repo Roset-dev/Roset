@@ -115,7 +115,6 @@ impl NodeService {
 
         // Spawn FUSE process (detached)
         let child = cmd
-        let child = cmd
             .spawn()
             .map_err(|e| Box::new(Status::internal(format!("Failed to spawn fuse mount: {}", e))))?;
 

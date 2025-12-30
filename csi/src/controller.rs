@@ -13,8 +13,6 @@ use crate::csi::{
 };
 use tonic::{Request, Response, Status};
 
-use tonic::{Request, Response, Status};
-
 struct SnapshotConfig<'a> {
     name: &'a str,
     api_key: &'a str,
@@ -85,7 +83,6 @@ impl ControllerService {
     }
 
     /// Parse opaque volume_id format: `roset-vol:<node_id>` -> node_id
-    /// Parse opaque volume_id format: `roset-vol:<node_id>` -> node_id
     fn parse_volume_id(volume_id: &str) -> Result<String, Box<Status>> {
         if let Some(node_id) = volume_id.strip_prefix("roset-vol:") {
             Ok(node_id.to_string())
@@ -95,7 +92,6 @@ impl ControllerService {
         }
     }
 
-    /// Create a volume from a snapshot (commit) by creating a ref to the commit
     /// Create a volume from a snapshot (commit) by creating a ref to the commit
     async fn create_volume_from_snapshot(
         &self,
@@ -157,7 +153,7 @@ impl ControllerService {
         }
 
         let commit_data: serde_json::Value = commit_resp
-            .json()
+            .json::<serde_json::Value>()
             .await
             .map_err(|e| Status::internal(format!("Failed to parse commit: {}", e)))?;
 
@@ -268,7 +264,6 @@ impl Controller for ControllerService {
                 match source_type {
                     crate::csi::volume_content_source::Type::Snapshot(snap_source) => {
                         return self
-                        return self
                             .create_volume_from_snapshot(SnapshotConfig {
                                 name: &name,
                                 api_key,
@@ -289,7 +284,6 @@ impl Controller for ControllerService {
             }
         }
 
-        // 4. Setup Client
         // 4. Setup Client
         let client = reqwest::Client::new();
         let create_node_url = "https://api.roset.dev/v1/nodes";
@@ -348,7 +342,7 @@ impl Controller for ControllerService {
                 return Err(Status::internal("Failed to resolve existing volume node"));
             }
 
-            let resolved: serde_json::Value = resolve_resp.json().await.map_err(|e| {
+            let resolved: serde_json::Value = resolve_resp.json::<serde_json::Value>().await.map_err(|e| {
                 Status::internal(format!("Failed to parse resolve response: {}", e))
             })?;
 
