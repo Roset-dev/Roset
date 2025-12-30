@@ -1538,6 +1538,288 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all shares */
+        get: {
+            parameters: {
+                query?: {
+                    includeRevoked?: "true" | "false";
+                    includeExpired?: "true" | "false";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of shares */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ShareList"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create a share */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateShareInput"];
+                };
+            };
+            responses: {
+                /** @description Share created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Share"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shares/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get share info (authenticated) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Share info */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Share"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Share not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Revoke share */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Share revoked */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Share not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shares/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update share */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateShareInput"];
+                };
+            };
+            responses: {
+                /** @description Share updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Share"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/nodes/{id}/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List shares for a node */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of shares for node */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["Share"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/s/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Access shared content */
+        get: {
+            parameters: {
+                query?: {
+                    password?: string;
+                    download?: boolean | null;
+                };
+                header?: never;
+                path: {
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Share content */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ShareAccessResult"];
+                    };
+                };
+                /** @description Redirect to download */
+                302: {
+                    headers: {
+                        Location: string;
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Password required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SharePasswordRequired"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/uploads/init": {
         parameters: {
             query?: never;
@@ -2260,6 +2542,105 @@ export interface components {
             message: string;
             /** @example Use POST /v1/connectors/test... */
             hint?: string;
+        };
+        Share: {
+            /**
+             * Format: uuid
+             * @example share_123
+             */
+            id: string;
+            /** @example tenant_123 */
+            tenantId: string;
+            /**
+             * Format: uuid
+             * @example node_123
+             */
+            nodeId: string;
+            /** @example abc123token */
+            token: string;
+            /**
+             * @example read
+             * @enum {string}
+             */
+            scope: "read" | "write";
+            /** @example false */
+            hasPassword: boolean;
+            /** @example 100 */
+            maxDownloads: number | null;
+            /** @example 5 */
+            downloadCount: number;
+            /**
+             * Format: date-time
+             * @example 2023-12-31T23:59:59Z
+             */
+            expiresAt: string | null;
+            /**
+             * Format: date-time
+             * @example null
+             */
+            revokedAt: string | null;
+            /** @example user_123 */
+            createdBy: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: uri
+             * @example https://roset.dev/v1/s/abc123token
+             */
+            url?: string;
+        };
+        ShareList: {
+            shares: components["schemas"]["Share"][];
+        };
+        CreateShareInput: {
+            /**
+             * Format: uuid
+             * @example node_123
+             */
+            nodeId: string;
+            /**
+             * @default read
+             * @example read
+             * @enum {string}
+             */
+            scope: "read" | "write";
+            /**
+             * Format: date-time
+             * @example 2023-12-31T23:59:59Z
+             */
+            expiresAt?: string;
+            /** @example 7d */
+            expiresIn?: string;
+            /** @example secret123 */
+            password?: string;
+            /** @example 10 */
+            maxDownloads?: number;
+            /** @example user@example.com */
+            recipient?: string | "";
+        };
+        UpdateShareInput: {
+            /**
+             * Format: date-time
+             * @example 2023-12-31T23:59:59Z
+             */
+            expiresAt?: string;
+            /** @example 7d */
+            expiresIn?: string;
+        };
+        ShareAccessResult: {
+            node: components["schemas"]["Node"];
+            children?: components["schemas"]["Node"][];
+            /** @enum {string} */
+            scope: "read" | "write";
+            /** Format: date-time */
+            expiresAt: string | null;
+        };
+        SharePasswordRequired: {
+            error: string;
+            /** @enum {string} */
+            code: "PASSWORD_REQUIRED";
+            /** @enum {boolean} */
+            requiresPassword: true;
         };
         UploadInitResult: {
             /** @example https://storage.example.com/upload/... */

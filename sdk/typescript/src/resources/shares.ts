@@ -127,9 +127,6 @@ export class SharesResource {
    * ```typescript
    * // Get shared node info
    * const { node, children } = await client.shares.access(token);
-   *
-   * // Get download URL for shared file
-   * const { node, downloadUrl } = await client.shares.access(token, { download: true });
    * ```
    */
   async access(
@@ -147,24 +144,6 @@ export class SharesResource {
     const path = `/v1/s/${token}${query ? `?${query}` : ""}`;
 
     return this.http.get<ShareAccessResult>(path, options);
-  }
-
-  /**
-   * Download a file from a shared folder
-   */
-  async downloadFromShare(
-    token: string,
-    childId: string,
-    password?: string,
-    options?: RequestOptions
-  ): Promise<{ url: string; contentType: string | null }> {
-    const params = new URLSearchParams();
-    if (password) params.set("password", password);
-
-    const query = params.toString();
-    const path = `/v1/s/${token}/download/${childId}${query ? `?${query}` : ""}`;
-
-    return this.http.get<{ url: string; contentType: string | null }>(path, options);
   }
 
   /**

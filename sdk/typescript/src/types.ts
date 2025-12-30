@@ -119,21 +119,9 @@ export interface UploadOptions {
 // Share Types
 // ============================================================================
 
-export interface Share {
-  id: string;
-  tenantId: string;
-  nodeId: string;
-  token: string;
-  scope: "read" | "write";
-  url?: string;
-  hasPassword: boolean;
-  maxDownloads: number | null;
-  downloadCount: number;
-  expiresAt: string | null;
-  revokedAt: string | null;
-  createdBy: string | null;
-  createdAt: string;
-}
+export type Share = Exclude<components["schemas"]["Share"], null>;
+export type ShareAccessResult = Exclude<components["schemas"]["ShareAccessResult"], null>;
+export type SharePasswordRequired = Exclude<components["schemas"]["SharePasswordRequired"], null>;
 
 export interface CreateShareOptions {
   /** Share scope */
@@ -153,12 +141,6 @@ export interface CreateShareOptions {
 
   /** Recipient email (optional) */
   recipient?: string;
-}
-
-export interface ShareAccessResult {
-  node: Node;
-  children?: Node[];
-  downloadUrl?: string;
 }
 
 // ============================================================================
