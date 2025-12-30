@@ -1,23 +1,15 @@
 import { HttpClient, generateIdempotencyKey } from "../http.js";
 import { RosetClientConfig, RequestOptions, PaginatedResult } from "../types.js";
+import type { components } from "../generated/models.js";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export interface Webhook {
-  id: string;
-  url: string;
-  secret: string;
-  events: WebhookEvent[];
-  enabled: boolean;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
-  lastTriggeredAt?: string;
-  failureCount: number;
-}
+export type Webhook = components["schemas"]["Webhook"];
+export type WebhookDelivery = components["schemas"]["WebhookDelivery"];
 
+// Keep manual definition of events for type safety in SDK inputs
 export type WebhookEvent = 
   | 'node.created'
   | 'node.updated'
@@ -43,36 +35,6 @@ export interface UpdateWebhookOptions {
   secret?: string;
   description?: string;
   enabled?: boolean;
-}
-
-export interface WebhookDelivery {
-  id: string;
-  webhookId: string;
-  event: WebhookEvent;
-  payload: Record<string, unknown>;
-  statusCode: number | null;
-  success: boolean;
-  attemptCount: number;
-  durationMs: number; // Added
-  createdAt: string;
-  deliveredAt?: string;
-  error?: string;
-  request: {
-    url: string;
-    method: string;
-    headers: Record<string, string>;
-    body: string;
-  };
-  response?: {
-    statusCode: number;
-    body: string;
-    headers?: Record<string, string>;
-  };
-  attempts?: {
-    statusCode: number;
-    error?: string;
-    createdAt: string;
-  }[];
 }
 
 // ============================================================================
@@ -187,6 +149,9 @@ export class WebhooksResource {
       page: page.toString(),
       page_size: pageSize.toString(),
     });
+    // Use generated response type or map it?
+    // API returns { items, total, page, pageSize, hasMore }
+    // PaginatedResult expects same.
     return this.http.get<PaginatedResult<WebhookDelivery>>(
       `/v1/webhooks/${webhookId}/deliveries?${query.toString()}`,
       options

@@ -36,5 +36,6 @@ export {
   ConflictError,
   ValidationError,
   RateLimitError,
+  QuotaExceededError,
 } from "./errors.js";
 

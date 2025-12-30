@@ -1,5 +1,6 @@
 import { HttpClient } from "../http.js";
-import { RosetClientConfig, Commit, CommitOptions, PaginatedResult, CompareResult } from "../types.js";
+import { RosetClientConfig, Commit, CommitOptions, PaginatedResult, CompareResult, RequestOptions } from "../types.js";
+import { PaginatedIterator } from "../pagination.js";
 
 /**
  * Commits Resource
@@ -59,6 +60,21 @@ export class CommitsResource {
     }
     
     return this.http.get<PaginatedResult<Commit>>(`/v1/commits?${query.toString()}`);
+  }
+
+  /**
+   * List all commits for a specific folder (auto-paginated)
+   */
+  listAll(
+    nodeId: string, 
+    options?: { 
+      pageSize?: number;
+      status?: 'pending' | 'completed' | 'failed';
+    } & RequestOptions
+  ): PaginatedIterator<Commit> {
+    return new PaginatedIterator((opts) => 
+      this.list(nodeId, { ...options, ...opts })
+    );
   }
 
   /**

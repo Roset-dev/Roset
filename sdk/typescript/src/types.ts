@@ -1,3 +1,5 @@
+import type { components } from "./generated/models.js";
+
 /**
  * SDK Types
  */
@@ -50,6 +52,9 @@ export interface RequestOptions {
 
   /** Additional headers */
   headers?: Record<string, string>;
+
+  /** Per-request mount override */
+  mount?: string;
 }
 
 // ============================================================================
@@ -82,40 +87,9 @@ export interface PaginatedResult<T> {
 // Node Types
 // ============================================================================
 
-export interface Node {
-  id: string;
-  tenantId: string;
-  mountId: string;
-  parentId: string | null;
-  name: string;
-  type: "file" | "folder";
-  path?: string;
-  size?: number | null;
-  contentType?: string | null;
-  metadata?: Record<string, unknown>;
-  isImmutable?: boolean;
-  commitStatus?: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt?: string | null;
-}
-
-export interface FileVersion {
-  id: number;
-  nodeId: string;
-  storageKey: string;
-  etag: string | null;
-  size: number;
-  contentType: string | null;
-  sha256?: string | null;
-  isCurrent: boolean;
-  createdAt: string;
-  createdBy?: string | null;
-}
-
-export interface NodeWithVersion extends Node {
-  version?: FileVersion;
-}
+export type Node = Exclude<components["schemas"]["Node"], null>;
+export type FileVersion = Exclude<components["schemas"]["FileVersion"], null>;
+export type NodeWithVersion = components["schemas"]["NodeWithVersion"];
 
 export interface ResolveResult {
   [path: string]: Node | null;
@@ -125,27 +99,20 @@ export interface ResolveResult {
 // Upload Types
 // ============================================================================
 
-export interface UploadInitResult {
-  uploadUrl: string;
-  uploadToken: string;
-  nodeId: string;
-  expiresIn: number;
-}
-
-export interface UploadResult {
-  node: Node;
-}
-
-export interface DownloadResult {
-  url: string;
-  contentType: string | null;
-  size: number;
-  expiresIn: number;
-}
+export type UploadInitResult = Exclude<components["schemas"]["UploadInitResult"], null>;
+export type UploadResult = Exclude<components["schemas"]["UploadCommitResult"], null>;
+export type DownloadResult = Exclude<components["schemas"]["DownloadUrl"], null>;
 
 export interface UploadOptions {
+  name?: string;
   contentType?: string;
   metadata?: Record<string, unknown>;
+  size?: number;
+  multipart?: boolean;
+  expectedSha256?: string;
+  parentId?: string;
+  parentPath?: string;
+  nodeId?: string;
 }
 
 // ============================================================================
@@ -198,18 +165,7 @@ export interface ShareAccessResult {
 // Audit Types
 // ============================================================================
 
-export interface AuditOp {
-  id: string;
-  tenantId: string;
-  actorId: string | null;
-  actorType: "user" | "api_key" | "system" | "share" | "agent";
-  action: string;
-  targetId: string | null;
-  targetType: string | null;
-  requestId?: string | null;
-  payload: Record<string, unknown>;
-  createdAt: string;
-}
+export type AuditOp = Exclude<components["schemas"]["AuditLogEntry"], null>;
 
 export interface AuditQueryOptions extends PaginationOptions {
   action?: string;
@@ -338,20 +294,7 @@ export interface Integration {
 // Mount Types
 // ============================================================================
 
-export interface Mount {
-  id: string;
-  tenantId: string;
-  name: string;
-  provider: "s3" | "r2" | "minio" | "gcs" | "azure";
-  bucket: string;
-  region: string | null;
-  basePrefix: string;
-  endpoint: string | null;
-  isDefault: boolean;
-  retentionDays: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type Mount = Exclude<components["schemas"]["Mount"], null>;
 
 export interface MountRetentionInfo {
   retentionDays: number | null;
@@ -380,23 +323,18 @@ export interface UpdateMountOptions {
 // Search Types
 // ============================================================================
 
-export interface SearchResult {
-  node: Node;
-  score: number;
-  highlights: Record<string, string[]>;
-}
+export type SearchResult = Exclude<components["schemas"]["SearchResult"], null>;
+export type QuickSearch = Exclude<components["schemas"]["QuickSearch"], null>;
 
 export interface SearchFilters {
-  mode?: 'metadata' | 'fulltext';
-  type?: 'file' | 'folder';
-  parentId?: string;
-  extensions?: string[];
+  mode?: "metadata" | "fulltext";
+  type?: "file" | "folder";
+  folderId?: string;
+  contentType?: string;
   minSize?: number;
   maxSize?: number;
-  dateRange?: {
-    start?: string | Date;
-    end?: string | Date;
-  };
+  startDate?: string | Date;
+  endDate?: string | Date;
 }
 
 // ============================================================================

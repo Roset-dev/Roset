@@ -10,8 +10,10 @@ import type {
   PaginatedResult,
   Node,
   NodeWithVersion,
+  FileVersion,
   ResolveResult,
 } from "../types.js";
+import { PaginatedIterator } from "../pagination.js";
 
 export interface ListChildrenOptions extends PaginationOptions {
   /** Filter by type */
@@ -27,6 +29,12 @@ export interface CreateNodeOptions {
 
   /** Custom metadata */
   metadata?: Record<string, unknown>;
+
+  /** File size in bytes (only for files) */
+  size?: number;
+
+  /** Content type (only for files) */
+  contentType?: string;
 
   /** Idempotency key. Pass null to disable auto-generated key. */
   idempotencyKey?: string | null;
@@ -123,6 +131,18 @@ export class NodesResource {
   }
 
   /**
+   * List all children of a folder (auto-paginated)
+   */
+  listAll(
+    nodeId: string,
+    options?: ListChildrenOptions & RequestOptions
+  ): PaginatedIterator<Node> {
+    return new PaginatedIterator((opts) =>
+      this.listChildren(nodeId, { ...options, ...opts })
+    );
+  }
+
+  /**
    * Create a new file or folder
    *
    * @example
@@ -151,6 +171,8 @@ export class NodesResource {
         parentId: options?.parentId,
         parentPath: options?.parentPath,
         metadata: options?.metadata,
+        size: options?.size,
+        contentType: options?.contentType,
       },
       {
         idempotencyKey: options?.idempotencyKey,
@@ -346,17 +368,6 @@ export class NodesResource {
    * console.log(`Permanently deleted ${deletedCount} items`);
    * ```
    */
-  /**
-   * Empty trash (permanently delete all trashed items)
-   * 
-   * @returns The count of items deleted
-   * 
-   * @example
-   * ```typescript
-   * const { deletedCount } = await client.nodes.emptyTrash();
-   * console.log(`Permanently deleted ${deletedCount} items`);
-   * ```
-   */
   async emptyTrash(options?: RequestOptions): Promise<{ deletedCount: number }> {
     return this.http.delete<{ deletedCount: number }>("/v1/trash", options);
   }
@@ -461,8 +472,8 @@ export class NodesResource {
    * versions.forEach(v => console.log(v.createdAt, v.size));
    * ```
    */
-  async listVersions(nodeId: string, options?: RequestOptions): Promise<{ versions: FileVersionInfo[] }> {
-    return this.http.get<{ versions: FileVersionInfo[] }>(`/v1/nodes/${nodeId}/versions`, options);
+  async listVersions(nodeId: string, options?: RequestOptions): Promise<{ versions: FileVersion[] }> {
+    return this.http.get<{ versions: FileVersion[] }>(`/v1/nodes/${nodeId}/versions`, options);
   }
 
   /**
@@ -488,15 +499,3 @@ export class NodesResource {
   }
 }
 
-export interface FileVersionInfo {
-  id: number;
-  nodeId: string;
-  storageKey: string;
-  etag: string | null;
-  size: number;
-  contentType: string | null;
-  sha256: string | null;
-  isCurrent: boolean;
-  createdAt: string;
-  createdBy: string | null;
-}

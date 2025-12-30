@@ -68,8 +68,12 @@ export class ValidationError extends RosetError {
 export class RateLimitError extends RosetError {
   public readonly retryAfter?: number;
 
-  constructor(message: string = "Rate limit exceeded", retryAfter?: number) {
-    super(message, "RATE_LIMIT", 429);
+  constructor(
+    message: string = "Rate limit exceeded",
+    retryAfter?: number,
+    options?: { requestId?: string; retryable?: boolean; cause?: unknown }
+  ) {
+    super(message, "RATE_LIMIT", 429, undefined, options);
     this.name = "RateLimitError";
     this.retryAfter = retryAfter;
   }
@@ -87,7 +91,8 @@ export class QuotaExceededError extends RosetError {
  */
 export function parseApiError(
   statusCode: number,
-  body: { error?: string; code?: string; details?: Record<string, unknown> }
+  body: { error?: string; code?: string; details?: Record<string, unknown> },
+  options?: { requestId?: string }
 ): RosetError {
   const message = body.error ?? "Unknown error";
   const code = body.code ?? "UNKNOWN";
@@ -107,8 +112,8 @@ export function parseApiError(
       if (body.code === "QUOTA_EXCEEDED") {
         return new QuotaExceededError(message, body.details);
       }
-      return new RateLimitError(message);
+      return new RateLimitError(message, undefined, { ...options, retryable: true });
     default:
-      return new RosetError(message, code, statusCode, body.details);
+      return new RosetError(message, code, statusCode, body.details, options);
   }
 }

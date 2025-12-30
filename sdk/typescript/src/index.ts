@@ -24,7 +24,7 @@
 
 // Resources
 export { RosetClient } from "./client.js";
-export { NodesResource, type FileVersionInfo } from "./resources/nodes.js";
+export { NodesResource } from "./resources/nodes.js";
 export { UploadsResource } from "./resources/uploads.js";
 export { SharesResource } from "./resources/shares.js";
 export { AuditResource } from "./resources/audit.js";

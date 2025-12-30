@@ -10,6 +10,7 @@ import type {
   AuditOp,
   AuditQueryOptions,
 } from "../types.js";
+import { PaginatedIterator } from "../pagination.js";
 
 export class AuditResource {
   constructor(
@@ -80,28 +81,20 @@ export class AuditResource {
   }
 
   /**
-   * Async iterator for paginating through audit logs
+   * Query all audit logs (auto-paginated)
    *
    * @example
    * ```typescript
-   * for await (const op of client.audit.iterate({ action: 'upload' })) {
+   * for await (const op of client.audit.queryAll({ action: 'upload' })) {
    *   console.log(op.action, op.targetNodeId);
    * }
    * ```
    */
-  async *iterate(
+  queryAll(
     options?: AuditQueryOptions & RequestOptions
-  ): AsyncGenerator<AuditOp, void, undefined> {
-    let page = options?.page ?? 1;
-    let hasMore = true;
-
-    while (hasMore) {
-      const result = await this.query({ ...options, page });
-      for (const item of result.items) {
-        yield item;
-      }
-      hasMore = result.hasMore;
-      page++;
-    }
+  ): PaginatedIterator<AuditOp> {
+    return new PaginatedIterator((opts) =>
+      this.query({ ...options, ...opts })
+    );
   }
 }

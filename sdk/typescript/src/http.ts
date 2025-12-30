@@ -101,8 +101,9 @@ export class HttpClient {
       ...options?.headers,
     };
 
-    if (this.mountId) {
-      headers["X-Roset-Mount-Id"] = this.mountId;
+    const mountId = options?.mount ?? this.mountId;
+    if (mountId) {
+      headers["X-Roset-Mount-Id"] = mountId;
     }
 
     // Auto-generate idempotency key for mutating requests (unless explicitly disabled with null)
@@ -153,11 +154,13 @@ export class HttpClient {
 
         // Handle errors
         if (!response.ok) {
+          const requestId = response.headers.get("x-request-id") ?? undefined;
           const error = parseApiError(
             response.status,
             typeof data === "object" && data !== null
               ? (data as Record<string, unknown>)
-              : { error: String(data) }
+              : { error: String(data) },
+            { requestId }
           );
 
           // Retry on rate limit with backoff
@@ -249,9 +252,9 @@ export class HttpClient {
     if (SAFE_METHODS.has(method)) {
       return true;
     }
-    // DELETE is considered idempotent by HTTP spec, so allow retries
+    // DELETE is NOT automatically safe to retry without idempotency key
     if (method === "DELETE") {
-      return true;
+      return !!options?.idempotencyKey;
     }
     // For POST/PUT/PATCH, only retry if idempotency key is present
     return !!options?.idempotencyKey;

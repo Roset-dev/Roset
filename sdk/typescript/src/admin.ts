@@ -2,7 +2,6 @@ import { HttpClient } from "./http.js";
 import { OrgResource } from "./resources/org.js";
 import { IntegrationsResource } from "./resources/integrations.js";
 import { WebhooksResource } from "./resources/webhooks.js";
-import { SharesResource } from "./resources/shares.js";
 import { BillingResource } from "./resources/billing.js";
 import { TenantResource } from "./resources/tenant.js";
 import { UserResource } from "./resources/user.js";
@@ -25,9 +24,6 @@ export class RosetAdmin {
   /** Webhooks resource - webhook endpoint management */
   public readonly webhooks: WebhooksResource;
 
-  /** Shares resource - active share/link management */
-  public readonly shares: SharesResource;
-
   /** Billing resource - plan, usage, and limits */
   public readonly billing: BillingResource;
 
@@ -39,8 +35,12 @@ export class RosetAdmin {
 
   constructor(config: RosetClientConfig) {
 
-    if (!config.apiKey && !config.getAccessToken) {
-      throw new Error("Either apiKey or getAccessToken is required");
+    if (config.getAccessToken) {
+      throw new Error("RosetAdmin requires apiKey, not getAccessToken");
+    }
+
+    if (!config.apiKey) {
+      throw new Error("apiKey is required for RosetAdmin");
     }
 
     this.config = config;
@@ -50,7 +50,6 @@ export class RosetAdmin {
     this.org = new OrgResource(this.http, config);
     this.integrations = new IntegrationsResource(this.http, config);
     this.webhooks = new WebhooksResource(this.http, config);
-    this.shares = new SharesResource(this.http, config);
     this.billing = new BillingResource(this.http, config);
     this.tenant = new TenantResource(this.http, config);
     this.user = new UserResource(this.http, config);

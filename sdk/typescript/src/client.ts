@@ -135,5 +135,18 @@ export class RosetClient {
     });
   }
 
-
+  /**
+   * Create a new client with default request options overrides
+   * 
+   * @example
+   * ```ts
+   * const gcsClient = client.with({ mount: 'mount-gcs-backup' });
+   * ```
+   */
+  with(options: { mount?: string }): RosetClient {
+    return new RosetClient({
+      ...this.config,
+      mountId: options.mount ?? this.config.mountId,
+    });
+  }
 }

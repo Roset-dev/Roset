@@ -1,15 +1,10 @@
-/**
- * Uploads Resource - File upload and download operations
- */
-
 import type { HttpClient } from "../http.js";
-import { generateIdempotencyKey } from "../http.js";
 import { RosetError } from "../errors.js";
 import type {
   RosetClientConfig,
   RequestOptions,
-  Node,
   UploadInitResult,
+  UploadResult,
   DownloadResult,
   UploadOptions,
 } from "../types.js";
@@ -29,41 +24,33 @@ export class UploadsResource {
    *
    * @example
    * ```typescript
-   * const { uploadUrl, uploadToken } = await client.uploads.init('/documents/report.pdf', {
+   * const { uploadUrl, uploadToken } = await client.uploads.init({
+   *   name: 'report.pdf',
    *   contentType: 'application/pdf',
    *   size: 1024000,
+   *   parentId: 'folder-123'
    * });
-   *
-   * // Upload directly to storage
-   * await fetch(uploadUrl, {
-   *   method: 'PUT',
-   *   body: fileBuffer,
-   *   headers: { 'Content-Type': 'application/pdf' },
-   * });
-   *
-   * // Finalize
-   * const node = await client.uploads.commit(uploadToken, etag);
    * ```
    */
   async init(
-    path: string,
-    options: {
-      contentType: string;
-      size: number;
-      metadata?: Record<string, unknown>;
-    },
+    options: UploadOptions,
     requestOptions?: RequestOptions
   ): Promise<UploadInitResult> {
     return this.http.post<UploadInitResult>(
       "/v1/uploads/init",
       {
-        path,
+        nodeId: options.nodeId,
+        parentId: options.parentId,
+        parentPath: options.parentPath,
+        name: options.name,
         contentType: options.contentType,
         size: options.size,
         metadata: options.metadata,
+        multipart: options.multipart,
+        expectedSha256: options.expectedSha256,
       },
       {
-        idempotencyKey: requestOptions?.idempotencyKey ?? generateIdempotencyKey(),
+        idempotencyKey: requestOptions?.idempotencyKey,
         ...requestOptions,
       }
     );
@@ -74,19 +61,53 @@ export class UploadsResource {
    */
   async commit(
     uploadToken: string,
-    etag: string,
-    versionId?: string,
-    options?: RequestOptions
-  ): Promise<Node> {
-    return this.http.post<Node>(
+    options?: {
+      etag?: string;
+      size?: number;
+    } & RequestOptions
+  ): Promise<UploadResult> {
+    return this.http.post<UploadResult>(
       "/v1/uploads/commit",
       {
         uploadToken,
-        etag,
-        versionId,
+        etag: options?.etag,
+        size: options?.size,
       },
       {
-        idempotencyKey: options?.idempotencyKey ?? generateIdempotencyKey(),
+        idempotencyKey: options?.idempotencyKey,
+        ...options,
+      }
+    );
+  }
+
+  /**
+   * Get URL for a multipart upload part
+   */
+  async getPartUrl(
+    uploadToken: string,
+    partNumber: number,
+    options?: RequestOptions
+  ): Promise<{ uploadUrl: string }> {
+    return this.http.post<{ uploadUrl: string }>(
+      `/v1/uploads/${uploadToken}/part?partNumber=${partNumber}`,
+      {},
+      options
+    );
+  }
+
+  /**
+   * Complete a multipart upload
+   */
+  async completeMultipart(
+    uploadToken: string,
+    parts: { ETag: string; PartNumber: number }[],
+    options?: RequestOptions
+  ): Promise<UploadResult> {
+    return this.http.post<UploadResult>(
+      `/v1/uploads/${uploadToken}/complete`,
+      { parts },
+      {
+        idempotencyKey: options?.idempotencyKey,
         ...options,
       }
     );
@@ -122,28 +143,29 @@ export class UploadsResource {
   /**
    * Convenience method: Upload a file in one call
    *
-   * This handles init → upload → commit automatically.
+   * This handles init → upload → commit automatically for small files.
+   * For large files, use multipart uploads.
    *
    * @example
    * ```typescript
    * const buffer = await fs.readFile('report.pdf');
-   * const node = await client.uploads.upload('/documents/report.pdf', buffer, {
+   * const { node } = await client.uploads.upload('report.pdf', buffer, {
    *   contentType: 'application/pdf',
+   *   parentId: 'folder-123'
    * });
    * ```
    */
   async upload(
-    path: string,
+    name: string,
     data: ArrayBuffer | Uint8Array,
     options?: UploadOptions & RequestOptions
-  ): Promise<Node> {
+  ): Promise<UploadResult> {
     const size = data.byteLength;
     const contentType = options?.contentType ?? "application/octet-stream";
 
     // Step 1: Init upload
     const { uploadUrl, uploadToken } = await this.init(
-      path,
-      { contentType, size, metadata: options?.metadata },
+      { ...options, name, contentType, size },
       options
     );
 
@@ -177,17 +199,11 @@ export class UploadsResource {
     const etag = uploadResponse.headers.get("etag")?.replace(/"/g, "") ?? "";
 
     // Step 3: Commit
-    return this.commit(uploadToken, etag, undefined, options);
+    return this.commit(uploadToken, { etag, size, ...options });
   }
 
   /**
    * Convenience method: Download a file by ID
-   *
-   * @example
-   * ```typescript
-   * const buffer = await client.uploads.download(nodeId);
-   * await fs.writeFile('output.pdf', buffer);
-   * ```
    */
   async download(nodeId: string, options?: RequestOptions): Promise<ArrayBuffer> {
     const { url } = await this.getDownloadUrl(nodeId, options);
