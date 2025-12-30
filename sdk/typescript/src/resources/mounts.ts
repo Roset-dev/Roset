@@ -54,10 +54,13 @@ export class MountsResource {
   }
 
   /**
-   * Delete a mount (must be empty)
+   * Delete a mount
+   * @param id - Mount ID
+   * @param options.force - If true, deletes even if mount has file references
    */
-  async delete(id: string, options?: RequestOptions): Promise<void> {
-    await this.http.delete(`/v1/mounts/${id}`, options);
+  async delete(id: string, options?: RequestOptions & { force?: boolean }): Promise<void> {
+    const url = options?.force ? `/v1/mounts/${id}?force=true` : `/v1/mounts/${id}`;
+    await this.http.delete(url, options);
   }
 
   /**
