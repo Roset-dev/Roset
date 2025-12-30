@@ -1,0 +1,58 @@
+# User API
+
+Manage your user profile and preferences.
+
+## Get Profile
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/user/profile"
+  description="Get current authenticated user profile."
+>
+  <ResponseExample
+    status={200}
+    json={{
+      id: "user_123",
+      email: "jane@example.com",
+      displayName: "Jane Doe",
+      avatarUrl: "https://example.com/avatar.jpg",
+      preferences: {
+        theme: "dark",
+        emailUpdates: true,
+      },
+      createdAt: "2025-01-01T00:00:00Z",
+      updatedAt: "2025-01-01T00:00:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Update Profile
+
+<ApiEndpoint
+  method="PATCH"
+  path="/v1/user/profile"
+  description="Update profile information and preferences."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      { name: "displayName", type: "string", required: false },
+      { name: "avatarUrl", type: "string", required: false },
+      { name: "preferences", type: "object", required: false },
+    ]}
+  />
+  <RequestExample
+    json={{
+      displayName: "Jane D.",
+      preferences: { theme: "light" },
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      id: "user_123",
+      displayName: "Jane D.",
+      preferences: { theme: "light", emailUpdates: true },
+    }}
+  />
+</ApiEndpoint>

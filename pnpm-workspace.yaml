@@ -1,5 +1,4 @@
 packages:
   - 'sdk/typescript'
-  - 'core/packages/ui'
-  - 'core/apps/docs'
+  - 'docs'
   - 'fuse'

@@ -4,10 +4,15 @@
   "uploads": "Uploads",
   "shares": "Shares",
   "mounts": "Mounts",
-  "org": "Organization",
-  "integrations": "Integrations",
   "ml": "ML & Commit",
   "leases": "Leases",
   "search": "Search",
+  "webhooks": "Webhooks",
+  "integrations": "Integrations",
+  "org": "Organization",
+  "user": "User",
+  "billing": "Billing",
+  "tenant": "Tenant",
+  "notifications": "Notifications",
   "audit": "Audit"
 }

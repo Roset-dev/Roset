@@ -1,0 +1,23 @@
+# Tenant API
+
+Access tenant-level statistics and metadata.
+
+## Get Statistics
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/tenant/stats"
+  description="Get overview statistics for the tenant (file counts, storage, etc)."
+>
+  <ResponseExample
+    status={200}
+    json={{
+      files: 12500,
+      storage: 107374182400,
+      activeShares: 42,
+      connectedDevices: 3,
+      totalDevices: 15,
+      computedAt: "2025-01-03T12:00:00Z",
+    }}
+  />
+</ApiEndpoint>

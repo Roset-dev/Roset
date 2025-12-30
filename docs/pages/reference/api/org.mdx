@@ -1,6 +1,6 @@
 # Organization API
 
-Manage team members, invitations, and roles within your tenant organization.
+Manage team members, invitations, roles, and API keys within your tenant organization.
 
 ## List Members
 
@@ -12,19 +12,49 @@ Manage team members, invitations, and roles within your tenant organization.
   <ResponseExample
     status={200}
     json={{
-      items: [
+      members: [
         {
           id: "mem_123",
-          tenant_id: "tenant_abc",
-          user_id: "user_456",
+          tenantId: "tenant_abc",
+          principalId: "user_456",
           email: "jane@example.com",
+          name: "Jane Doe",
           role: "owner",
-          created_at: "2025-01-01T00:00:00Z",
+          joinedAt: "2025-01-01T00:00:00Z",
         },
       ],
-      meta: {
-        total: 1,
+      count: 1,
+    }}
+  />
+</ApiEndpoint>
+
+## Get Member
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/org/members/:memberId"
+  description="Get details of a specific member."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "memberId",
+        type: "string",
+        required: true,
+        description: "Member ID",
       },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      id: "mem_123",
+      tenantId: "tenant_abc",
+      principalId: "user_456",
+      email: "jane@example.com",
+      role: "owner",
+      joinedAt: "2025-01-01T00:00:00Z",
     }}
   />
 </ApiEndpoint>
@@ -34,7 +64,7 @@ Manage team members, invitations, and roles within your tenant organization.
 <ApiEndpoint
   method="POST"
   path="/v1/org/invites"
-  description="Create a new email invitation to join the organization."
+  description="Create a new email invitation. Returns an invite URL to share."
 >
   <ParameterTable
     type="body"
@@ -81,7 +111,7 @@ Manage team members, invitations, and roles within your tenant organization.
   <ResponseExample
     status={200}
     json={{
-      items: [
+      invites: [
         {
           id: "inv_789",
           email: "colleague@example.com",
@@ -98,13 +128,18 @@ Manage team members, invitations, and roles within your tenant organization.
 
 <ApiEndpoint
   method="DELETE"
-  path="/v1/org/invites/:id"
+  path="/v1/org/invites/:inviteId"
   description="Revoke a pending invitation."
 >
   <ParameterTable
     type="path"
     params={[
-      { name: "id", type: "string", required: true, description: "Invite ID" },
+      {
+        name: "inviteId",
+        type: "string",
+        required: true,
+        description: "Invite ID",
+      },
     ]}
   />
   <ResponseExample status={204} description="No content" json={{}} />
@@ -114,13 +149,18 @@ Manage team members, invitations, and roles within your tenant organization.
 
 <ApiEndpoint
   method="PATCH"
-  path="/v1/org/members/:id"
-  description="Update a member's role."
+  path="/v1/org/members/:memberId"
+  description="Update a member's role (Owner/Admin only)."
 >
   <ParameterTable
     type="path"
     params={[
-      { name: "id", type: "string", required: true, description: "Member ID" },
+      {
+        name: "memberId",
+        type: "string",
+        required: true,
+        description: "Member ID",
+      },
     ]}
   />
   <ParameterTable
@@ -147,14 +187,158 @@ Manage team members, invitations, and roles within your tenant organization.
 
 <ApiEndpoint
   method="DELETE"
-  path="/v1/org/members/:id"
+  path="/v1/org/members/:memberId"
   description="Remove a member from the organization."
 >
   <ParameterTable
     type="path"
     params={[
-      { name: "id", type: "string", required: true, description: "Member ID" },
+      {
+        name: "memberId",
+        type: "string",
+        required: true,
+        description: "Member ID",
+      },
     ]}
   />
   <ResponseExample status={204} description="No content" json={{}} />
+</ApiEndpoint>
+
+## Transfer Ownership
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/org/transfer-ownership"
+  description="Transfer organization ownership to another member."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "newOwnerId",
+        type: "string",
+        required: true,
+        description: "Member ID of new owner",
+      },
+    ]}
+  />
+  <ResponseExample status={200} json={{ success: true }} />
+</ApiEndpoint>
+
+## API Keys
+
+### List API Keys
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/org/api-keys"
+  description="List all API keys for the organization."
+>
+  <ResponseExample
+    status={200}
+    json={{
+      keys: [
+        {
+          id: "key_123",
+          name: "CI/CD Pipeline",
+          prefix: "rsk_live_...",
+          scopes: ["*"],
+          expiresAt: null,
+          lastUsedAt: "2025-01-01T12:00:00Z",
+        },
+      ],
+    }}
+  />
+</ApiEndpoint>
+
+### Create API Key
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/org/api-keys"
+  description="Create a new API key. The secret is only returned once."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      { name: "name", type: "string", required: true },
+      { name: "scopes", type: "array", required: false, default: '["*"]' },
+      {
+        name: "expiresAt",
+        type: "string",
+        required: false,
+        description: "ISO 8601 date",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={201}
+    json={{
+      id: "key_456",
+      name: "Development Key",
+      prefix: "rsk_test_...",
+      secret: "rsk_test_SECRET_VALUE_...",
+      scopes: ["*"],
+      createdAt: "2025-01-01T00:00:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+### Revoke API Key
+
+<ApiEndpoint
+  method="DELETE"
+  path="/v1/org/api-keys/:keyId"
+  description="Revoke an API key immediately."
+>
+  <ParameterTable
+    type="path"
+    params={[{ name: "keyId", type: "string", required: true }]}
+  />
+  <ResponseExample status={204} description="No content" json={{}} />
+</ApiEndpoint>
+
+## Public Invite Access
+
+### Get Invite Info
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/invites/:token"
+  auth="optional"
+  description="Get public info about an invite token."
+>
+  <ParameterTable
+    type="path"
+    params={[{ name: "token", type: "string", required: true }]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      email: "colleague@example.com",
+      role: "member",
+      expiresAt: "2025-01-08T00:00:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+### Accept Invite
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/invites/:token/accept"
+  description="Accept an invite and join the organization (requires auth)."
+>
+  <ParameterTable
+    type="path"
+    params={[{ name: "token", type: "string", required: true }]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      memberId: "mem_new123",
+      tenantId: "tenant_abc",
+      role: "member",
+    }}
+  />
 </ApiEndpoint>

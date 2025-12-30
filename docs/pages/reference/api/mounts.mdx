@@ -1,6 +1,8 @@
 # Mounts API
 
-Mounts connect Roset to storage backends. Each mount represents a connection to a bucket (S3, R2, MinIO, etc.) with its own credentials and configuration.
+Mounts connect Roset to storage backends. Each mount represents a connection to a bucket (S3, R2, MinIO, etc.).
+
+> **Note**: Credentials (access keys) are not stored directly on the mount. They are configured via the Integrations API (Connectors) to ensure secure handling and rotation.
 
 ## List Mounts
 
@@ -12,7 +14,7 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
   <ResponseExample
     status={200}
     json={{
-      items: [
+      mounts: [
         {
           id: "mount_abc123",
           name: "Production S3",
@@ -20,8 +22,11 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
           bucket: "my-company-files",
           region: "us-east-1",
           basePrefix: "roset/",
+          endpoint: null,
           isDefault: true,
+          retentionDays: 30,
           createdAt: "2025-01-01T00:00:00Z",
+          updatedAt: "2025-01-01T00:00:00Z",
         },
         {
           id: "mount_def456",
@@ -31,40 +36,11 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
           region: null,
           basePrefix: "",
           isDefault: false,
+          retentionDays: 30,
           createdAt: "2025-01-10T00:00:00Z",
+          updatedAt: "2025-01-10T00:00:00Z",
         },
       ],
-    }}
-  />
-</ApiEndpoint>
-
-## Get Mount
-
-<ApiEndpoint
-  method="GET"
-  path="/v1/mounts/:id"
-  description="Get details for a specific mount."
->
-  <ParameterTable
-    type="path"
-    params={[
-      { name: "id", type: "uuid", required: true, description: "Mount ID" },
-    ]}
-  />
-  <ResponseExample
-    status={200}
-    json={{
-      id: "mount_abc123",
-      name: "Production S3",
-      provider: "s3",
-      bucket: "my-company-files",
-      region: "us-east-1",
-      basePrefix: "roset/",
-      endpoint: null,
-      isDefault: true,
-      retentionDays: 30,
-      createdAt: "2025-01-01T00:00:00Z",
-      updatedAt: "2025-01-01T00:00:00Z",
     }}
   />
 </ApiEndpoint>
@@ -74,7 +50,7 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
 <ApiEndpoint
   method="POST"
   path="/v1/mounts"
-  description="Create a new storage mount."
+  description="Create a new storage mount definition."
 >
   <ParameterTable
     type="body"
@@ -117,18 +93,6 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
         description: "Custom endpoint (for MinIO/S3-compatible)",
       },
       {
-        name: "accessKeyId",
-        type: "string",
-        required: true,
-        description: "Access key ID",
-      },
-      {
-        name: "secretAccessKey",
-        type: "string",
-        required: true,
-        description: "Secret access key",
-      },
-      {
         name: "isDefault",
         type: "boolean",
         required: false,
@@ -140,6 +104,7 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
         type: "number",
         required: false,
         description: "Trash retention period in days",
+        default: "30",
       },
     ]}
   />
@@ -150,8 +115,6 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
       bucket: "my-company-files",
       region: "us-east-1",
       basePrefix: "roset/",
-      accessKeyId: "AKIAIOSFODNN7EXAMPLE",
-      secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
       isDefault: true,
       retentionDays: 30,
     }}
@@ -164,8 +127,43 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
       provider: "s3",
       bucket: "my-company-files",
       region: "us-east-1",
+      basePrefix: "roset/",
+      endpoint: null,
       isDefault: true,
+      retentionDays: 30,
       createdAt: "2025-01-01T00:00:00Z",
+      updatedAt: "2025-01-01T00:00:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Get Mount
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/mounts/:id"
+  description="Get details for a specific mount."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Mount ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      id: "mount_abc123",
+      name: "Production S3",
+      provider: "s3",
+      bucket: "my-company-files",
+      region: "us-east-1",
+      basePrefix: "roset/",
+      endpoint: null,
+      isDefault: true,
+      retentionDays: 30,
+      createdAt: "2025-01-01T00:00:00Z",
+      updatedAt: "2025-01-01T00:00:00Z",
     }}
   />
 </ApiEndpoint>
@@ -175,7 +173,7 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
 <ApiEndpoint
   method="PATCH"
   path="/v1/mounts/:id"
-  description="Update mount configuration. Credentials can be rotated without downtime."
+  description="Update mount configuration."
 >
   <ParameterTable
     type="path"
@@ -191,18 +189,6 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
         type: "string",
         required: false,
         description: "New name",
-      },
-      {
-        name: "accessKeyId",
-        type: "string",
-        required: false,
-        description: "New access key",
-      },
-      {
-        name: "secretAccessKey",
-        type: "string",
-        required: false,
-        description: "New secret key",
       },
       {
         name: "isDefault",
@@ -231,6 +217,30 @@ Mounts connect Roset to storage backends. Each mount represents a connection to 
       name: "Primary S3 Storage",
       retentionDays: 60,
       updatedAt: "2025-01-15T10:30:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Test Mount
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/mounts/:id/test"
+  description="Test mount configuration validity (does not test connectivity)."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Mount ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      success: true,
+      message:
+        "Mount configuration valid. To test connectivity, configure credentials via Integrations.",
+      hint: "Use POST /v1/connectors/test with credentials to verify bucket access.",
     }}
   />
 </ApiEndpoint>

@@ -1,0 +1,263 @@
+# Webhooks API
+
+Manage webhook endpoints for event delivery.
+
+## List Webhooks
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/webhooks"
+  description="List all webhooks configured for the tenant."
+>
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          id: "wh_123",
+          url: "https://example.com/webhook",
+          events: ["node.created", "node.updated"],
+          enabled: true,
+          description: "Production webhook",
+          createdAt: "2025-01-01T00:00:00Z",
+          updatedAt: "2025-01-01T00:00:00Z",
+          lastTriggeredAt: "2025-01-02T10:30:00Z",
+          failureCount: 0,
+        },
+      ],
+    }}
+  />
+</ApiEndpoint>
+
+## Create Webhook
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/webhooks"
+  description="Register a new webhook endpoint."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "url",
+        type: "string",
+        required: true,
+        description: "HTTPS URL to receive events",
+      },
+      {
+        name: "events",
+        type: "array",
+        required: false,
+        default: '["*"]',
+        description: "List of event types to subscribe to",
+      },
+      {
+        name: "description",
+        type: "string",
+        required: false,
+        description: "Human-readable description",
+      },
+      {
+        name: "enabled",
+        type: "boolean",
+        required: false,
+        default: "true",
+        description: "Whether the webhook is active",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      url: "https://api.example.com/events",
+      events: ["node.created", "upload.completed"],
+      description: "Data pipeline trigger",
+    }}
+  />
+  <ResponseExample
+    status={201}
+    json={{
+      webhook: {
+        id: "wh_456",
+        url: "https://api.example.com/events",
+        secret: "whsec_...",
+        events: ["node.created", "upload.completed"],
+        enabled: true,
+        createdAt: "2025-01-03T00:00:00Z",
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## Get Webhook
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/webhooks/:id"
+  description="Get details of a specific webhook."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "string", required: true, description: "Webhook ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      webhook: {
+        id: "wh_123",
+        url: "https://example.com/webhook",
+        secret: "whsec_...",
+        events: ["*"],
+        enabled: true,
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## Update Webhook
+
+<ApiEndpoint
+  method="PATCH"
+  path="/v1/webhooks/:id"
+  description="Update webhook configuration."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "string", required: true, description: "Webhook ID" },
+    ]}
+  />
+  <ParameterTable
+    type="body"
+    params={[
+      { name: "url", type: "string", required: false },
+      { name: "events", type: "array", required: false },
+      { name: "description", type: "string", required: false },
+      { name: "enabled", type: "boolean", required: false },
+    ]}
+  />
+  <RequestExample
+    json={{
+      enabled: false,
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      webhook: {
+        id: "wh_123",
+        enabled: false,
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## Delete Webhook
+
+<ApiEndpoint
+  method="DELETE"
+  path="/v1/webhooks/:id"
+  description="Remove a webhook endpoint."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "string", required: true, description: "Webhook ID" },
+    ]}
+  />
+  <ResponseExample status={204} description="No content" json={{}} />
+</ApiEndpoint>
+
+## Rotate Secret
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/webhooks/:id/rotate-secret"
+  description="Generate a new signing secret for the webhook."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "string", required: true, description: "Webhook ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      webhook: {
+        id: "wh_123",
+        secret: "whsec_new_secret...",
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## Test Webhook
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/webhooks/:id/test"
+  description="Trigger a test event delivery."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "string", required: true, description: "Webhook ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      delivery: {
+        id: "del_789",
+        webhookId: "wh_123",
+        event: "test",
+        statusCode: 200,
+        success: true,
+        durationMs: 45,
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## List Deliveries
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/webhooks/:id/deliveries"
+  description="View recent delivery attempts for debugging."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "string", required: true, description: "Webhook ID" },
+    ]}
+  />
+  <ParameterTable
+    type="query"
+    params={[
+      { name: "page", type: "number", required: false, default: "1" },
+      { name: "page_size", type: "number", required: false, default: "20" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          id: "del_789",
+          event: "node.created",
+          statusCode: 200,
+          success: true,
+          createdAt: "2025-01-03T10:00:00Z",
+        },
+      ],
+      total: 150,
+      page: 1,
+      pageSize: 20,
+      hasMore: true,
+    }}
+  />
+</ApiEndpoint>

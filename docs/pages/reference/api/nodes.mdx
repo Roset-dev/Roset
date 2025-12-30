@@ -7,7 +7,7 @@ The Nodes API provides operations for managing files and folders in the Roset fi
 <ApiEndpoint
   method="POST"
   path="/v1/resolve"
-  description="Batch resolve paths to node IDs. Returns null for paths that don't exist."
+  description="Batch resolve paths to node IDs. Returns a map of paths to resolved nodes (or null if not found)."
 >
   <ParameterTable
     type="body"
@@ -17,6 +17,13 @@ The Nodes API provides operations for managing files and folders in the Roset fi
         type: "string[]",
         required: true,
         description: "Array of paths to resolve (max 100)",
+      },
+      {
+        name: "baseId",
+        type: "uuid",
+        required: false,
+        description:
+          "Optional base folder ID to resolve relative paths against",
       },
     ]}
   />
@@ -28,17 +35,23 @@ The Nodes API provides operations for managing files and folders in the Roset fi
   <ResponseExample
     status={200}
     json={{
-      results: [
-        {
-          path: "/documents/report.pdf",
-          nodeId: "550e8400-e29b-41d4-a716-446655440000",
-        },
-        {
-          path: "/images/logo.png",
-          nodeId: "550e8400-e29b-41d4-a716-446655440001",
-        },
-        { path: "/nonexistent", nodeId: null },
-      ],
+      "/documents/report.pdf": {
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        name: "report.pdf",
+        type: "file",
+        parentId: "parent_uuid...",
+        tenantId: "tenant_abc",
+        mountId: "mount_123",
+      },
+      "/images/logo.png": {
+        id: "550e8400-e29b-41d4-a716-446655440001",
+        name: "logo.png",
+        type: "file",
+        parentId: "parent_uuid...",
+        tenantId: "tenant_abc",
+        mountId: "mount_123",
+      },
+      "/nonexistent": null,
     }}
   />
 </ApiEndpoint>
@@ -53,23 +66,37 @@ The Nodes API provides operations for managing files and folders in the Roset fi
   <ParameterTable
     type="path"
     params={[
-      { name: "id", type: "uuid", required: true, description: "Node ID" },
+      {
+        name: "id",
+        type: "string",
+        required: true,
+        description: "Node ID or 'root'",
+      },
     ]}
   />
   <ResponseExample
     status={200}
     json={{
       id: "550e8400-e29b-41d4-a716-446655440000",
-      tenant_id: "tenant_abc",
-      mount_id: "mount_123",
-      parent_id: "550e8400-e29b-41d4-a716-446655440001",
+      tenantId: "tenant_abc",
+      mountId: "mount_123",
+      parentId: "550e8400-e29b-41d4-a716-446655440001",
       name: "report.pdf",
       type: "file",
-      size_bytes: 1048576,
-      content_type: "application/pdf",
+      size: 1048576,
+      contentType: "application/pdf",
       metadata: { author: "Jane Doe" },
-      created_at: "2025-01-15T10:30:00Z",
-      updated_at: "2025-01-15T10:30:00Z",
+      createdAt: "2025-01-15T10:30:00Z",
+      updatedAt: "2025-01-15T10:30:00Z",
+      version: {
+        id: 42,
+        nodeId: "550e8400-e29b-41d4-a716-446655440000",
+        storageKey: "s3_key_...",
+        size: 1048576,
+        contentType: "application/pdf",
+        isCurrent: true,
+        createdAt: "2025-01-15T10:30:00Z",
+      },
     }}
   />
 </ApiEndpoint>
@@ -86,9 +113,9 @@ The Nodes API provides operations for managing files and folders in the Roset fi
     params={[
       {
         name: "id",
-        type: "uuid",
+        type: "string",
         required: true,
-        description: "Parent folder ID",
+        description: "Parent folder ID or 'root'",
       },
     ]}
   />
@@ -120,11 +147,14 @@ The Nodes API provides operations for managing files and folders in the Roset fi
     status={200}
     json={{
       items: [
-        { id: "node1", name: "document.pdf", type: "file", size_bytes: 1024 },
-        { id: "node2", name: "images", type: "folder", size_bytes: null },
+        { id: "node1", name: "document.pdf", type: "file", size: 1024 },
+        { id: "node2", name: "images", type: "folder", size: null },
       ],
-      next_cursor: "eyJpZCI6Im5vZGUyIn0=",
-      has_more: true,
+      nextCursor: "eyJpZCI6Im5vZGUyIn0=",
+      hasMore: true,
+      total: 2,
+      page: 1,
+      pageSize: 50,
     }}
   />
 </ApiEndpoint>
@@ -185,9 +215,60 @@ The Nodes API provides operations for managing files and folders in the Roset fi
       id: "550e8400-e29b-41d4-a716-446655440002",
       name: "quarterly-report.pdf",
       type: "file",
-      parent_id: "550e8400-e29b-41d4-a716-446655440001",
+      parentId: "550e8400-e29b-41d4-a716-446655440001",
       metadata: { department: "finance" },
-      created_at: "2025-01-15T10:30:00Z",
+      createdAt: "2025-01-15T10:30:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Copy Node
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/nodes/copy"
+  description="Copy a node to a new location."
+>
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "nodeId",
+        type: "uuid",
+        required: true,
+        description: "Source node ID",
+      },
+      {
+        name: "destinationParentId",
+        type: "uuid",
+        required: true,
+        description: "Destination folder ID",
+      },
+      {
+        name: "newName",
+        type: "string",
+        required: false,
+        description: "Optional new name for copy",
+      },
+    ]}
+  />
+  <RequestExample
+    json={{
+      nodeId: "src_123",
+      destinationParentId: "dest_456",
+      newName: "Copy of Report.pdf",
+    }}
+  />
+  <ResponseExample
+    status={201}
+    json={{
+      node: {
+        id: "new_789",
+        name: "Copy of Report.pdf",
+        type: "file",
+        parentId: "dest_456",
+      },
+      message: "Node copied successfully.",
     }}
   />
 </ApiEndpoint>
@@ -202,7 +283,12 @@ The Nodes API provides operations for managing files and folders in the Roset fi
   <ParameterTable
     type="path"
     params={[
-      { name: "id", type: "uuid", required: true, description: "Node ID" },
+      {
+        name: "id",
+        type: "string",
+        required: true,
+        description: "Node ID or 'root'",
+      },
     ]}
   />
   <ParameterTable
@@ -239,8 +325,66 @@ The Nodes API provides operations for managing files and folders in the Roset fi
     json={{
       id: "550e8400-e29b-41d4-a716-446655440002",
       name: "annual-report-2025.pdf",
-      parent_id: "550e8400-e29b-41d4-a716-446655440003",
-      updated_at: "2025-01-15T11:00:00Z",
+      parentId: "550e8400-e29b-41d4-a716-446655440003",
+      updatedAt: "2025-01-15T11:00:00Z",
+    }}
+  />
+</ApiEndpoint>
+
+## Get Manifest
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/nodes/:id/manifest"
+  description="Get recursive manifest for committed folders (HPC/ML workloads)."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "string", required: true, description: "Node ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      "/": { type: "folder", id: "root_123" },
+      "/data.csv": { type: "file", id: "file_456", size: 1024 },
+    }}
+  />
+</ApiEndpoint>
+
+## Commit Node
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/nodes/:id/commit"
+  description="Initiate a commit (seal) for a folder version."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "string", required: true, description: "Node ID" },
+    ]}
+  />
+  <ParameterTable
+    type="body"
+    params={[
+      {
+        name: "message",
+        type: "string",
+        required: false,
+        description: "Commit message",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={202}
+    json={{
+      commit: { id: "commit_abc" },
+      _links: {
+        self: "/v1/commits/commit_abc",
+        poll: "/v1/commits/commit_abc",
+      },
     }}
   />
 </ApiEndpoint>
@@ -257,9 +401,9 @@ The Nodes API provides operations for managing files and folders in the Roset fi
     params={[
       {
         name: "id",
-        type: "uuid",
+        type: "string",
         required: true,
-        description: "Node ID to delete",
+        description: "Node ID or 'root'",
       },
     ]}
   />
@@ -278,7 +422,7 @@ The Nodes API provides operations for managing files and folders in the Roset fi
     params={[
       {
         name: "id",
-        type: "uuid",
+        type: "string",
         required: true,
         description: "Deleted node ID",
       },
@@ -289,8 +433,8 @@ The Nodes API provides operations for managing files and folders in the Roset fi
     json={{
       id: "550e8400-e29b-41d4-a716-446655440002",
       name: "annual-report-2025.pdf",
-      deleted_at: null,
-      restored_at: "2025-01-15T12:00:00Z",
+      deletedAt: null,
+      updatedAt: "2025-01-15T12:00:00Z",
     }}
   />
 </ApiEndpoint>
@@ -302,7 +446,7 @@ The Nodes API provides operations for managing files and folders in the Roset fi
 <ApiEndpoint
   method="POST"
   path="/v1/nodes/batch/stat"
-  description="Get metadata for multiple nodes by ID in a single request."
+  description="Get metadata for multiple nodes by ID in a single request. Returns a map."
 >
   <ParameterTable
     type="body"
@@ -395,8 +539,8 @@ The Nodes API provides operations for managing files and folders in the Roset fi
   <ResponseExample
     status={200}
     json={[
-      { id: "id1", name: "file1.pdf", parent_id: "folder-id" },
-      { id: "id2", name: "file2.pdf", parent_id: "folder-id" },
+      { id: "id1", name: "file1.pdf", parentId: "folder-id" },
+      { id: "id2", name: "file2.pdf", parentId: "folder-id" },
     ]}
   />
 </ApiEndpoint>
@@ -435,7 +579,7 @@ The Nodes API provides operations for managing files and folders in the Roset fi
         {
           id: "node1",
           name: "deleted-file.pdf",
-          deleted_at: "2025-01-15T10:00:00Z",
+          deletedAt: "2025-01-15T10:00:00Z",
         },
       ],
       total: 1,
@@ -471,7 +615,7 @@ The Nodes API provides operations for managing files and folders in the Roset fi
     params={[
       {
         name: "id",
-        type: "uuid",
+        type: "string",
         required: true,
         description: "Trashed node ID",
       },

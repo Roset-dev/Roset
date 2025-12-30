@@ -24,41 +24,42 @@ The Audit API provides access to the append-only operation log. Every action in 
         description: 'Filter by action type (e.g., "node.create")',
       },
       {
-        name: "principalId",
-        type: "string",
+        name: "actorId",
+        type: "uuid",
         required: false,
-        description: "Filter by actor",
+        description: "Filter by actor (user/key ID)",
       },
       {
         name: "nodeId",
-        type: "uuid",
+        type: "string",
         required: false,
-        description: "Filter by target node",
+        description: 'Filter by target node ID (or "root")',
       },
       {
-        name: "startTime",
+        name: "startDate",
         type: "string",
         required: false,
         description: "ISO timestamp (inclusive)",
       },
       {
-        name: "endTime",
+        name: "endDate",
         type: "string",
         required: false,
         description: "ISO timestamp (exclusive)",
       },
       {
-        name: "limit",
+        name: "pageSize",
         type: "number",
         required: false,
         description: "Max results",
         default: "50",
       },
       {
-        name: "cursor",
-        type: "string",
+        name: "page",
+        type: "number",
         required: false,
-        description: "Pagination cursor",
+        description: "Page number",
+        default: "1",
       },
     ]}
   />
@@ -68,22 +69,23 @@ The Audit API provides access to the append-only operation log. Every action in 
       items: [
         {
           id: "op_abc123",
+          tenantId: "tenant_789",
           action: "node.create",
-          principalId: "user_123",
-          principalEmail: "jane@example.com",
-          targetNodeId: "550e8400-e29b-41d4-a716-446655440000",
-          targetPath: "/documents/report.pdf",
-          metadata: {
+          actorType: "user",
+          actorId: "user_123",
+          targetType: "node",
+          targetId: "550e8400-e29b-41d4-a716-446655440000",
+          payload: {
             name: "report.pdf",
             type: "file",
             parentId: "550e8400-e29b-41d4-a716-446655440001",
           },
-          ipAddress: "192.168.1.100",
-          userAgent: "Mozilla/5.0...",
-          timestamp: "2025-01-15T10:30:00Z",
+          createdAt: "2025-01-15T10:30:00Z",
         },
       ],
-      nextCursor: "eyJpZCI6Im9wX2FiYzEyMyJ9",
+      total: 1540,
+      page: 1,
+      pageSize: 50,
       hasMore: true,
     }}
   />
@@ -100,13 +102,13 @@ The Audit API provides access to the append-only operation log. Every action in 
     type="query"
     params={[
       {
-        name: "startTime",
+        name: "startDate",
         type: "string",
         required: true,
         description: "Export start (ISO timestamp)",
       },
       {
-        name: "endTime",
+        name: "endDate",
         type: "string",
         required: true,
         description: "Export end (ISO timestamp)",
@@ -125,8 +127,6 @@ The Audit API provides access to the append-only operation log. Every action in 
     json={{
       downloadUrl: "https://storage.example.com/exports/audit-2025-01.json?...",
       expiresAt: "2025-01-15T11:30:00Z",
-      recordCount: 15234,
-      sizeBytes: 2456789,
     }}
   />
 </ApiEndpoint>
@@ -148,17 +148,11 @@ The Audit API provides access to the append-only operation log. Every action in 
     type="query"
     params={[
       {
-        name: "limit",
+        name: "pageSize",
         type: "number",
         required: false,
         description: "Max results",
         default: "50",
-      },
-      {
-        name: "cursor",
-        type: "string",
-        required: false,
-        description: "Pagination cursor",
       },
     ]}
   />
@@ -169,19 +163,16 @@ The Audit API provides access to the append-only operation log. Every action in 
         {
           id: "op_xyz789",
           action: "node.update",
-          principalEmail: "bob@example.com",
-          changes: {
-            name: { from: "old-name.pdf", to: "new-name.pdf" },
+          actorId: "user_456",
+          payload: {
+            changes: { name: { from: "old.pdf", to: "new.pdf" } },
           },
-          timestamp: "2025-01-15T11:00:00Z",
-        },
-        {
-          id: "op_abc123",
-          action: "node.create",
-          principalEmail: "jane@example.com",
-          timestamp: "2025-01-15T10:30:00Z",
+          createdAt: "2025-01-15T11:00:00Z",
         },
       ],
+      total: 5,
+      page: 1,
+      pageSize: 50,
       hasMore: false,
     }}
   />
@@ -207,16 +198,3 @@ The Audit API provides access to the append-only operation log. Every action in 
 | `mount.create`  | Mount created                            |
 | `mount.update`  | Mount updated                            |
 | `mount.delete`  | Mount deleted                            |
-
-## Example: Tracking File Changes
-
-<CodeBlock language="typescript" code={`import { RosetClient } from "@roset/sdk";
-
-const client = new RosetClient({ apiKey: "rsk*live*..." });
-
-// Get the last 10 operations on a file
-const history = await client.audit.getNodeHistory(fileId, { limit: 10 });
-
-for (const op of history.items) {
-console.log(\`\${op.timestamp}: \${op.action} by \${op.principalEmail}\`);
-}`} />

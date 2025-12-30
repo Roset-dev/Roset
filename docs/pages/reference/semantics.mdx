@@ -19,7 +19,7 @@ Every file and folder in Roset is a **node** with a unique UUID. Nodes form a tr
 
 Paths are **derived** from the node hierarchy, not stored. The path `/a/b/c.txt` resolves to a node by walking the tree from root.
 
-**Path resolution is cached** with a 5-minute TTL. After rename/move, cached paths may be stale briefly.
+**Path resolution is cached** for a short duration. After rename/move, cached paths may be stale briefly.
 
 ---
 
@@ -27,7 +27,7 @@ Paths are **derived** from the node hierarchy, not stored. The path `/a/b/c.txt`
 
 ### Efficient Rename/Move
 
-Renaming a file or folder is **O(1)**. Moving a folder updates the path for all its descendants (Materialized Path pattern). This trade-off enables blazing fast O(1) path resolution and subtree querying.
+Renaming a file or folder is **O(1)**. Moving a folder updates the path for all its descendants efficiently. This enable blazing fast path resolution and subtree querying.
 
 <CodeBlock
   language="http"
@@ -36,7 +36,7 @@ Renaming a file or folder is **O(1)**. Moving a folder updates the path for all 
 
 ### O(1) Hierarchical Queries
 
-Thanks to materialized paths, querying ancestors or all descendants of a folder is **O(1)** (index scan), without requiring recursive database operations.
+Querying ancestors or all descendants of a folder is **O(1)** (index scan), without requiring recursive database operations.
 
 ### Soft Delete with Trash
 
@@ -116,7 +116,7 @@ Roset assumes collaborative (not concurrent) editing:
 
 ### Path Cache Consistency
 
-- Path → Node resolution is cached with 5-minute TTL
+- Path → Node resolution is cached with a short TTL
 - Invalidation happens on move/rename
 - Brief staleness is possible after renames
 

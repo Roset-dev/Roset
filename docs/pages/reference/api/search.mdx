@@ -19,6 +19,12 @@ The Search API enables finding nodes by name, metadata, and content type across 
         description: "Search query",
       },
       {
+        name: "mode",
+        type: "string",
+        required: false,
+        description: '"metadata" or "fulltext"',
+      },
+      {
         name: "type",
         type: "string",
         required: false,
@@ -31,22 +37,22 @@ The Search API enables finding nodes by name, metadata, and content type across 
         description: 'Filter by MIME type (e.g., "image/*")',
       },
       {
-        name: "parentId",
+        name: "folderId",
         type: "uuid",
         required: false,
-        description: "Search within a specific folder",
+        description: "Search within a specific folder (recursive)",
       },
       {
-        name: "createdAfter",
+        name: "startDate",
         type: "string",
         required: false,
-        description: "ISO date filter",
+        description: "ISO date filter (created/modified after)",
       },
       {
-        name: "createdBefore",
+        name: "endDate",
         type: "string",
         required: false,
-        description: "ISO date filter",
+        description: "ISO date filter (created/modified before)",
       },
       {
         name: "minSize",
@@ -61,17 +67,18 @@ The Search API enables finding nodes by name, metadata, and content type across 
         description: "Maximum file size in bytes",
       },
       {
-        name: "limit",
+        name: "pageSize",
         type: "number",
         required: false,
         description: "Max results",
-        default: "20",
+        default: "50",
       },
       {
-        name: "cursor",
-        type: "string",
+        name: "page",
+        type: "number",
         required: false,
-        description: "Pagination cursor",
+        description: "Page number",
+        default: "1",
       },
     ]}
   />
@@ -80,21 +87,23 @@ The Search API enables finding nodes by name, metadata, and content type across 
     json={{
       items: [
         {
-          id: "550e8400-e29b-41d4-a716-446655440000",
-          name: "quarterly-report-2025.pdf",
-          type: "file",
-          path: "/documents/reports/quarterly-report-2025.pdf",
-          sizeBytes: 1048576,
-          contentType: "application/pdf",
-          highlight: {
-            name: ["<mark>quarterly</mark>-<mark>report</mark>-2025.pdf"],
+          node: {
+            id: "550e8400-e29b-41d4-a716-446655440000",
+            name: "quarterly-report-2025.pdf",
+            type: "file",
+            size: 1048576,
+            contentType: "application/pdf",
           },
           score: 0.95,
+          highlights: {
+            name: ["<mark>quarterly</mark>-<mark>report</mark>-2025.pdf"],
+          },
         },
       ],
-      nextCursor: null,
-      hasMore: false,
-      totalCount: 1,
+      total: 100,
+      page: 1,
+      pageSize: 50,
+      hasMore: true,
     }}
   />
 </ApiEndpoint>
@@ -120,7 +129,7 @@ The Search API enables finding nodes by name, metadata, and content type across 
         type: "number",
         required: false,
         description: "Max results",
-        default: "5",
+        default: "10",
       },
     ]}
   />
@@ -147,13 +156,12 @@ The Search API enables finding nodes by name, metadata, and content type across 
 
 ## Search Query Syntax
 
-| Syntax       | Example            | Description                          |
-| ------------ | ------------------ | ------------------------------------ |
-| Simple text  | `report`           | Matches name containing "report"     |
-| Exact phrase | `"annual report"`  | Matches exact phrase                 |
-| Wildcard     | `*.pdf`            | Matches files ending in .pdf         |
-| Prefix       | `budget*`          | Matches names starting with "budget" |
-| Metadata     | `meta.author:jane` | Search in metadata fields            |
+| Syntax       | Example           | Description                          |
+| ------------ | ----------------- | ------------------------------------ |
+| Simple text  | `report`          | Matches name containing "report"     |
+| Exact phrase | `"annual report"` | Matches exact phrase                 |
+| Wildcard     | `*.pdf`           | Matches files ending in .pdf         |
+| Prefix       | `budget*`         | Matches names starting with "budget" |
 
 ## Example: Searching with Filters
 
@@ -166,10 +174,10 @@ const results = await client.search({
 q: "quarterly report",
 type: "file",
 contentType: "application/pdf",
-createdAfter: "2025-01-01T00:00:00Z",
-limit: 20,
+startDate: "2025-01-01T00:00:00Z",
+pageSize: 20,
 });
 
 for (const item of results.items) {
-console.log(\`\${item.name} - \${item.path}\`);
+console.log(\`\${item.node.name} (Score: \${item.score})\`);
 }`} />

@@ -32,16 +32,28 @@ The Shares API enables creating and managing shareable links for files and folde
         description: 'Expiry duration (e.g., "7d", "24h")',
       },
       {
+        name: "expiresAt",
+        type: "string",
+        required: false,
+        description: "Specific expiry timestamp (ISO 8601)",
+      },
+      {
         name: "password",
         type: "string",
         required: false,
-        description: "Optional password protection",
+        description: "Optional password protection (min 4 chars)",
       },
       {
         name: "maxDownloads",
         type: "number",
         required: false,
         description: "Maximum download count",
+      },
+      {
+        name: "recipient",
+        type: "string",
+        required: false,
+        description: "Optional email recipient metadata",
       },
     ]}
   />
@@ -58,12 +70,16 @@ The Shares API enables creating and managing shareable links for files and folde
     json={{
       id: "share_abc123",
       token: "shr_Kj8nM2pL4qR7...",
-      url: "https://share.roset.dev/shr_Kj8nM2pL4qR7...",
+      url: "https://share.roset.dev/v1/s/shr_Kj8nM2pL4qR7...",
+      tenantId: "tenant_123",
       nodeId: "550e8400-e29b-41d4-a716-446655440000",
       scope: "read",
-      expiresAt: "2025-01-22T10:30:00Z",
       maxDownloads: 100,
       downloadCount: 0,
+      expiresAt: "2025-01-22T10:30:00Z",
+      revokedAt: null,
+      hasPassword: false,
+      createdBy: "user_123",
       createdAt: "2025-01-15T10:30:00Z",
     }}
   />
@@ -74,36 +90,56 @@ The Shares API enables creating and managing shareable links for files and folde
 <ApiEndpoint
   method="GET"
   path="/v1/shares"
-  description="List all share links for the tenant."
+  description="List all shares for the tenant."
 >
   <ParameterTable
     type="query"
     params={[
       {
-        name: "nodeId",
-        type: "uuid",
-        required: false,
-        description: "Filter by node ID",
-      },
-      {
-        name: "active",
+        name: "includeRevoked",
         type: "boolean",
         required: false,
-        description: "Only active (non-revoked) shares",
+        description: "Include revoked shares",
+        default: "false",
       },
       {
-        name: "limit",
-        type: "number",
+        name: "includeExpired",
+        type: "boolean",
         required: false,
-        description: "Max results",
-        default: "50",
+        description: "Include expired shares",
+        default: "false",
       },
-      {
-        name: "cursor",
-        type: "string",
-        required: false,
-        description: "Pagination cursor",
-      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      shares: [
+        {
+          id: "share_abc123",
+          token: "shr_Kj8nM2pL4qR7...",
+          url: "https://share.roset.dev/v1/s/shr_Kj8nM2pL4qR7...",
+          nodeId: "550e8400-e29b-41d4-a716-446655440000",
+          scope: "read",
+          expiresAt: "2025-01-22T10:30:00Z",
+          downloadCount: 5,
+        },
+      ],
+    }}
+  />
+</ApiEndpoint>
+
+## List Node Shares
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/nodes/:id/shares"
+  description="List all active shares for a specific node."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Node ID" },
     ]}
   />
   <ResponseExample
@@ -113,16 +149,11 @@ The Shares API enables creating and managing shareable links for files and folde
         {
           id: "share_abc123",
           token: "shr_Kj8nM2pL4qR7...",
+          url: "https://share.roset.dev/v1/s/shr_Kj8nM2pL4qR7...",
           nodeId: "550e8400-e29b-41d4-a716-446655440000",
-          nodeName: "report.pdf",
           scope: "read",
-          expiresAt: "2025-01-22T10:30:00Z",
-          downloadCount: 5,
-          createdAt: "2025-01-15T10:30:00Z",
         },
       ],
-      nextCursor: null,
-      hasMore: false,
     }}
   />
 </ApiEndpoint>
@@ -132,8 +163,7 @@ The Shares API enables creating and managing shareable links for files and folde
 <ApiEndpoint
   method="GET"
   path="/v1/shares/:token"
-  auth="optional"
-  description="Get share details. Public endpoint for share link access."
+  description="Get detailed information about a share (authenticated)."
 >
   <ParameterTable
     type="path"
@@ -146,26 +176,55 @@ The Shares API enables creating and managing shareable links for files and folde
       },
     ]}
   />
+  <ResponseExample
+    status={200}
+    json={{
+      id: "share_abc123",
+      token: "shr_Kj8nM2pL4qR7...",
+      url: "https://share.roset.dev/v1/s/shr_Kj8nM2pL4qR7...",
+      nodeId: "550e8400-e29b-41d4-a716-446655440000",
+      scope: "read",
+      hasPassword: true,
+      downloadCount: 42,
+    }}
+  />
+</ApiEndpoint>
+
+## Update Share
+
+<ApiEndpoint
+  method="PATCH"
+  path="/v1/shares/:id"
+  description="Update share details (e.g. extend expiry)."
+>
   <ParameterTable
-    type="header"
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Share ID" },
+    ]}
+  />
+  <ParameterTable
+    type="body"
     params={[
       {
-        name: "X-Share-Password",
+        name: "expiresIn",
         type: "string",
         required: false,
-        description: "Password if share is protected",
+        description: "Add time (e.g. '3d')",
+      },
+      {
+        name: "expiresAt",
+        type: "string",
+        required: false,
+        description: "Set new expiry (ISO 8601)",
       },
     ]}
   />
   <ResponseExample
     status={200}
     json={{
-      nodeId: "550e8400-e29b-41d4-a716-446655440000",
-      nodeName: "report.pdf",
-      nodeType: "file",
-      scope: "read",
-      downloadUrl: "https://storage.example.com/...",
-      expiresAt: "2025-01-22T10:30:00Z",
+      id: "share_abc123",
+      expiresAt: "2025-02-01T10:00:00Z",
     }}
   />
 </ApiEndpoint>
@@ -184,26 +243,73 @@ The Shares API enables creating and managing shareable links for files and folde
         name: "token",
         type: "string",
         required: true,
-        description: "Share token to revoke",
+        description: "Share token",
       },
     ]}
   />
   <ResponseExample status={204} description="No content" json={{}} />
 </ApiEndpoint>
 
-## Example: Creating a Password-Protected Share
+## Access Shared Content
 
-<CodeBlock language="typescript" code={`import { RosetClient } from "@roset/sdk";
-
-const client = new RosetClient({ apiKey: "rsk*live*..." });
-
-// Create a password-protected share that expires in 24 hours
-const share = await client.shares.create({
-nodeId: file.id,
-expiresIn: "24h",
-password: "secret123",
-maxDownloads: 10,
-});
-
-console.log(\`Share URL: \${share.url}\`);
-// Share URL: https://share.roset.dev/shr_Kj8nM2pL4qR7...`} />
+<ApiEndpoint
+  method="GET"
+  path="/v1/s/:token"
+  auth="optional"
+  description="Access content via share link (public/password protected)."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "token",
+        type: "string",
+        required: true,
+        description: "Share token",
+      },
+    ]}
+  />
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "password",
+        type: "string",
+        required: false,
+        description: "Password if protected",
+      },
+      {
+        name: "download",
+        type: "boolean",
+        required: false,
+        description: "Download file directly (redirect)",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      node: {
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        name: "report.pdf",
+        type: "file",
+        size: 1048576,
+        contentType: "application/pdf",
+      },
+      scope: "read",
+      expiresAt: "2025-01-22T10:30:00Z",
+    }}
+  />
+  <ResponseExample
+    status={302}
+    description="Redirect to download URL (if download=true)"
+  />
+  <ResponseExample
+    status={401}
+    json={{
+      error: "Password required",
+      code: "PASSWORD_REQUIRED",
+      requiresPassword: true,
+    }}
+  />
+</ApiEndpoint>

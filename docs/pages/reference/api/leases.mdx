@@ -24,40 +24,32 @@ Leases provide distributed locking for nodes. They prevent concurrent modificati
     type="body"
     params={[
       {
-        name: "ttlSeconds",
-        type: "number",
-        required: false,
-        description: "Lease duration",
-        default: "300",
-      },
-      {
         name: "mode",
         type: "string",
-        required: false,
-        description: '"read" or "write"',
-        default: '"write"',
+        required: true,
+        description: '"exclusive" (write) or "shared" (read)',
       },
       {
-        name: "waitSeconds",
+        name: "durationMinutes",
         type: "number",
         required: false,
-        description: "Max time to wait if locked",
-        default: "0",
+        description: "Lease duration in minutes (max 1440)",
       },
     ]}
   />
   <RequestExample
     json={{
-      ttlSeconds: 600,
-      mode: "write",
+      mode: "exclusive",
+      durationMinutes: 10,
     }}
   />
   <ResponseExample
-    status={200}
+    status={201}
     json={{
-      leaseId: "lease_abc123",
+      id: "lease_abc123",
       nodeId: "550e8400-e29b-41d4-a716-446655440000",
-      mode: "write",
+      principalId: "user_123",
+      mode: "exclusive",
       expiresAt: "2025-01-15T10:40:00Z",
       acquiredAt: "2025-01-15T10:30:00Z",
     }}
@@ -69,7 +61,7 @@ Leases provide distributed locking for nodes. They prevent concurrent modificati
 <ApiEndpoint
   method="PATCH"
   path="/v1/nodes/:id/lease"
-  description="Extend the TTL of an existing lease."
+  description="Extend the duration of your active lease on a node."
 >
   <ParameterTable
     type="path"
@@ -81,30 +73,22 @@ Leases provide distributed locking for nodes. They prevent concurrent modificati
     type="body"
     params={[
       {
-        name: "leaseId",
-        type: "string",
-        required: true,
-        description: "Lease ID from acquire response",
-      },
-      {
-        name: "ttlSeconds",
+        name: "durationMinutes",
         type: "number",
         required: false,
-        description: "New TTL from now",
-        default: "300",
+        description: "New duration from now in minutes",
       },
     ]}
   />
   <RequestExample
     json={{
-      leaseId: "lease_abc123",
-      ttlSeconds: 600,
+      durationMinutes: 10,
     }}
   />
   <ResponseExample
     status={200}
     json={{
-      leaseId: "lease_abc123",
+      id: "lease_abc123",
       expiresAt: "2025-01-15T10:50:00Z",
       renewedAt: "2025-01-15T10:40:00Z",
     }}
@@ -116,23 +100,12 @@ Leases provide distributed locking for nodes. They prevent concurrent modificati
 <ApiEndpoint
   method="DELETE"
   path="/v1/nodes/:id/lease"
-  description="Release a lease before it expires."
+  description="Release your active lease on a node."
 >
   <ParameterTable
     type="path"
     params={[
       { name: "id", type: "uuid", required: true, description: "Node ID" },
-    ]}
-  />
-  <ParameterTable
-    type="body"
-    params={[
-      {
-        name: "leaseId",
-        type: "string",
-        required: true,
-        description: "Lease ID to release",
-      },
     ]}
   />
   <ResponseExample status={204} description="No content" json={{}} />
@@ -156,9 +129,9 @@ Leases provide distributed locking for nodes. They prevent concurrent modificati
     json={{
       items: [
         {
-          leaseId: "lease_abc123",
+          id: "lease_abc123",
           principalId: "user_123",
-          mode: "write",
+          mode: "exclusive",
           expiresAt: "2025-01-15T10:40:00Z",
           acquiredAt: "2025-01-15T10:30:00Z",
         },
@@ -167,51 +140,26 @@ Leases provide distributed locking for nodes. They prevent concurrent modificati
   />
 </ApiEndpoint>
 
-## List All Leases
+## List My Leases
 
 <ApiEndpoint
   method="GET"
   path="/v1/leases"
-  description="List all active leases in the tenant."
+  description="List all active leases held by the current user."
 >
-  <ParameterTable
-    type="query"
-    params={[
-      {
-        name: "principalId",
-        type: "string",
-        required: false,
-        description: "Filter by lease holder",
-      },
-      {
-        name: "mode",
-        type: "string",
-        required: false,
-        description: "Filter by lease mode",
-      },
-      {
-        name: "limit",
-        type: "number",
-        required: false,
-        description: "Max results",
-        default: "50",
-      },
-    ]}
-  />
   <ResponseExample
     status={200}
     json={{
       items: [
         {
-          leaseId: "lease_abc123",
+          id: "lease_abc123",
           nodeId: "550e8400-e29b-41d4-a716-446655440000",
           nodeName: "report.pdf",
           principalId: "user_123",
-          mode: "write",
+          mode: "exclusive",
           expiresAt: "2025-01-15T10:40:00Z",
         },
       ],
-      hasMore: false,
     }}
   />
 </ApiEndpoint>
@@ -223,9 +171,10 @@ Leases provide distributed locking for nodes. They prevent concurrent modificati
 const client = new RosetClient({ apiKey: "rsk*live*..." });
 
 // Acquire a lease before modifying
+// Requesting 'exclusive' access (write lock)
 const lease = await client.leases.acquire(fileId, {
-ttlSeconds: 300,
-mode: "write",
+durationMinutes: 5,
+mode: "exclusive",
 });
 
 try {
@@ -233,12 +182,12 @@ try {
 const { uploadUrl, uploadToken } = await client.uploads.init({
 nodeId: fileId,
 contentType: "application/pdf",
-sizeBytes: newContent.length,
+size: newContent.length,
 });
 
 await fetch(uploadUrl, { method: "PUT", body: newContent });
 await client.uploads.commit({ uploadToken, etag });
 } finally {
 // Always release the lease
-await client.leases.release(fileId, lease.leaseId);
+await client.leases.release(fileId);
 }`} />

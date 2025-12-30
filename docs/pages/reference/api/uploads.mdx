@@ -21,28 +21,41 @@ The Uploads API handles file data uploads using a two-phase commit pattern. Rose
       {
         name: "nodeId",
         type: "uuid",
-        required: true,
-        description: "Target file node ID",
+        required: false,
+        description: "Target file node ID (for overwrite)",
+      },
+      {
+        name: "parentId",
+        type: "uuid",
+        required: false,
+        description: "Parent folder ID (for new file)",
+      },
+      {
+        name: "name",
+        type: "string",
+        required: false,
+        description: "File name (for new file)",
       },
       {
         name: "contentType",
         type: "string",
-        required: true,
+        required: false,
         description: "MIME type of the file",
       },
       {
-        name: "sizeBytes",
+        name: "size",
         type: "number",
-        required: true,
+        required: false,
         description: "File size in bytes",
       },
     ]}
   />
   <RequestExample
     json={{
-      nodeId: "550e8400-e29b-41d4-a716-446655440000",
+      parentId: "550e8400-e29b-41d4-a716-446655440000",
+      name: "report.pdf",
       contentType: "application/pdf",
-      sizeBytes: 1048576,
+      size: 1048576,
     }}
   />
   <ResponseExample
@@ -50,12 +63,8 @@ The Uploads API handles file data uploads using a two-phase commit pattern. Rose
     json={{
       uploadUrl: "https://storage.example.com/bucket/key?X-Amz-Signature=...",
       uploadToken: "ut_abc123...",
-      expiresAt: "2025-01-15T10:45:00Z",
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/pdf",
-        "x-amz-content-sha256": "UNSIGNED-PAYLOAD",
-      },
+      nodeId: "550e8400-e29b-41d4-a716-446655440001",
+      expiresIn: 3600,
     }}
   />
 </ApiEndpoint>
@@ -79,8 +88,14 @@ The Uploads API handles file data uploads using a two-phase commit pattern. Rose
       {
         name: "etag",
         type: "string",
-        required: true,
+        required: false,
         description: "ETag returned by storage provider",
+      },
+      {
+        name: "size",
+        type: "number",
+        required: false,
+        description: "Confirms size of uploaded file",
       },
     ]}
   />
@@ -93,17 +108,90 @@ The Uploads API handles file data uploads using a two-phase commit pattern. Rose
   <ResponseExample
     status={200}
     json={{
-      nodeId: "550e8400-e29b-41d4-a716-446655440000",
-      versionId: "v_xyz789...",
-      sizeBytes: 1048576,
-      contentType: "application/pdf",
-      etag: '"d41d8cd98f00b204e9800998ecf8427e"',
-      committedAt: "2025-01-15T10:35:00Z",
+      node: {
+        id: "550e8400-e29b-41d4-a716-446655440001",
+        name: "report.pdf",
+        type: "file",
+        size: 1048576,
+        contentType: "application/pdf",
+      },
+      version: {
+        id: 42,
+        nodeId: "550e8400-e29b-41d4-a716-446655440001",
+        size: 1048576,
+        etag: '"d41d8cd98f00b204e9800998ecf8427e"',
+        isCurrent: true,
+        createdAt: "2025-01-15T10:35:00Z",
+      },
     }}
   />
 </ApiEndpoint>
 
-## Get Download URL
+## Multipart Uploads
+
+### Get Part URL
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/uploads/:token/part"
+  description="Get a signed URL for a specific part of a multipart upload."
+>
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "partNumber",
+        type: "number",
+        required: true,
+        description: "Part number (1-10000)",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      uploadUrl: "https://storage.example.com/bucket/key?partNumber=1...",
+    }}
+  />
+</ApiEndpoint>
+
+### Complete Multipart
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/uploads/:token/complete"
+  description="Finalize a multipart upload by providing ETags for all parts."
+>
+  <RequestExample
+    json={{
+      parts: [
+        { ETag: '"etag1"', PartNumber: 1 },
+        { ETag: '"etag2"', PartNumber: 2 },
+      ],
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      node: { id: "node_123", type: "file" },
+      version: { id: 1, size: 5242880 },
+    }}
+  />
+</ApiEndpoint>
+
+## Abort Upload
+
+<ApiEndpoint
+  method="DELETE"
+  path="/v1/uploads/:token"
+  description="Abort a pending upload and clean up resources."
+>
+  <ResponseExample status={204} description="No content" json={{}} />
+</ApiEndpoint>
+
+## Downloads
+
+### Get Download URL
 
 <ApiEndpoint
   method="GET"
@@ -126,56 +214,56 @@ The Uploads API handles file data uploads using a two-phase commit pattern. Rose
         description: "Specific version to download",
       },
       {
-        name: "expiresIn",
-        type: "number",
+        name: "attachment",
+        type: "boolean",
         required: false,
-        description: "URL expiry in seconds",
-        default: "3600",
+        description: "Return Content-Disposition: attachment",
+        default: "false",
       },
     ]}
   />
   <ResponseExample
     status={200}
     json={{
-      downloadUrl: "https://storage.example.com/bucket/key?X-Amz-Signature=...",
-      expiresAt: "2025-01-15T11:30:00Z",
-      fileName: "report.pdf",
+      url: "https://storage.example.com/bucket/key?X-Amz-Signature=...",
       contentType: "application/pdf",
-      sizeBytes: 1048576,
+      size: 1048576,
+      expiresIn: 3600,
     }}
   />
 </ApiEndpoint>
 
-## Example: Complete Upload Flow
+### Download by Path
 
-<CodeBlock language="typescript" code={`import { RosetClient } from "@roset/sdk";
-
-const client = new RosetClient({ apiKey: "rsk*live*..." });
-
-// 1. Create the file node
-const file = await client.nodes.create({
-name: "document.pdf",
-type: "file",
-parentPath: "/documents",
-});
-
-// 2. Initialize upload
-const { uploadUrl, uploadToken, headers } = await client.uploads.init({
-nodeId: file.id,
-contentType: "application/pdf",
-sizeBytes: pdfBuffer.length,
-});
-
-// 3. Upload directly to storage
-const uploadResponse = await fetch(uploadUrl, {
-method: "PUT",
-headers,
-body: pdfBuffer,
-});
-const etag = uploadResponse.headers.get("ETag");
-
-// 4. Commit the upload
-await client.uploads.commit({
-uploadToken,
-etag,
-});`} />
+<ApiEndpoint
+  method="GET"
+  path="/v1/download"
+  description="Get a signed download URL using the full file path."
+>
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "path",
+        type: "string",
+        required: true,
+        description: "Full path to file",
+      },
+      {
+        name: "attachment",
+        type: "boolean",
+        required: false,
+        default: "false",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      url: "https://storage.example.com/bucket/key?...",
+      contentType: "image/png",
+      size: 2048,
+      expiresIn: 3600,
+    }}
+  />
+</ApiEndpoint>

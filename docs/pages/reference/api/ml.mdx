@@ -1,6 +1,6 @@
 # ML & Checkpoints API
 
-Atomic checkpoint management for Machine Learning workloads.
+Atomic checkpoint management for Machine Learning workloads. This API enables versioning of large datasets (folders) with Git-like semantics.
 
 ## List Commits
 
@@ -13,10 +13,22 @@ Atomic checkpoint management for Machine Learning workloads.
     type="query"
     params={[
       {
-        name: "mountId",
+        name: "nodeId",
         type: "uuid",
         required: false,
-        description: "Filter by mount",
+        description: "Filter by node ID",
+      },
+      {
+        name: "groupId",
+        type: "uuid",
+        required: false,
+        description: "Filter by commit group ID",
+      },
+      {
+        name: "status",
+        type: "string",
+        required: false,
+        description: "'pending', 'completed', or 'failed'",
       },
       { name: "limit", type: "number", required: false, default: "50" },
       { name: "cursor", type: "string", required: false },
@@ -28,13 +40,17 @@ Atomic checkpoint management for Machine Learning workloads.
       items: [
         {
           id: "commit_123",
-          node_id: "node_456",
-          status: "committed",
+          nodeId: "node_456",
+          status: "completed",
           message: "Step 1000",
-          created_at: "2025-01-01T10:00:00Z",
-          sealed_at: "2025-01-01T10:00:05Z",
+          stats: { added: 5, deleted: 0 },
+          createdAt: "2025-01-01T10:00:00Z",
+          actorId: "user_123",
         },
       ],
+      total: 100,
+      page: 1,
+      pageSize: 50,
     }}
   />
 </ApiEndpoint>
@@ -57,10 +73,11 @@ Atomic checkpoint management for Machine Learning workloads.
     json={{
       commit: {
         id: "commit_123",
-        status: "committed",
-        manifest_hash: "sha256:abc...",
-        total_files: 1500,
-        total_size: 104857600,
+        nodeId: "node_456",
+        status: "completed",
+        message: "Step 1000",
+        stats: { added: 5, deleted: 0 },
+        createdAt: "2025-01-01T10:00:00Z",
       },
     }}
   />
@@ -98,13 +115,21 @@ Atomic checkpoint management for Machine Learning workloads.
   <ResponseExample
     status={200}
     json={{
-      base_commit: "commit_old",
-      target_commit: "commit_new",
-      changes: {
+      summary: {
         added: 5,
-        modified: 2,
-        deleted: 0,
+        removed: 0,
+        changed: 2,
+        sizeDelta: 1024,
+        sizeDeltaPercent: 0.1,
       },
+      files: [
+        {
+          path: "/data/train.csv",
+          status: "modified",
+          sizeA: 1000,
+          sizeB: 1200,
+        },
+      ],
     }}
   />
 </ApiEndpoint>
@@ -122,10 +147,68 @@ Atomic checkpoint management for Machine Learning workloads.
       refs: [
         {
           name: "latest",
-          commit_id: "commit_123",
-          updated_at: "2025-01-01T10:00:00Z",
+          commitId: "commit_123",
+          updatedAt: "2025-01-01T10:00:00Z",
+          tenantId: "tenant_123",
+          mountId: "mount_456",
         },
       ],
+    }}
+  />
+</ApiEndpoint>
+
+## Get Latest Ref
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/refs/latest"
+  description="Get the most recently updated ref for the active mount."
+>
+  <ResponseExample
+    status={200}
+    json={{
+      ref: {
+        name: "latest",
+        commitId: "commit_123",
+        updatedAt: "2025-01-01T10:00:00Z",
+      },
+      commit: {
+        id: "commit_123",
+        message: "Step 1000",
+        status: "completed",
+        createdAt: "2025-01-01T10:00:00Z",
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## Get Ref
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/refs/:name"
+  description="Get details of a specific named ref."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "name", type: "string", required: true, description: "Ref name" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      ref: {
+        name: "production",
+        commitId: "commit_456",
+        updatedAt: "2025-01-02T10:00:00Z",
+      },
+      commit: {
+        id: "commit_456",
+        message: "Release v1.0",
+        status: "completed",
+        createdAt: "2025-01-02T09:55:00Z",
+      },
     }}
   />
 </ApiEndpoint>
@@ -176,7 +259,8 @@ Atomic checkpoint management for Machine Learning workloads.
     json={{
       ref: {
         name: "latest",
-        commit_id: "commit_999",
+        commitId: "commit_999",
+        updatedAt: "2025-01-03T12:00:00Z",
       },
       message: "Ref updated successfully",
     }}
@@ -207,8 +291,36 @@ Atomic checkpoint management for Machine Learning workloads.
       group: {
         id: "grp_123",
         status: "pending",
-        created_at: "2025-01-01T10:00:00Z",
+        message: "Batch Update",
+        createdAt: "2025-01-01T10:00:00Z",
       },
+    }}
+  />
+</ApiEndpoint>
+
+## Get Commit Group
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/commit-groups/:id"
+  description="Get group status and member commits."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      { name: "id", type: "uuid", required: true, description: "Group ID" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      group: {
+        id: "grp_123",
+        status: "pending",
+        message: "Batch Update",
+        createdAt: "2025-01-01T10:00:00Z",
+      },
+      commits: [{ id: "commit_1", status: "completed" }],
     }}
   />
 </ApiEndpoint>
@@ -232,6 +344,7 @@ Atomic checkpoint management for Machine Learning workloads.
       group: {
         id: "grp_123",
         status: "committed",
+        committedAt: "2025-01-01T10:05:00Z",
       },
       message: "Commit group sealed successfully",
     }}

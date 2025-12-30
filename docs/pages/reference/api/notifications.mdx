@@ -1,0 +1,131 @@
+# Notifications API
+
+Manage in-app notifications and alerts.
+
+## List Notifications
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/notifications"
+  description="List notifications for the current user."
+>
+  <ParameterTable
+    type="query"
+    params={[
+      {
+        name: "unreadOnly",
+        type: "boolean",
+        required: false,
+        default: "false",
+      },
+      { name: "limit", type: "number", required: false, default: "50" },
+      { name: "offset", type: "number", required: false, default: "0" },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      items: [
+        {
+          id: "notif_123",
+          type: "alert",
+          title: "Quota Exceeded",
+          message: "You have reached 90% of your storage limit.",
+          data: { usage: 90 },
+          createdAt: "2025-01-03T10:00:00Z",
+          readAt: null,
+        },
+      ],
+      unreadCount: 1,
+      pagination: {
+        limit: 50,
+        offset: 0,
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## Mark Read
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/notifications/:id/read"
+  description="Mark a single notification as read."
+>
+  <ParameterTable
+    type="path"
+    params={[
+      {
+        name: "id",
+        type: "string",
+        required: true,
+        description: "Notification ID",
+      },
+    ]}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      success: true,
+    }}
+  />
+</ApiEndpoint>
+
+## Mark All Read
+
+<ApiEndpoint
+  method="POST"
+  path="/v1/notifications/read-all"
+  description="Mark all unread notifications as read."
+>
+  <ResponseExample
+    status={200}
+    json={{
+      success: true,
+      markedCount: 5,
+    }}
+  />
+</ApiEndpoint>
+
+## Get Settings
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/notifications/settings"
+  description="Get notification delivery preferences."
+>
+  <ResponseExample
+    status={200}
+    json={{
+      settings: {
+        email_alerts: true,
+        quota_warnings: true,
+        login_alerts: false,
+      },
+    }}
+  />
+</ApiEndpoint>
+
+## Update Settings
+
+<ApiEndpoint
+  method="PUT"
+  path="/v1/notifications/settings"
+  description="Update notification delivery preferences."
+>
+  <RequestExample
+    json={{
+      login_alerts: true,
+    }}
+  />
+  <ResponseExample
+    status={200}
+    json={{
+      settings: {
+        email_alerts: true,
+        quota_warnings: true,
+        login_alerts: true,
+      },
+    }}
+  />
+</ApiEndpoint>

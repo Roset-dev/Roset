@@ -1,0 +1,28 @@
+# Billing API
+
+Retrieve usage and plan information.
+
+## Get Current Usage
+
+<ApiEndpoint
+  method="GET"
+  path="/v1/billing"
+  description="Get current plan details and usage metrics."
+>
+  <ResponseExample
+    status={200}
+    json={{
+      plan: "pro",
+      periodStart: "2025-01-01T00:00:00Z",
+      periodEnd: "2025-02-01T00:00:00Z",
+      usage: {
+        storageBytes: 5368709120,
+        storageLimit: 1099511627776,
+        apiCalls: 15000,
+        apiLimit: 100000,
+        users: 5,
+        userLimit: 10,
+      },
+    }}
+  />
+</ApiEndpoint>
