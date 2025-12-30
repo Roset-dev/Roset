@@ -3,7 +3,7 @@
  */
 
 import { HttpClient } from "../http.js";
-import type { RosetClientConfig, RequestOptions, Mount, MountRetentionInfo, CreateMountOptions, UpdateMountOptions } from "../types.js";
+import type { RosetClientConfig, RequestOptions, Mount, CreateMountOptions, UpdateMountOptions } from "../types.js";
 
 export class MountsResource {
   constructor(
@@ -25,7 +25,8 @@ export class MountsResource {
   async get(
     id: string,
     options?: RequestOptions
-  ): Promise<{ mount: Mount; retention: MountRetentionInfo }> {
+  ): Promise<Mount> {
+    // API returns the mount object directly (not wrapped)
     return this.http.get(`/v1/mounts/${id}`, options);
   }
 
