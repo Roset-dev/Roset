@@ -150,7 +150,7 @@ export class SharesResource {
    * Build full share URL from token
    */
   buildShareUrl(token: string): string {
-    return `https://api.roset.dev/v1/s/${token}`;
+    return `https://console.roset.dev/share/${token}`;
   }
 
   /**
