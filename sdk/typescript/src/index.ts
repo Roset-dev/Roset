@@ -33,7 +33,7 @@ export { LeasesResource } from "./resources/leases.js";
 export { CommitsResource } from "./resources/commits.js";
 export { RefsResource } from "./resources/refs.js";
 export { OrgResource } from "./resources/org.js";
-export { IntegrationsResource } from "./resources/integrations.js";
+export { IntegrationsResource, type IntegrationAccount, type IntegrationBucket } from "./resources/integrations.js";
 export { SearchResource } from "./resources/search.js";
 export { TenantResource, type TenantStats } from "./resources/tenant.js";
 export { UserResource, type UserProfile, type UserProfileUpdate } from "./resources/user.js";
