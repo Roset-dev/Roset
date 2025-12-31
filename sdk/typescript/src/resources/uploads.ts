@@ -16,7 +16,9 @@ export class UploadsResource {
     private readonly http: HttpClient,
     config: RosetClientConfig
   ) {
-    this.fetchFn = config.fetch ?? globalThis.fetch;
+    // Must bind fetch to globalThis to preserve context, otherwise browsers throw
+    // "TypeError: Illegal invocation" when calling fetch without its original context
+    this.fetchFn = config.fetch ?? globalThis.fetch.bind(globalThis);
   }
 
   /**
@@ -164,10 +166,21 @@ export class UploadsResource {
     const contentType = options?.contentType ?? "application/octet-stream";
 
     // Step 1: Init upload
-    const { uploadUrl, uploadToken } = await this.init(
+    const initResult = await this.init(
       { ...options, name, contentType, size },
       options
     );
+    
+    const { uploadUrl, uploadToken } = initResult;
+
+    // Validate uploadUrl is present (it won't be for multipart uploads)
+    if (!uploadUrl) {
+      throw new RosetError(
+        "No upload URL returned from server. This may indicate a multipart upload or server configuration issue.",
+        "MISSING_UPLOAD_URL",
+        500
+      );
+    }
 
     const headers: Record<string, string> = {
       "Content-Type": contentType,
@@ -179,17 +192,63 @@ export class UploadsResource {
     }
 
     // Step 2: Upload to storage
-    const uploadResponse = await this.fetchFn(uploadUrl, {
-      method: "PUT",
-      body: data as BodyInit,
-      headers,
-    });
+
+    let uploadResponse: Response;
+    try {
+      uploadResponse = await this.fetchFn(uploadUrl, {
+        method: "PUT",
+        body: data as BodyInit,
+        headers,
+      });
+      // Success - proceed to commit
+    } catch (fetchError) {
+      console.error("[Roset SDK] Fetch failed with exception:", fetchError);
+      await this.abort(uploadToken).catch(() => {});
+      
+      // Detect CORS errors - browsers throw "Failed to fetch" for CORS issues
+      const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      const isCorsError = errorMessage.includes("Failed to fetch") || 
+                          errorMessage.includes("CORS") ||
+                          errorMessage.includes("NetworkError");
+      
+      if (isCorsError) {
+        throw new RosetError(
+          "Storage bucket CORS not configured. Please configure CORS on your storage bucket to allow uploads from your domain. Go to your bucket settings and add a CORS policy that allows PUT requests from your origin.",
+          "CORS_ERROR",
+          0
+        );
+      }
+      
+      throw new RosetError(
+        `Fetch to storage failed: ${errorMessage}`,
+        "FETCH_EXCEPTION",
+        0
+      );
+    }
 
     if (!uploadResponse.ok) {
+      // Capture detailed error information
+      let errorBody = "";
+      try {
+        errorBody = await uploadResponse.text();
+      } catch {
+        // Ignore if we can't read the body
+      }
+
+      // Log detailed error for debugging
+      console.error("[Roset SDK] Upload to storage failed:", {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        headers: Object.fromEntries(uploadResponse.headers.entries()),
+        body: errorBody,
+        url: uploadUrl.split("?")[0], // Log URL without query params (contains credentials)
+      });
+
       // Abort on failure
       await this.abort(uploadToken).catch(() => {});
+      
       throw new RosetError(
-        `Upload to storage failed: ${uploadResponse.status} ${uploadResponse.statusText}`,
+        `Upload to storage failed: ${uploadResponse.status} ${uploadResponse.statusText}${errorBody ? ` - ${errorBody}` : ""}`,
         "STORAGE_UPLOAD_FAILED",
         uploadResponse.status
       );

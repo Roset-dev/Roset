@@ -90,7 +90,11 @@ export class IntegrationsResource {
   async importBucket(
     integrationId: string,
     bucketId: string,
-    options: { name: string; isDefault?: boolean }
+    options: { 
+      name: string; 
+      isDefault?: boolean;
+      storageSemantics?: 'overlay' | 'mirror';
+    }
   ): Promise<{ id: string; name: string }> {
     return await this.http.post<{ id: string; name: string }>(
       `/v1/integrations/${integrationId}/buckets/${bucketId}/import`,
