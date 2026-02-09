@@ -14,11 +14,13 @@
     <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square" alt="License" /></a>
     <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/pypi/pyversions/roset?style=flat-square" alt="Python" /></a>
   </p>
+
+  <p><em>🚧 In active development — API may change before 1.0</em></p>
 </div>
 
 <br />
 
-Upload any unstructured file -- get back markdown, embeddings, metadata, thumbnails, and a searchable index. The Python SDK for the Roset unstructured-to-structured transformation engine.
+Upload any unstructured file — get back markdown, embeddings, metadata, thumbnails, and a searchable index. The Python SDK for the Roset unstructured-to-structured transformation engine.
 
 ## Installation
 

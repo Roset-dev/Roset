@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "roset"
-version = "0.1.1"
+version = "0.1.2"
 description = "Roset Python SDK -- Unstructured-to-Structured Transformation Engine"
 readme = "README.md"
 license = "Apache-2.0"

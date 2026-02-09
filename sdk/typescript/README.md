@@ -13,11 +13,13 @@
     <a href="https://www.npmjs.com/package/@roset/sdk"><img src="https://img.shields.io/npm/v/@roset/sdk.svg?style=flat-square&color=black" alt="NPM Version" /></a>
     <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square" alt="License" /></a>
   </p>
+
+  <p><em>🚧 In active development — API may change before 1.0</em></p>
 </div>
 
 <br />
 
-Upload any document — get back markdown, embeddings, and variants. The TypeScript SDK for the Roset file processing orchestration API.
+Upload any unstructured file — get back markdown, embeddings, metadata, thumbnails, and a searchable index. The TypeScript SDK for the Roset unstructured-to-structured transformation engine.
 
 ## Installation
 
