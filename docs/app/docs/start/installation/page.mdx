@@ -1,0 +1,78 @@
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'Installation',
+  description: 'Install the Roset SDK and configure your environment for file processing orchestration.',
+}
+
+# Installation
+
+Roset provides an official TypeScript SDK plus direct REST API access for any HTTP client. The SDK handles authentication, request formatting, and typed responses so you can focus on your application logic.
+
+## TypeScript SDK (Recommended)
+
+Install the SDK with npm, pnpm, or yarn:
+
+```bash
+npm install @roset/sdk
+```
+
+Requires Node.js 18 or later. Also works in edge runtimes (Cloudflare Workers, Deno, Bun).
+
+### Verify the Installation
+
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+// Initialize with your API key
+const client = new RosetClient({ apiKey: 'rsk_...' });
+console.log('Connected to Roset');
+```
+
+## Environment Setup
+
+Store your API key as an environment variable instead of hardcoding it:
+
+```bash
+export ROSET_API_KEY=rsk_your_key_here
+```
+
+Then reference it in your code:
+
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+// Read the API key from the environment
+const client = new RosetClient({
+  apiKey: process.env.ROSET_API_KEY!,
+});
+```
+
+<Callout type="caution">
+Never commit API keys to version control. Use environment variables or a secrets manager.
+</Callout>
+
+## Provider Keys
+
+Roset orchestrates extraction providers on your behalf. All tiers use BYOK (Bring Your Own Keys) for extraction providers. A small managed trial quota is included for evaluation.
+
+You can optionally add your own provider keys in the console under **Settings > Provider Keys**:
+
+- **Reducto** -- document extraction (PDF, DOCX, PPTX)
+- **OpenAI** -- vector embeddings
+- **Gemini** -- image processing
+- **Whisper** -- audio transcription
+
+You can also manage provider keys through the API. See [PUT /v1/org/provider-keys](/docs/reference/api#put-v1orgprovider-keys) for details.
+
+## Direct API Access
+
+If you prefer not to use an SDK, all endpoints are accessible with any HTTP client. Roset is a standard REST API:
+
+```bash
+# List your files
+curl https://api.roset.dev/v1/files \
+  -H "Authorization: ApiKey rsk_your_key"
+```
+
+See [Authentication](/docs/start/authentication) for details on supported auth methods.

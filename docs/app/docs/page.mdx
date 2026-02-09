@@ -1,0 +1,116 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'Roset Documentation',
+  description: 'The transformation engine for unstructured data. Upload any document — get back markdown, embeddings, metadata, thumbnails, and a searchable index.',
+}
+
+# Roset Documentation
+
+<Callout type="note">
+Roset is currently in **public beta** (v0.1.1). The API is stable, but expect new features and providers regularly. Breaking changes will be communicated in advance.
+</Callout>
+
+Roset is the **transformation engine for unstructured data**. Upload any document, and Roset routes it to the right extraction provider -- Reducto for PDFs, Gemini for images, Whisper for audio -- then generates vector embeddings via OpenAI. You get back five structured outputs: markdown, embeddings, metadata, thumbnails, and a searchable index.
+
+Roset is not an extraction service. It **orchestrates** extraction services, managing the queues, retries, provider routing, variant tracking, and space isolation so you do not have to.
+
+**How it works:** You upload files via signed URLs (bytes go directly to storage, never through Roset). Roset coordinates extraction providers to transform your files and tracks every variant with lineage back to the source.
+
+## Quick Start
+
+<Tabs>
+<Tab label="TypeScript">
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+// Initialize the client with your API key
+const client = new RosetClient({ apiKey: 'rsk_...' });
+
+// Upload a file -- Roset routes it to the right extraction provider
+const file = await client.files.upload({
+  filename: 'invoice.pdf',
+  content_type: 'application/pdf',
+  size_bytes: 45678,
+});
+
+// Poll until processing completes
+let status = file.status;
+while (status !== 'completed' && status !== 'failed') {
+  const current = await client.files.get(file.id);
+  status = current.status;
+}
+
+// Retrieve the extracted markdown variant
+const { variants } = await client.files.listVariants(file.id);
+console.log(variants);
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# Upload a file -- Roset creates a processing job automatically
+curl -X POST https://api.roset.dev/v1/upload \
+  -H "Authorization: ApiKey rsk_..." \
+  -F "file=@invoice.pdf"
+
+# Check processing status
+curl https://api.roset.dev/v1/files/FILE_ID \
+  -H "Authorization: ApiKey rsk_..."
+
+# Get extracted content (markdown, embeddings, etc.)
+curl https://api.roset.dev/v1/files/FILE_ID/variants \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+
+## How It Works
+
+1. **Upload** a file via multipart form data or a signed URL. Roset stores metadata only -- file bytes go directly to your storage.
+2. **Route** to the right extraction provider. Roset selects Reducto for documents, Gemini for images, or Whisper for audio based on content type.
+3. **Extract** structured content. The provider returns markdown, and Roset stores the result as a variant on the file.
+4. **Embed** the extracted content. If an OpenAI key is configured, vector embeddings are generated automatically as a second variant.
+5. **Retrieve** the original file metadata, extracted markdown, or embeddings through a single unified API.
+
+```
+Upload --> Route (Reducto / Gemini / Whisper) --> Extract --> Embed (OpenAI) --> Variants
+```
+
+
+## Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /v1/upload` | Upload a file for processing |
+| `GET /v1/files` | List files |
+| `GET /v1/files/:id` | Get a file and its variants |
+| `DELETE /v1/files/:id` | Delete a file and its variants |
+| `GET /v1/jobs` | List processing jobs |
+| `GET /v1/jobs/:id` | Get job details |
+| `POST /v1/jobs/:id/cancel` | Cancel a queued or in-progress job |
+| `POST /v1/jobs/:id/retry` | Retry a failed job |
+| `GET /v1/files/:id/variants` | List extraction outputs for a file |
+| `GET /v1/files/:id/variants/:type` | Get a specific variant (markdown, embeddings) |
+| `GET /v1/spaces` | List spaces |
+| `GET /v1/spaces/:name/stats` | Get space statistics |
+
+
+## Core Concepts
+
+- **Files** are documents tracked by Roset's metadata store. Each file has a processing status and zero or more variants.
+- **Jobs** represent the processing pipeline for a file. Each job moves through a state machine: `queued` -> `processing` -> `completed` or `failed`. Jobs are created automatically on upload.
+- **Variants** are the extraction outputs linked to a parent file -- extracted markdown, vector embeddings, thumbnails, or structured metadata. Each variant has a type and is produced by a specific provider.
+- **Connections** are linked storage buckets (S3, GCS, Azure Blob Storage, MinIO, Cloudflare R2, Supabase Storage). Roset reads file metadata from your bucket without copying bytes.
+- **Spaces** provide optional namespace isolation for multi-space applications. If you are not building a B2B SaaS product, you can ignore spaces entirely -- files default to a `"default"` space.
+- **Provider Keys** are the API credentials for extraction providers (Reducto, OpenAI, Gemini, Whisper). All tiers use BYOK (Bring Your Own Keys). A small managed trial quota is included for evaluation — after the trial, configure your own provider keys in Settings.
+- **Webhooks** deliver HTTP callbacks when processing events occur (file completed, variant ready, job failed).
+
+
+## Next Steps
+
+- [Quickstart](/docs/start/quickstart) -- upload your first file in under 5 minutes.
+- [Installation](/docs/start/installation) -- set up the TypeScript or Python SDK.
+- [Authentication](/docs/start/authentication) -- configure API keys and bearer tokens.
+- [API Reference](/docs/reference/api) -- full endpoint documentation.

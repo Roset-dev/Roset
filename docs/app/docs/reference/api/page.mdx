@@ -1,0 +1,1835 @@
+export const metadata = {
+  title: 'API Reference',
+  description: 'Complete REST API reference for the Roset file processing orchestration platform.',
+}
+
+# API Reference
+
+The Roset API is a REST API for file processing orchestration. It manages file uploads, processing jobs, extraction variants, storage connections, search, and webhooks. Files are uploaded via signed URLs (bytes go directly to storage) and Roset coordinates extraction providers to produce structured variants.
+
+Base URL: `https://api.roset.dev`
+
+All requests require an `Authorization` header. See [Authentication](/docs/start/authentication) for details.
+
+```bash
+Authorization: ApiKey rsk_...
+```
+
+
+## Upload
+
+### POST /v1/upload
+
+Upload a file for processing. Roset creates a file record and a processing job, then routes the file to the appropriate extraction provider based on content type.
+
+**Multipart upload:**
+
+```bash
+# Upload a PDF -- Roset routes it to Reducto for extraction
+curl -X POST https://api.roset.dev/v1/upload \
+  -H "Authorization: ApiKey rsk_..." \
+  -F "file=@document.pdf"
+```
+
+Response `201`:
+
+```json
+{
+  "id": "abc-123",
+  "space": "default",
+  "filename": "document.pdf",
+  "content_type": "application/pdf",
+  "size_bytes": 45678,
+  "storage_key": "default/abc-123/document.pdf",
+  "status": "uploaded",
+  "job_id": "job-456"
+}
+```
+
+**JSON metadata upload (for signed-URL workflow):**
+
+```bash
+# Register file metadata -- Roset returns a signed upload_url
+curl -X POST https://api.roset.dev/v1/upload \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"filename":"doc.pdf","content_type":"application/pdf","size_bytes":45678}'
+```
+
+The response includes an `upload_url` field. Upload the file bytes directly to that signed URL with a PUT request. Roset never sees the file content.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | binary | Yes (multipart) | The file to upload |
+| `space` | string | No | Space namespace. Defaults to `"default"`. Only needed for multi-space applications. |
+| `filename` | string | Yes (JSON) | Original filename |
+| `content_type` | string | No | MIME type (auto-detected if omitted) |
+| `size_bytes` | integer | No | File size in bytes |
+| `provider` | string | No | Force a specific extraction provider (`reducto`, `gemini`, `whisper`) instead of auto-routing |
+| `embedding_model` | string | No | Override the default embedding model |
+| `chunking` | object | No | Chunking config: `{ strategy, chunk_size, chunk_overlap }` |
+| `variants` | string[] | No | Variant types to generate (e.g., `["markdown", "embeddings", "thumbnail"]`). Defaults to all applicable types. |
+| `skip_processing` | boolean | No | If `true`, create the file record without starting a processing job |
+| `metadata` | object | No | Custom key-value metadata (max 50 keys, string values) |
+
+### POST /v1/upload/batch
+
+Upload 1--50 files in a single request. Each file in the array accepts the same parameters as `POST /v1/upload` (JSON workflow). Returns a batch ID for tracking progress.
+
+```bash
+curl -X POST https://api.roset.dev/v1/upload/batch \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "files": [
+      { "filename": "report-q1.pdf", "content_type": "application/pdf", "size_bytes": 45678 },
+      { "filename": "report-q2.pdf", "content_type": "application/pdf", "size_bytes": 56789 }
+    ]
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "batch_id": "batch-abc123",
+  "files": [
+    { "id": "file-1", "filename": "report-q1.pdf", "upload_url": "https://...", "job_id": "job-1" },
+    { "id": "file-2", "filename": "report-q2.pdf", "upload_url": "https://...", "job_id": "job-2" }
+  ]
+}
+```
+
+### GET /v1/batches/:id
+
+Get the status of a batch upload.
+
+```bash
+curl https://api.roset.dev/v1/batches/batch-abc123 \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "id": "batch-abc123",
+  "total": 2,
+  "completed": 1,
+  "failed": 0,
+  "in_progress": 1,
+  "files": [
+    { "id": "file-1", "status": "completed" },
+    { "id": "file-2", "status": "processing" }
+  ]
+}
+```
+
+
+## Files
+
+Files are documents tracked by Roset's metadata store. Each file has a processing status, belongs to a space namespace, and can have zero or more variants (extraction outputs).
+
+### GET /v1/files
+
+List files with optional filtering.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `space` | string | Filter by space namespace |
+| `status` | string | Filter by status: `uploading`, `uploaded`, `processing`, `completed`, `failed` |
+| `search` | string | Search files by filename or content |
+| `sort_by` | string | Sort field: `created_at`, `updated_at`, `filename`, `size_bytes` (default: `created_at`) |
+| `sort_order` | string | `asc` or `desc` (default: `desc`) |
+| `metadata.*` | string | Filter by metadata key (e.g., `metadata.department=finance`) |
+| `limit` | integer | Maximum number of results (default 50) |
+| `cursor` | string | Pagination cursor from a previous response |
+
+```bash
+# List completed files (defaults to "default" space if not specified)
+curl "https://api.roset.dev/v1/files?status=completed&limit=10" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "files": [
+    {
+      "id": "abc-123",
+      "space": "default",
+      "filename": "document.pdf",
+      "content_type": "application/pdf",
+      "size_bytes": 45678,
+      "status": "completed",
+      "created_at": "2025-01-15 10:30:00",
+      "updated_at": "2025-01-15 10:31:00"
+    }
+  ],
+  "next_cursor": null
+}
+```
+
+### GET /v1/files/:id
+
+Get a single file by ID, including its variants.
+
+```bash
+curl https://api.roset.dev/v1/files/abc-123 \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "id": "abc-123",
+  "space": "default",
+  "filename": "document.pdf",
+  "content_type": "application/pdf",
+  "size_bytes": 45678,
+  "status": "completed",
+  "variants": [
+    {
+      "id": "var-1",
+      "type": "markdown",
+      "content_type": "text/markdown",
+      "size_bytes": 12345,
+      "created_at": "2025-01-15 10:31:00"
+    }
+  ]
+}
+```
+
+### POST /v1/files
+
+Create a file record with metadata. A processing job is created automatically.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `filename` | string | Yes | Original filename |
+| `space` | string | No | Space namespace. Defaults to `"default"`. |
+| `content_type` | string | No | MIME type |
+| `size_bytes` | integer | No | File size in bytes |
+| `metadata` | object | No | Custom key-value metadata |
+
+```bash
+# Create a file record -- a processing job starts automatically
+curl -X POST https://api.roset.dev/v1/files \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filename": "report.pdf",
+    "content_type": "application/pdf",
+    "size_bytes": 45678
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "id": "abc-123",
+  "space": "default",
+  "filename": "report.pdf",
+  "status": "uploading",
+  "job_id": "job-456"
+}
+```
+
+### DELETE /v1/files/:id
+
+Delete a file and all associated jobs and variants.
+
+```bash
+curl -X DELETE https://api.roset.dev/v1/files/abc-123 \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{ "deleted": true }
+```
+
+### DELETE /v1/files
+
+Batch delete up to 100 files in a single request.
+
+```bash
+curl -X DELETE https://api.roset.dev/v1/files \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"file_ids": ["file-1", "file-2", "file-3"]}'
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file_ids` | string[] | Yes | Array of file IDs to delete (max 100) |
+
+Response `200`:
+
+```json
+{
+  "deleted": 3,
+  "errors": []
+}
+```
+
+### POST /v1/files/:id/process
+
+Reprocess a file with optional overrides. Creates a new processing job for the file.
+
+```bash
+curl -X POST https://api.roset.dev/v1/files/abc-123/process \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "reducto", "variants": ["markdown", "embeddings"]}'
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `provider` | string | No | Override extraction provider |
+| `embedding_model` | string | No | Override embedding model |
+| `chunking` | object | No | Override chunking config: `{ strategy, chunk_size, chunk_overlap }` |
+| `variants` | string[] | No | Variant types to regenerate |
+
+Response `201`:
+
+```json
+{
+  "job_id": "job-789",
+  "file_id": "abc-123",
+  "status": "queued"
+}
+```
+
+### POST /v1/files/process-batch
+
+Batch reprocess files by IDs or by connection.
+
+```bash
+curl -X POST https://api.roset.dev/v1/files/process-batch \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"file_ids": ["file-1", "file-2"]}'
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file_ids` | string[] | No | Specific file IDs to reprocess |
+| `connection_id` | string | No | Reprocess all files from this connection |
+| `provider` | string | No | Override extraction provider |
+| `variants` | string[] | No | Variant types to regenerate |
+
+One of `file_ids` or `connection_id` is required.
+
+Response `201`:
+
+```json
+{
+  "batch_id": "batch-xyz",
+  "queued": 2,
+  "job_ids": ["job-1", "job-2"]
+}
+```
+
+
+## Jobs
+
+Jobs represent the processing pipeline for a file. When you upload a file, Roset automatically creates a job that tracks extraction progress through a state machine. Each job is routed to a specific provider (Reducto, Gemini, Whisper) based on the file's content type.
+
+### Status Flow
+
+```
+queued > processing > completed
+                    > failed > (retry) > queued
+queued > cancelled
+```
+
+### GET /v1/jobs
+
+List jobs with optional filtering.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `space` | string | Filter by space namespace |
+| `status` | string | Filter by status: `queued`, `processing`, `completed`, `failed`, `cancelled` |
+| `limit` | integer | Maximum number of results |
+| `cursor` | string | Pagination cursor |
+
+```bash
+# List failed jobs to identify extraction errors
+curl "https://api.roset.dev/v1/jobs?status=failed" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "jobs": [
+    {
+      "id": "job-456",
+      "file_id": "abc-123",
+      "space": "default",
+      "status": "completed",
+      "provider": "reducto",
+      "created_at": "2025-01-15 10:30:00",
+      "completed_at": "2025-01-15 10:31:00"
+    }
+  ],
+  "next_cursor": null
+}
+```
+
+### GET /v1/jobs/:id
+
+Get a single job by ID, including provider and timing details.
+
+```bash
+curl https://api.roset.dev/v1/jobs/job-456 \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "id": "job-456",
+  "file_id": "abc-123",
+  "space": "default",
+  "status": "completed",
+  "provider": "reducto",
+  "created_at": "2025-01-15 10:30:00",
+  "completed_at": "2025-01-15 10:31:00"
+}
+```
+
+### POST /v1/jobs/:id/cancel
+
+Cancel a job that is `queued` or `processing`. Already-completed jobs cannot be cancelled.
+
+```bash
+curl -X POST https://api.roset.dev/v1/jobs/job-456/cancel \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{ "id": "job-456", "status": "cancelled" }
+```
+
+### POST /v1/jobs/:id/retry
+
+Retry a failed job. Resets the status to `queued` and re-enters the processing pipeline.
+
+```bash
+curl -X POST https://api.roset.dev/v1/jobs/job-456/retry \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{ "id": "job-456", "status": "queued" }
+```
+
+
+## Variants
+
+Variants are extraction outputs linked to a parent file. When Roset processes a file, the extraction provider produces one or more variants -- typically markdown from the document content, and optionally vector embeddings if an OpenAI key is configured.
+
+Common variant types: `markdown`, `embeddings`, `thumbnail`, `metadata`, `searchable-index`.
+
+### GET /v1/files/:file_id/variants
+
+List all variants for a file.
+
+```bash
+curl https://api.roset.dev/v1/files/abc-123/variants \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "variants": [
+    {
+      "id": "var-1",
+      "file_id": "abc-123",
+      "type": "markdown",
+      "provider": "reducto",
+      "content": "# Document Title\n\nExtracted content...",
+      "content_type": "text/markdown",
+      "size_bytes": 12345,
+      "created_at": "2025-01-15 10:31:00"
+    }
+  ]
+}
+```
+
+### GET /v1/files/:file_id/variants/:type
+
+Get a specific variant by type, such as `markdown` or `embeddings`.
+
+```bash
+# Retrieve the extracted markdown for a file
+curl https://api.roset.dev/v1/files/abc-123/variants/markdown \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+
+## Spaces
+
+Spaces provide optional namespace isolation for multi-space applications. If you are building a B2B SaaS product and need to scope files per customer, assign each customer a space name. Otherwise, all files default to the `"default"` space and you can ignore this section entirely.
+
+### GET /v1/spaces
+
+List all spaces with file counts.
+
+```bash
+curl https://api.roset.dev/v1/spaces \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "spaces": [
+    { "space": "default", "file_count": 100 },
+    { "space": "acme", "file_count": 42 },
+    { "space": "beta-corp", "file_count": 15 }
+  ]
+}
+```
+
+### GET /v1/spaces/:name/stats
+
+Get detailed statistics for a specific space.
+
+```bash
+curl https://api.roset.dev/v1/spaces/acme/stats \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "space": "acme",
+  "total_files": 42,
+  "total_size_bytes": 1234567,
+  "status_counts": {
+    "completed": 38,
+    "processing": 2,
+    "failed": 2
+  }
+}
+```
+
+### DELETE /v1/spaces/:name
+
+Delete a space. All files in the space must be deleted first, or use `?cascade=true` to delete the space and all its files.
+
+```bash
+curl -X DELETE "https://api.roset.dev/v1/spaces/acme?cascade=true" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cascade` | boolean | If `true`, delete the space and all its files. Default: `false`. |
+
+Response `200`:
+
+```json
+{ "deleted": true, "files_deleted": 42 }
+```
+
+
+## Provider Keys
+
+Provider keys are API credentials for the extraction and embedding services that Roset orchestrates (Reducto, OpenAI, Gemini, Whisper). All tiers use BYOK (Bring Your Own Keys). A small managed trial quota is included for evaluation — after the trial, configure your own provider keys.
+
+### GET /v1/org/provider-keys
+
+List configured providers. Key values are redacted in the response for security.
+
+```bash
+curl https://api.roset.dev/v1/org/provider-keys \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### PUT /v1/org/provider-keys
+
+Save a provider API key.
+
+```bash
+# Add your Reducto key for document extraction
+curl -X PUT https://api.roset.dev/v1/org/provider-keys \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"provider":"reducto","key":"rdt_your_key"}'
+```
+
+### DELETE /v1/org/provider-keys/:provider
+
+Remove a provider API key.
+
+```bash
+curl -X DELETE https://api.roset.dev/v1/org/provider-keys/reducto \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+
+## Connections
+
+Connections link your cloud storage buckets to Roset. Once connected, Roset can enumerate files in your bucket and issue signed URLs for direct upload and download -- without ever copying or proxying file bytes.
+
+### POST /v1/connections
+
+Create a new storage connection.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `provider` | string | Yes | `s3`, `gcs`, `azure_blob`, `r2`, `minio`, `supabase_storage`, `b2`, `do_spaces`, or `wasabi` |
+| `name` | string | Yes | Display name for this connection |
+| `bucket` | string | Yes | Bucket or container name |
+| `region` | string | No | Cloud region |
+| `prefix` | string | No | Key prefix filter (e.g., `uploads/`) |
+
+```bash
+# Connect an S3 bucket
+curl -X POST https://api.roset.dev/v1/connections \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"provider":"s3","name":"Production","bucket":"my-bucket","region":"us-east-1"}'
+```
+
+Response `201`:
+
+```json
+{
+  "id": "conn-abc123",
+  "provider": "s3",
+  "name": "Production",
+  "bucket": "my-bucket",
+  "region": "us-east-1",
+  "status": "pending",
+  "created_at": "2025-06-15 10:00:00"
+}
+```
+
+### GET /v1/connections
+
+List all connections for the organization.
+
+```bash
+curl https://api.roset.dev/v1/connections \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### GET /v1/connections/:id
+
+Get a connection by ID.
+
+```bash
+curl https://api.roset.dev/v1/connections/conn-abc123 \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### DELETE /v1/connections/:id
+
+Delete a connection. This removes the metadata link from Roset. Your files in the cloud storage bucket are not affected.
+
+```bash
+curl -X DELETE https://api.roset.dev/v1/connections/conn-abc123 \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### POST /v1/connections/:id/test
+
+Test connectivity to the linked bucket.
+
+```bash
+curl -X POST https://api.roset.dev/v1/connections/conn-abc123/test \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{ "success": true }
+```
+
+### POST /v1/connections/:id/sync
+
+Sync file metadata from the bucket into Roset. This is a metadata-only operation -- Roset enumerates the bucket and creates node records without transferring file bytes.
+
+```bash
+curl -X POST https://api.roset.dev/v1/connections/conn-abc123/sync \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### POST /v1/connections/start
+
+Initiate the connection setup flow. Returns provider-specific instructions (e.g., IAM role ARN for AWS, service account for GCS).
+
+```bash
+curl -X POST https://api.roset.dev/v1/connections/start \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "s3"}'
+```
+
+Response `200`:
+
+```json
+{
+  "provider": "s3",
+  "instructions": {
+    "role_arn": "arn:aws:iam::123456789:role/RosetAccess",
+    "external_id": "roset-abc123",
+    "steps": ["Create IAM role with the provided trust policy", "Attach S3 read permissions"]
+  }
+}
+```
+
+### POST /v1/connections/list-buckets
+
+Enumerate accessible buckets using the provided credentials.
+
+```bash
+curl -X POST https://api.roset.dev/v1/connections/list-buckets \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "s3", "credentials": {"role_arn": "arn:aws:iam::123456789:role/RosetAccess"}}'
+```
+
+Response `200`:
+
+```json
+{
+  "buckets": [
+    { "name": "my-bucket", "region": "us-east-1" },
+    { "name": "staging-bucket", "region": "eu-west-1" }
+  ]
+}
+```
+
+### POST /v1/connections/verify
+
+Verify credentials and create a connection in a single step. This is the preferred setup flow.
+
+```bash
+curl -X POST https://api.roset.dev/v1/connections/verify \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "s3",
+    "name": "Production",
+    "bucket": "my-bucket",
+    "region": "us-east-1",
+    "credentials": {"role_arn": "arn:aws:iam::123456789:role/RosetAccess"}
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "id": "conn-abc123",
+  "provider": "s3",
+  "name": "Production",
+  "bucket": "my-bucket",
+  "status": "active",
+  "verified": true
+}
+```
+
+### GET /v1/connections/providers
+
+List all supported storage providers with metadata.
+
+```bash
+curl https://api.roset.dev/v1/connections/providers \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "providers": [
+    { "id": "s3", "name": "Amazon S3", "auth_type": "role_assumption" },
+    { "id": "gcs", "name": "Google Cloud Storage", "auth_type": "service_account" },
+    { "id": "azure_blob", "name": "Azure Blob Storage", "auth_type": "service_principal" },
+    { "id": "r2", "name": "Cloudflare R2", "auth_type": "access_key" },
+    { "id": "minio", "name": "MinIO", "auth_type": "access_key" }
+  ]
+}
+```
+
+### POST /v1/connections/:id/sync/preview
+
+Preview the impact of a sync before running it.
+
+```bash
+curl -X POST https://api.roset.dev/v1/connections/conn-abc123/sync/preview \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "new_files": 15,
+  "updated_files": 3,
+  "deleted_files": 1,
+  "total_size_bytes": 1234567
+}
+```
+
+### GET /v1/connections/:id/sync/progress
+
+Get progress of an active sync operation, including ETA.
+
+```bash
+curl https://api.roset.dev/v1/connections/conn-abc123/sync/progress \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "status": "syncing",
+  "synced": 120,
+  "total": 500,
+  "percent": 24,
+  "eta_seconds": 180,
+  "started_at": "2025-06-15 10:30:00"
+}
+```
+
+### GET /v1/connections/:id/sync/history
+
+List past sync sessions for a connection.
+
+```bash
+curl https://api.roset.dev/v1/connections/conn-abc123/sync/history \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "syncs": [
+    {
+      "id": "sync-1",
+      "status": "completed",
+      "files_added": 42,
+      "files_updated": 5,
+      "files_deleted": 0,
+      "started_at": "2025-06-15 10:30:00",
+      "completed_at": "2025-06-15 10:32:00"
+    }
+  ]
+}
+```
+
+### GET /v1/connections/:id/browse
+
+Browse bucket objects directly without syncing.
+
+```bash
+curl "https://api.roset.dev/v1/connections/conn-abc123/browse?prefix=uploads/&limit=50" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `prefix` | string | Key prefix to browse (e.g., `uploads/`) |
+| `limit` | integer | Maximum results |
+| `cursor` | string | Pagination cursor |
+
+Response `200`:
+
+```json
+{
+  "objects": [
+    { "key": "uploads/report.pdf", "size_bytes": 45678, "last_modified": "2025-06-14 10:00:00" }
+  ],
+  "next_cursor": null
+}
+```
+
+
+## Nodes
+
+Nodes represent files and folders discovered from synced storage connections. After syncing a connection, you can browse the bucket contents through the nodes API.
+
+### GET /v1/nodes
+
+List nodes with optional filtering.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `connection_id` | string | Filter by connection |
+| `parent_id` | string | Filter by parent folder |
+| `type` | string | `file` or `folder` |
+| `limit` | integer | Maximum results |
+| `cursor` | string | Pagination cursor |
+
+```bash
+# List files from a connected bucket
+curl "https://api.roset.dev/v1/nodes?connection_id=conn-abc123" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "nodes": [
+    {
+      "id": "node-xyz",
+      "connection_id": "conn-abc123",
+      "type": "file",
+      "name": "report.pdf",
+      "path": "uploads/report.pdf",
+      "size_bytes": 45678,
+      "content_type": "application/pdf",
+      "created_at": "2025-06-15 10:30:00"
+    }
+  ],
+  "next_cursor": null
+}
+```
+
+### GET /v1/nodes/:id
+
+Get a single node by ID.
+
+```bash
+curl https://api.roset.dev/v1/nodes/node-xyz \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### GET /v1/nodes/:id/download
+
+Get a signed download URL for a file node. The URL is valid for 1 hour. The download happens directly between the client and the storage bucket -- Roset does not proxy file bytes.
+
+```bash
+curl https://api.roset.dev/v1/nodes/node-xyz/download \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "url": "https://my-bucket.s3.amazonaws.com/uploads/report.pdf?X-Amz-...",
+  "expires_in": 3600
+}
+```
+
+### DELETE /v1/nodes/:id
+
+Delete a node record from Roset. This does not delete the file from your storage bucket.
+
+```bash
+curl -X DELETE https://api.roset.dev/v1/nodes/node-xyz \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### POST /v1/nodes/upload/init
+
+Initialize a file upload to a connected storage bucket. Returns a signed URL for direct upload.
+
+```bash
+curl -X POST https://api.roset.dev/v1/nodes/upload/init \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"connection_id": "conn-abc123", "path": "uploads/report.pdf", "content_type": "application/pdf"}'
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `connection_id` | string | Yes | Target connection |
+| `path` | string | Yes | Destination path in the bucket |
+| `content_type` | string | No | MIME type |
+| `size_bytes` | integer | No | Expected file size |
+
+Response `200`:
+
+```json
+{
+  "upload_url": "https://my-bucket.s3.amazonaws.com/uploads/report.pdf?X-Amz-...",
+  "node_id": "node-new",
+  "expires_in": 3600
+}
+```
+
+### POST /v1/nodes/upload/commit
+
+Commit an upload after the file bytes have been PUT to the signed URL. Triggers processing.
+
+```bash
+curl -X POST https://api.roset.dev/v1/nodes/upload/commit \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"node_id": "node-new"}'
+```
+
+Response `200`:
+
+```json
+{
+  "node_id": "node-new",
+  "job_id": "job-789",
+  "status": "queued"
+}
+```
+
+### GET /v1/nodes/:id/children
+
+List child nodes of a folder.
+
+```bash
+curl "https://api.roset.dev/v1/nodes/folder-123/children?limit=50" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `type` | string | Filter: `file` or `folder` |
+| `limit` | integer | Maximum results |
+| `cursor` | string | Pagination cursor |
+
+Response `200`:
+
+```json
+{
+  "nodes": [
+    { "id": "node-1", "type": "file", "name": "report.pdf", "size_bytes": 45678 },
+    { "id": "node-2", "type": "folder", "name": "images" }
+  ],
+  "next_cursor": null
+}
+```
+
+
+## Webhooks
+
+Webhooks deliver HTTP callbacks when processing events occur. Register an endpoint, and Roset will POST event payloads to it in real time -- no polling required.
+
+### POST /v1/webhooks
+
+Create a webhook endpoint.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `url` | string | Yes | HTTPS endpoint URL |
+| `events` | string[] | Yes | Event types to subscribe to |
+
+```bash
+# Subscribe to processing completion events
+curl -X POST https://api.roset.dev/v1/webhooks \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com/webhook","events":["file.processing.completed"]}'
+```
+
+Response `201`:
+
+```json
+{
+  "id": "wh-abc123",
+  "url": "https://example.com/webhook",
+  "events": ["file.processing.completed"],
+  "secret": "whsec_...",
+  "active": true,
+  "created_at": "2025-06-15 10:00:00"
+}
+```
+
+### GET /v1/webhooks
+
+List all webhooks for the organization.
+
+```bash
+curl https://api.roset.dev/v1/webhooks \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### GET /v1/webhooks/:id
+
+Get a webhook by ID.
+
+```bash
+curl https://api.roset.dev/v1/webhooks/wh-abc123 \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### PATCH /v1/webhooks/:id
+
+Update a webhook's URL or subscribed events.
+
+```bash
+# Add failure events to an existing webhook
+curl -X PATCH https://api.roset.dev/v1/webhooks/wh-abc123 \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"events":["file.processing.completed","file.processing.failed"]}'
+```
+
+### DELETE /v1/webhooks/:id
+
+Delete a webhook.
+
+```bash
+curl -X DELETE https://api.roset.dev/v1/webhooks/wh-abc123 \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### GET /v1/webhooks/:id/deliveries
+
+List delivery history for a webhook. Useful for debugging failed deliveries.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `limit` | integer | Maximum results (default 50) |
+
+```bash
+curl "https://api.roset.dev/v1/webhooks/wh-abc123/deliveries?limit=10" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "deliveries": [
+    {
+      "id": "del-1",
+      "event_type": "file.processing.completed",
+      "status": "delivered",
+      "status_code": 200,
+      "attempted_at": "2025-06-15 10:31:00"
+    }
+  ]
+}
+```
+
+### POST /v1/webhooks/:id/test
+
+Send a test event to the webhook endpoint. Useful for verifying your endpoint is configured correctly.
+
+```bash
+curl -X POST https://api.roset.dev/v1/webhooks/wh-abc123/test \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### POST /v1/webhooks/:id/rotate-secret
+
+Rotate the signing secret for a webhook. The old secret becomes invalid immediately.
+
+```bash
+curl -X POST https://api.roset.dev/v1/webhooks/wh-abc123/rotate-secret \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "id": "wh-abc123",
+  "secret": "whsec_new_secret_..."
+}
+```
+
+### POST /v1/webhooks/:id/replay
+
+Replay past webhook deliveries. Useful for recovering from endpoint downtime.
+
+```bash
+curl -X POST https://api.roset.dev/v1/webhooks/wh-abc123/replay \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"since": "2025-06-14T00:00:00Z", "until": "2025-06-15T00:00:00Z"}'
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `since` | string | Yes | Start time (ISO 8601) |
+| `until` | string | No | End time (defaults to now) |
+| `event_types` | string[] | No | Filter by event type |
+
+Response `200`:
+
+```json
+{
+  "replayed": 12,
+  "skipped": 0
+}
+```
+
+### GET /v1/webhook-events
+
+List all webhook events across all webhooks. Useful for auditing.
+
+```bash
+curl "https://api.roset.dev/v1/webhook-events?limit=20" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `event_type` | string | Filter by event type |
+| `limit` | integer | Maximum results (default 50) |
+| `cursor` | string | Pagination cursor |
+
+Response `200`:
+
+```json
+{
+  "events": [
+    {
+      "id": "evt-1",
+      "type": "file.processing.completed",
+      "webhook_id": "wh-abc123",
+      "delivered": true,
+      "created_at": "2025-06-15 10:31:00"
+    }
+  ],
+  "next_cursor": null
+}
+```
+
+
+## Analytics
+
+Query processing metrics and usage data for your organization.
+
+### GET /v1/analytics/overview
+
+Organization-wide statistics: total files, jobs, success rates, and connection counts.
+
+```bash
+curl https://api.roset.dev/v1/analytics/overview \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "total_files": 1234,
+  "total_jobs": 5678,
+  "total_variants": 4567,
+  "total_connections": 5,
+  "success_rate": 0.95,
+  "files_by_status": {
+    "completed": 1100,
+    "processing": 34,
+    "failed": 100
+  }
+}
+```
+
+### GET /v1/analytics/processing
+
+Processing performance metrics, including latency percentiles broken down by provider.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `days` | integer | Lookback period in days (default 30) |
+
+```bash
+curl "https://api.roset.dev/v1/analytics/processing?days=7" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "p50_ms": 2300,
+  "p95_ms": 8500,
+  "p99_ms": 15000,
+  "by_provider": [
+    { "provider": "reducto", "avg_ms": 3200, "count": 450 }
+  ]
+}
+```
+
+### GET /v1/analytics/file-types
+
+File type distribution across all uploads.
+
+```bash
+curl https://api.roset.dev/v1/analytics/file-types \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### GET /v1/analytics/spaces
+
+Per-space health scores and file counts.
+
+```bash
+curl https://api.roset.dev/v1/analytics/spaces \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### GET /v1/analytics/failures
+
+Recent processing failures with error details.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `limit` | integer | Maximum results (default 20) |
+
+```bash
+curl "https://api.roset.dev/v1/analytics/failures?limit=5" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### GET /v1/analytics/volume
+
+Daily upload and processing volume over time.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `days` | integer | Lookback period in days (default 30) |
+
+```bash
+curl "https://api.roset.dev/v1/analytics/volume?days=14" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+### GET /v1/analytics/trends
+
+Time-series upload, completion, and failure data.
+
+```bash
+curl "https://api.roset.dev/v1/analytics/trends?days=30" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `days` | integer | Lookback period in days (default 30) |
+
+Response `200`:
+
+```json
+{
+  "data": [
+    { "date": "2025-06-14", "uploads": 42, "completed": 38, "failed": 4 },
+    { "date": "2025-06-15", "uploads": 55, "completed": 52, "failed": 3 }
+  ]
+}
+```
+
+### GET /v1/analytics/providers
+
+Provider reliability and utilization statistics.
+
+```bash
+curl "https://api.roset.dev/v1/analytics/providers?days=30" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "providers": [
+    { "provider": "reducto", "total_jobs": 450, "success_rate": 0.96, "avg_ms": 3200 },
+    { "provider": "gemini", "total_jobs": 120, "success_rate": 0.98, "avg_ms": 1800 }
+  ]
+}
+```
+
+### GET /v1/analytics/top-failures
+
+Most common failure reasons across all processing jobs.
+
+```bash
+curl "https://api.roset.dev/v1/analytics/top-failures?limit=10" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `limit` | integer | Maximum results (default 10) |
+
+Response `200`:
+
+```json
+{
+  "failures": [
+    { "reason": "provider_timeout", "count": 15, "last_seen": "2025-06-15 10:30:00" },
+    { "reason": "unsupported_format", "count": 8, "last_seen": "2025-06-14 14:00:00" }
+  ]
+}
+```
+
+### GET /v1/analytics/storage-growth
+
+Storage growth over time across all files and variants.
+
+```bash
+curl "https://api.roset.dev/v1/analytics/storage-growth?days=30" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "data": [
+    { "date": "2025-06-14", "total_bytes": 12345678, "delta_bytes": 456789 },
+    { "date": "2025-06-15", "total_bytes": 12802467, "delta_bytes": 567890 }
+  ]
+}
+```
+
+
+## Organization
+
+### GET /v1/me
+
+Get the current authentication context. Returns the authenticated user or API key identity.
+
+```bash
+curl https://api.roset.dev/v1/me \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "org_id": "org-abc123",
+  "auth_type": "api_key",
+  "key_name": "CI Pipeline",
+  "scopes": ["files:read", "files:write", "jobs:read"]
+}
+```
+
+### GET /v1/org/settings
+
+Get organization settings including default processing configuration.
+
+```bash
+curl https://api.roset.dev/v1/org/settings \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "default_embedding_model": "text-embedding-3-small",
+  "default_chunking": {
+    "strategy": "recursive",
+    "chunk_size": 1000,
+    "chunk_overlap": 200
+  },
+  "default_variants": ["markdown", "embeddings", "metadata", "thumbnail", "searchable-index"]
+}
+```
+
+### PUT /v1/org/settings
+
+Update organization settings.
+
+```bash
+curl -X PUT https://api.roset.dev/v1/org/settings \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"default_embedding_model": "text-embedding-3-large"}'
+```
+
+### GET /v1/org/routing-rules
+
+Get content-type to provider routing rules.
+
+```bash
+curl https://api.roset.dev/v1/org/routing-rules \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "rules": [
+    { "content_type": "application/pdf", "provider": "reducto" },
+    { "content_type": "image/*", "provider": "gemini" },
+    { "content_type": "audio/*", "provider": "whisper" }
+  ]
+}
+```
+
+### PUT /v1/org/routing-rules
+
+Update routing rules to override default content-type to provider mapping.
+
+```bash
+curl -X PUT https://api.roset.dev/v1/org/routing-rules \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"rules": [{"content_type": "application/pdf", "provider": "gemini"}]}'
+```
+
+### GET /v1/org/usage
+
+Get current month usage data for the organization.
+
+```bash
+curl https://api.roset.dev/v1/org/usage \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "period": "2025-06",
+  "pages_used": 2340,
+  "pages_limit": 5000,
+  "plan": "growth",
+  "overage_pages": 0
+}
+```
+
+
+## API Keys
+
+### POST /v1/org/api-keys
+
+Create a new API key.
+
+```bash
+curl -X POST https://api.roset.dev/v1/org/api-keys \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"name": "CI Pipeline", "scopes": ["files:read", "files:write"]}'
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Display name for the key |
+| `scopes` | string[] | No | Permission scopes (defaults to all) |
+| `mode` | string | No | `live` or `test` (default: `live`) |
+| `expires_at` | string | No | Expiration date (ISO 8601). Omit for no expiration. |
+
+Response `201`:
+
+```json
+{
+  "id": "key-abc123",
+  "name": "CI Pipeline",
+  "key": "rsk_the_full_key_shown_only_once",
+  "scopes": ["files:read", "files:write"],
+  "created_at": "2025-06-15 10:00:00"
+}
+```
+
+Save the `key` value immediately -- it is only shown once.
+
+### GET /v1/org/api-keys
+
+List all API keys. Key values are redacted.
+
+```bash
+curl https://api.roset.dev/v1/org/api-keys \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{
+  "api_keys": [
+    {
+      "id": "key-abc123",
+      "name": "CI Pipeline",
+      "prefix": "rsk_the_",
+      "scopes": ["files:read", "files:write"],
+      "last_used_at": "2025-06-15 10:30:00",
+      "created_at": "2025-06-15 10:00:00"
+    }
+  ]
+}
+```
+
+### DELETE /v1/org/api-keys/:id
+
+Revoke an API key. The key is immediately invalidated.
+
+```bash
+curl -X DELETE https://api.roset.dev/v1/org/api-keys/key-abc123 \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+Response `200`:
+
+```json
+{ "deleted": true }
+```
+
+
+## Search & Q&A
+
+### POST /v1/search
+
+Search files by content using full-text, vector similarity, or hybrid search.
+
+```bash
+curl -X POST https://api.roset.dev/v1/search \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"query": "payment terms", "mode": "hybrid", "limit": 20}'
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `query` | string | Yes | Search query |
+| `mode` | string | No | `text`, `vector`, or `hybrid` (default: `hybrid`) |
+| `space` | string | No | Scope to a specific space |
+| `limit` | integer | No | Maximum results (default 20) |
+
+Response `200`:
+
+```json
+{
+  "results": [
+    {
+      "file_id": "abc-123",
+      "score": 0.92,
+      "snippet": "The payment terms are net 30 days from invoice date...",
+      "chunk_text": "Section 4: Payment Terms\nThe payment terms are net 30 days from invoice date..."
+    }
+  ],
+  "total": 1,
+  "query": "payment terms",
+  "mode": "hybrid"
+}
+```
+
+### POST /v1/qa
+
+Ask a question about your files using RAG. Returns a generated answer with source citations.
+
+```bash
+curl -X POST https://api.roset.dev/v1/qa \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What are the payment terms?", "space": "contracts", "top_k": 5}'
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `question` | string | Yes | Question to ask |
+| `space` | string | No | Scope to a specific space |
+| `top_k` | integer | No | Number of context documents to retrieve (default 5) |
+| `stream` | boolean | No | If `true`, response is streamed as SSE events |
+
+Response `200` (non-streaming):
+
+```json
+{
+  "answer": "The payment terms are net 30 days from the invoice date, with a 2% early payment discount for payment within 10 days.",
+  "question": "What are the payment terms?",
+  "sources": [
+    {
+      "file_id": "abc-123",
+      "filename": "master-agreement.pdf",
+      "snippet": "Payment terms are net 30 days...",
+      "score": 0.95
+    }
+  ]
+}
+```
+
+When `stream: true`, the response is delivered as Server-Sent Events:
+
+```
+data: {"type":"chunk","content":"The payment"}
+data: {"type":"chunk","content":" terms are"}
+data: {"type":"sources","sources":[{"file_id":"abc-123","score":0.95}]}
+data: {"type":"done"}
+```
+
+
+## Portal
+
+Portal endpoints power the hosted portal UI. Most portal endpoints are authenticated with a portal token rather than an API key.
+
+### POST /v1/portal/tokens
+
+Create a portal preview token. Use this to grant temporary access to the portal for a specific space.
+
+```bash
+curl -X POST https://api.roset.dev/v1/portal/tokens \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"space": "default", "ttl": 3600}'
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `space` | string | Yes | Space to grant access to |
+| `ttl` | integer | No | Token lifetime in seconds (default 3600) |
+
+Response `201`:
+
+```json
+{
+  "token": "ptk_abc123...",
+  "expires_at": "2025-06-15 11:00:00",
+  "space": "default"
+}
+```
+
+### GET /v1/portal/tokens/:token/verify
+
+Verify a portal token. This endpoint is public and does not require authentication.
+
+```bash
+curl https://api.roset.dev/v1/portal/tokens/ptk_abc123.../verify
+```
+
+Response `200`:
+
+```json
+{
+  "valid": true,
+  "space": "default",
+  "expires_at": "2025-06-15 11:00:00"
+}
+```
+
+### GET /v1/portal/files
+
+List files accessible through the portal token.
+
+```bash
+curl https://api.roset.dev/v1/portal/files \
+  -H "Authorization: PortalToken ptk_abc123..."
+```
+
+### GET /v1/portal/files/:id
+
+Get file detail including variants.
+
+```bash
+curl https://api.roset.dev/v1/portal/files/abc-123 \
+  -H "Authorization: PortalToken ptk_abc123..."
+```
+
+### GET /v1/portal/files/:id/download
+
+Get a presigned download URL for a portal file.
+
+```bash
+curl https://api.roset.dev/v1/portal/files/abc-123/download \
+  -H "Authorization: PortalToken ptk_abc123..."
+```
+
+### POST /v1/portal/search
+
+Search files within the portal space.
+
+```bash
+curl -X POST https://api.roset.dev/v1/portal/search \
+  -H "Authorization: PortalToken ptk_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{"query": "payment terms"}'
+```
+
+### POST /v1/portal/qa
+
+Ask questions within the portal space.
+
+```bash
+curl -X POST https://api.roset.dev/v1/portal/qa \
+  -H "Authorization: PortalToken ptk_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What are the payment terms?"}'
+```
+
+
+## Audit Logs
+
+### GET /v1/api-logs
+
+List API request logs for your organization. Logs are retained for 7 days.
+
+```bash
+curl "https://api.roset.dev/v1/api-logs?limit=20" \
+  -H "Authorization: ApiKey rsk_..."
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `method` | string | Filter by HTTP method (`GET`, `POST`, `DELETE`, etc.) |
+| `status` | integer | Filter by HTTP status code |
+| `path` | string | Filter by request path prefix |
+| `auth_type` | string | Filter by auth type: `api_key`, `jwt` |
+| `limit` | integer | Maximum results (default 50) |
+| `cursor` | string | Pagination cursor |
+
+Response `200`:
+
+```json
+{
+  "logs": [
+    {
+      "id": "log-1",
+      "method": "POST",
+      "path": "/v1/upload",
+      "status": 201,
+      "auth_type": "api_key",
+      "key_name": "CI Pipeline",
+      "duration_ms": 45,
+      "created_at": "2025-06-15 10:30:00"
+    }
+  ],
+  "next_cursor": null
+}
+```
+
+
+## Errors
+
+All error responses follow a consistent format with an `error` message, a machine-readable `code`, and a `requestId` for debugging with Roset support.
+
+```json
+{
+  "error": "File not found",
+  "code": "NOT_FOUND",
+  "requestId": "req-123"
+}
+```
+
+| Status | Code | Description |
+|--------|------|-------------|
+| 400 | `BAD_REQUEST` | Invalid request body or parameters |
+| 401 | `UNAUTHORIZED` | Missing or invalid authentication |
+| 402 | `QUOTA_EXCEEDED` | Usage quota exceeded for the current billing period |
+| 403 | `FORBIDDEN` | Insufficient permissions for this action |
+| 404 | `NOT_FOUND` | Resource not found |
+| 409 | `CONFLICT` | Resource conflict (e.g., duplicate name or concurrent modification) |
+| 429 | `RATE_LIMITED` | Too many requests -- retry after the delay in the response header |
+| 500 | `INTERNAL_ERROR` | Internal server error |

@@ -1,0 +1,141 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'Quickstart',
+  description: 'Upload and process your first file with Roset in under 5 minutes.',
+}
+
+# Quickstart
+
+Upload a document, let Roset orchestrate extraction, and retrieve structured markdown -- all in under 5 minutes. This guide walks through the complete flow: upload, wait for processing, and retrieve variants.
+
+## Prerequisites
+
+Before you start, make sure you have:
+
+1. A Roset account at [console.roset.dev](https://console.roset.dev)
+2. An API key (starts with `rsk_`) from **Settings > API Keys**
+3. A Reducto API key for document extraction, added in **Settings > Provider Keys**
+4. Node.js 18+ (for the TypeScript SDK)
+
+## Step 1: Install the SDK
+
+```bash
+npm install @roset/sdk
+```
+
+## Step 2: Upload a File
+
+Upload a document to Roset. The API creates a file record and a processing job automatically. Roset routes the file to the appropriate extraction provider based on content type.
+
+<Tabs>
+<Tab label="TypeScript">
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+// Initialize the client with your API key
+const client = new RosetClient({
+  apiKey: process.env.ROSET_API_KEY!,
+});
+
+// Upload a PDF -- Roset routes it to Reducto for extraction
+const file = await client.files.upload({
+  filename: 'contract.pdf',
+  content_type: 'application/pdf',
+  size_bytes: 45678,
+});
+
+console.log(`Uploaded: ${file.id}, Job: ${file.job_id}`);
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# Upload a PDF via multipart form data
+curl -X POST https://api.roset.dev/v1/upload \
+  -H "Authorization: ApiKey rsk_your_key" \
+  -F "file=@contract.pdf"
+```
+</Tab>
+</Tabs>
+
+## Step 3: Wait for Processing
+
+Roset processes files asynchronously. The processing job moves through a state machine: `queued` -> `processing` -> `completed` or `failed`. Poll the file status until it reaches a terminal state.
+
+<Tabs>
+<Tab label="TypeScript">
+```typescript
+// Poll until the processing job reaches a terminal state
+let status = file.status;
+while (status !== 'completed' && status !== 'failed') {
+  const current = await client.files.get(file.id);
+  status = current.status;
+  console.log(`Status: ${status}`);
+  if (status !== 'completed' && status !== 'failed') {
+    await new Promise(r => setTimeout(r, 2000)); // wait 2 seconds
+  }
+}
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# Poll the file endpoint until status is "completed" or "failed"
+curl https://api.roset.dev/v1/files/FILE_ID \
+  -H "Authorization: ApiKey rsk_your_key"
+```
+</Tab>
+</Tabs>
+
+<Callout type="note">
+For production use, register a [webhook](/docs/guides/webhooks) instead of polling. Roset will POST to your endpoint when processing completes.
+</Callout>
+
+## Step 4: Retrieve Results
+
+Once processing completes, the extracted content is available as **variants** on the file. Variants are the outputs of the extraction pipeline -- typically markdown and optionally vector embeddings.
+
+<Tabs>
+<Tab label="TypeScript">
+```typescript
+// List all variants (markdown, embeddings, etc.)
+const { variants } = await client.files.listVariants(file.id);
+for (const v of variants) {
+  console.log(`${v.type}: ${v.size_bytes} bytes`);
+}
+
+// Retrieve the markdown variant specifically
+const markdown = await client.files.getVariant(file.id, 'markdown');
+console.log(markdown.content?.slice(0, 500));
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# List all variants for the file
+curl https://api.roset.dev/v1/files/FILE_ID/variants \
+  -H "Authorization: ApiKey rsk_your_key"
+
+# Get the markdown variant directly
+curl https://api.roset.dev/v1/files/FILE_ID/variants/markdown \
+  -H "Authorization: ApiKey rsk_your_key"
+```
+</Tab>
+</Tabs>
+
+## What Happened
+
+1. You uploaded a document to Roset.
+2. Roset created a file metadata record and a processing job.
+3. The job was routed to **Reducto** (for PDFs/documents), **Gemini** (for images), or **Whisper** (for audio) based on content type.
+4. The extraction provider returned structured markdown, which Roset stored as a **variant** on the file.
+5. If you configured an OpenAI provider key, vector embeddings were also generated as a second variant.
+
+Roset never touched the file bytes directly -- it orchestrated the extraction pipeline and stored the resulting metadata.
+
+## Next Steps
+
+- [Storage Connections](/docs/guides/connections) -- connect your S3, GCS, or Azure Blob Storage buckets for direct upload.
+- [Webhooks](/docs/guides/webhooks) -- get notified when processing completes instead of polling.
+- [TypeScript SDK](/docs/sdks/typescript) -- full TypeScript client reference.
+- [API Reference](/docs/reference/api) -- complete endpoint documentation.
+- [Authentication](/docs/start/authentication) -- details on API keys and bearer tokens.

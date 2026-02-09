@@ -1,0 +1,122 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'Search',
+  description: 'Search your files using full-text, vector similarity, or hybrid search.',
+}
+
+# Search
+
+Every file processed by Roset produces a **searchable-index** variant (plain text) and chunked **embeddings** (vector). These power three search modes:
+
+| Mode | How it works | Best for |
+|------|-------------|----------|
+| `text` | Postgres full-text search on the searchable-index variant | Exact keyword matching |
+| `vector` | Cosine similarity via Cloudflare Vectorize on chunked embeddings | Semantic/conceptual search |
+| `hybrid` | Runs both in parallel, merges via Reciprocal Rank Fusion | Best overall relevance (default) |
+
+## Quick Start
+
+<Tabs>
+<Tab label="TypeScript">
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+const roset = new RosetClient({ apiKey: 'rsk_...' });
+
+// Hybrid search (default)
+const { results } = await roset.search.query({
+  query: 'payment terms',
+});
+
+for (const result of results) {
+  console.log(`${result.fileId} — score: ${result.score}`);
+  if (result.snippet) console.log(`  ${result.snippet}`);
+}
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# Hybrid search (default)
+curl -X POST https://api.roset.dev/v1/search \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"query": "payment terms"}'
+
+# Text-only search
+curl -X POST https://api.roset.dev/v1/search \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"query": "payment terms", "mode": "text"}'
+
+# Vector search within a space
+curl -X POST https://api.roset.dev/v1/search \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"query": "financial obligations", "mode": "vector", "space": "contracts"}'
+```
+</Tab>
+</Tabs>
+
+## Search Modes
+
+### Text Search
+
+Uses Postgres `tsvector` full-text search on the `searchable-index` variant. Returns results ranked by `ts_rank` with highlighted snippets.
+
+- Works immediately after file processing completes
+- Best for exact keyword and phrase matching
+- Supports pagination via `offset`
+
+### Vector Search
+
+Embeds your query using OpenAI `text-embedding-3-small`, then queries Cloudflare Vectorize for the closest chunk vectors.
+
+- Requires an OpenAI provider key configured at `/v1/org/provider-keys`
+- Best for semantic queries where exact words may not appear in the document
+- Results include the matched chunk text and chunk index
+
+### Hybrid Search
+
+Runs text and vector search in parallel, then merges results using Reciprocal Rank Fusion (RRF, k=60). This consistently outperforms either mode alone.
+
+- Falls back to text-only if no OpenAI key is configured
+- Default mode when `mode` is omitted
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `query` | string | required | The search query |
+| `mode` | string | `"hybrid"` | `"text"`, `"vector"`, or `"hybrid"` |
+| `space` | string | all spaces | Scope search to a specific space |
+| `limit` | number | `20` | Max results (up to 100) |
+| `offset` | number | `0` | Pagination offset (text mode only) |
+
+## Response
+
+```json
+{
+  "results": [
+    {
+      "fileId": "abc-123",
+      "score": 0.034,
+      "snippet": "The <b>payment</b> <b>terms</b> are net 30 days..."
+    }
+  ],
+  "total": 42,
+  "query": "payment terms",
+  "mode": "hybrid"
+}
+```
+
+<Callout type="note">
+Vector and hybrid modes require an OpenAI provider key. Configure one via the console or `PUT /v1/org/provider-keys`.
+</Callout>
+
+## Next Steps
+
+- [Q&A](/docs/guides/qa) — Ask questions about your files and get answers with citations
+- [Webhooks](/docs/guides/webhooks) — Get notified when new variants are ready for search
+- [TypeScript SDK](/docs/sdks/typescript) — Full SDK reference

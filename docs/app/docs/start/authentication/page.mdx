@@ -1,0 +1,81 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'Authentication',
+  description: 'Authenticate with the Roset API using API keys or bearer tokens.',
+}
+
+# Authentication
+
+Every request to the Roset API must be authenticated. Roset supports two methods: **API keys** for server-side applications and **bearer tokens** for browser-based clients. Both are passed via the `Authorization` header.
+
+## API Keys
+
+API keys are long-lived credentials designed for backend services, scripts, and CI/CD pipelines. All Roset API keys use the `rsk_` prefix for easy identification.
+
+### Create an API Key
+
+1. Sign in to [console.roset.dev](https://console.roset.dev).
+2. Go to **Settings > API Keys**.
+3. Click **Create API Key** and copy the key immediately.
+
+<Callout type="caution">
+API keys are shown only once at creation time. Store yours in an environment variable or a secrets manager. Never commit keys to version control.
+</Callout>
+
+### Use an API Key
+
+<Tabs>
+<Tab label="TypeScript">
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+// Pass your API key to the client constructor
+const client = new RosetClient({
+  apiKey: process.env.ROSET_API_KEY!,
+});
+```
+</Tab>
+<Tab label="Python">
+```python
+import os
+from roset import Client
+
+# Pass your API key to the client constructor
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# Use the ApiKey scheme in the Authorization header
+curl https://api.roset.dev/v1/files \
+  -H "Authorization: ApiKey rsk_your_key_here"
+```
+</Tab>
+</Tabs>
+
+Set the environment variable in your shell or `.env` file:
+
+```bash
+export ROSET_API_KEY=rsk_your_key_here
+```
+
+## Bearer Tokens
+
+For browser applications using Clerk, Auth0, or another identity provider, pass a JWT as a bearer token. This is how the Roset console authenticates its requests:
+
+```bash
+# Use the Bearer scheme with a JWT from your identity provider
+curl https://api.roset.dev/v1/files \
+  -H "Authorization: Bearer eyJhbGc..."
+```
+
+## Choosing a Method
+
+| Use case | Method |
+|----------|--------|
+| Backend services and scripts | API Key |
+| CI/CD pipelines | API Key |
+| Browser applications | Bearer Token |
+| Mobile applications | Bearer Token |

@@ -1,0 +1,462 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'TypeScript SDK',
+  description: 'Install and use the @roset/sdk TypeScript client for file processing orchestration.',
+}
+
+# TypeScript SDK
+
+The `@roset/sdk` package is the official TypeScript client for the Roset file processing orchestration API. It provides typed methods for uploading files, managing processing jobs, retrieving extraction variants, and configuring connections and webhooks.
+
+Works in Node.js 18+ and modern edge runtimes (Cloudflare Workers, Deno, Bun).
+
+## Installation
+
+```bash
+npm install @roset/sdk
+```
+
+## Quick Start
+
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+// Initialize with your API key
+const client = new RosetClient({ apiKey: 'rsk_...' });
+
+// Upload a file -- Roset routes it to the right extraction provider
+const file = await client.files.upload({
+  filename: 'report.pdf',
+  content_type: 'application/pdf',
+  size_bytes: 1024,
+});
+
+// List all completed files
+const { files } = await client.files.list({ status: 'completed' });
+```
+
+## Configuration
+
+```typescript
+const client = new RosetClient({
+  apiKey: 'rsk_...',                  // Required -- your Roset API key
+  baseUrl: 'https://api.roset.dev',   // Optional -- defaults to production
+  timeout: 30000,                     // Optional -- request timeout in ms (default: 30000)
+});
+```
+
+## Resources
+
+### Files
+
+Files are documents tracked by Roset's metadata store. Each file has a processing status and zero or more variants.
+
+```typescript
+// List files with optional filters
+const { files, next_cursor } = await client.files.list({
+  status: 'completed',
+  limit: 20,
+});
+
+// Get a file by ID (includes variant list)
+const file = await client.files.get('file-abc123');
+
+// Upload a file -- creates a file record and a processing job
+const uploaded = await client.files.upload({
+  filename: 'doc.pdf',
+  content_type: 'application/pdf',
+  size_bytes: 45678,
+});
+
+// Delete a file and all its variants
+await client.files.delete('file-abc123');
+
+// List extraction outputs (markdown, embeddings, etc.)
+const { variants } = await client.files.listVariants('file-abc123');
+
+// Get a specific variant by type
+const markdown = await client.files.getVariant('file-abc123', 'markdown');
+
+// Batch upload multiple files with concurrency control
+const batch = await client.files.uploadBatch(
+  [
+    { filename: 'report-q1.pdf', content_type: 'application/pdf', size_bytes: 45678 },
+    { filename: 'report-q2.pdf', content_type: 'application/pdf', size_bytes: 56789 },
+  ],
+  { concurrency: 3 }
+);
+
+// Reprocess a file with different settings
+await client.files.process('file-abc123', {
+  provider: 'gemini',
+  variants: ['markdown', 'embeddings'],
+});
+
+// Batch reprocess files
+await client.files.processBatch({
+  file_ids: ['file-1', 'file-2'],
+  variants: ['markdown', 'embeddings'],
+});
+```
+
+### Jobs
+
+Jobs represent the processing pipeline for a file. Each job moves through a state machine: `queued` -> `processing` -> `completed` or `failed`.
+
+```typescript
+// List jobs with optional status filter
+const { jobs } = await client.jobs.list({ status: 'failed' });
+
+// Get a single job's details (includes provider and timing)
+const job = await client.jobs.get('job-456');
+
+// Cancel a queued or in-progress job
+await client.jobs.cancel('job-456');
+
+// Retry a failed job (resets to queued)
+await client.jobs.retry('job-456');
+```
+
+### Connections
+
+Connections link your cloud storage buckets (S3, GCS, Azure Blob Storage, MinIO) to Roset. Roset uses connections to issue signed URLs and sync file metadata -- it never copies or proxies file bytes.
+
+```typescript
+// Link an S3 bucket to Roset
+const conn = await client.connections.create({
+  provider: 's3',
+  name: 'Production',
+  bucket: 'my-bucket',
+  region: 'us-east-1',
+});
+
+// List all connections for your organization
+const { connections } = await client.connections.list();
+
+// Test that Roset can access the bucket
+const test = await client.connections.test('conn-abc');
+
+// Sync file metadata from the bucket (metadata only, no bytes transferred)
+const sync = await client.connections.sync('conn-abc');
+
+// Delete a connection (your bucket is unaffected)
+await client.connections.delete('conn-abc');
+```
+
+### Nodes
+
+Nodes are file and folder records discovered from synced storage connections. They mirror your bucket's directory structure.
+
+```typescript
+// List nodes from a synced connection
+const { nodes } = await client.nodes.list({
+  connection_id: 'conn-abc',
+  parent_id: 'folder-123', // optional -- filter by parent folder
+});
+
+// Get a node's metadata
+const node = await client.nodes.get('node-xyz');
+
+// Get a signed download URL (direct from your bucket, valid 1 hour)
+const { url } = await client.nodes.download('node-xyz');
+
+// Delete a node record (does not delete the file from your bucket)
+await client.nodes.delete('node-xyz');
+
+// Upload a file to a connected bucket
+const { upload_url, node_id } = await client.nodes.upload('conn-abc', {
+  path: 'uploads/report.pdf',
+  content_type: 'application/pdf',
+});
+
+// Move a node to a different parent folder
+await client.nodes.move('node-xyz', { parent_id: 'folder-456' });
+
+// Rename a node
+await client.nodes.rename('node-xyz', 'new-name.pdf');
+
+// List children of a folder
+const { nodes: children } = await client.nodes.listChildren('folder-123', {
+  type: 'file',
+  limit: 50,
+});
+
+// Search nodes by name or content
+const { nodes: found } = await client.nodes.search('quarterly report', {
+  connection_id: 'conn-abc',
+});
+```
+
+### Webhooks
+
+Webhooks deliver HTTP callbacks when processing events occur (file completed, variant ready, job failed).
+
+```typescript
+// Register a webhook for processing events
+const webhook = await client.webhooks.create({
+  url: 'https://example.com/webhook',
+  events: ['file.processing.completed', 'file.processing.failed'],
+});
+
+// List all registered webhooks
+const { webhooks } = await client.webhooks.list();
+
+// Update which events a webhook subscribes to
+await client.webhooks.update('wh-123', {
+  events: ['file.processing.completed'],
+});
+
+// Send a test event to verify your endpoint
+await client.webhooks.test('wh-123');
+
+// View delivery history for debugging
+const { deliveries } = await client.webhooks.deliveries('wh-123');
+
+// Delete a webhook
+await client.webhooks.delete('wh-123');
+
+// Rotate the signing secret
+const { secret } = await client.webhooks.rotateSecret('wh-123');
+
+// Replay deliveries from a time range
+await client.webhooks.replay('wh-123', {
+  since: '2025-06-14T00:00:00Z',
+  until: '2025-06-15T00:00:00Z',
+  event_types: ['file.processing.completed'],
+});
+```
+
+### Spaces
+
+Spaces provide optional namespace isolation for multi-space applications. If you are building a B2B SaaS product, assign each of your customers a space name to scope their files. Otherwise, all files default to the `"default"` space and you can skip this section.
+
+```typescript
+// List spaces with file counts
+const { spaces } = await client.spaces.list();
+```
+
+### API Keys
+
+Manage API keys programmatically. All Roset API keys use the `rsk_` prefix.
+
+```typescript
+// Create a new API key
+const { api_key, key } = await client.apiKeys.create({ name: 'CI Pipeline' });
+// Save `key` immediately -- it is only shown once
+
+// List existing API keys (key values are redacted)
+const { api_keys } = await client.apiKeys.list();
+
+// Revoke an API key
+await client.apiKeys.delete('key-abc');
+```
+
+### Provider Keys
+
+Provider keys are the API credentials for the extraction and embedding services that Roset orchestrates. All tiers use BYOK (Bring Your Own Keys). A small managed trial quota is included for evaluation — after the trial, configure your own provider keys.
+
+```typescript
+// Save a provider key (e.g., Reducto for document extraction)
+await client.providerKeys.set({
+  provider: 'reducto',
+  key: 'rdt_your_key',
+});
+
+// List configured providers (key values are redacted)
+const { keys } = await client.providerKeys.get();
+
+// Remove a provider key
+await client.providerKeys.delete('reducto');
+```
+
+### Analytics
+
+Query processing metrics and usage data for your organization.
+
+```typescript
+// Organization-wide stats (files, jobs, success rate)
+const overview = await client.analytics.overview();
+
+// Processing latency percentiles by provider
+const processing = await client.analytics.processing(30); // last 30 days
+
+// File type distribution across all uploads
+const types = await client.analytics.fileTypes();
+
+// Per-space health scores and file counts
+const spaces = await client.analytics.spaces();
+
+// Recent processing failures with error details
+const failures = await client.analytics.failures(20);
+
+// Daily upload and processing volume
+const volume = await client.analytics.volume(14);
+
+// Time-series trends (uploads, completions, failures per day)
+const trends = await client.analytics.trends(30);
+
+// Provider reliability and utilization
+const providers = await client.analytics.providers(30);
+
+// Most common failure reasons
+const topFailures = await client.analytics.topFailures(10);
+
+// Storage growth over time
+const growth = await client.analytics.storageGrowth(30);
+```
+
+### Search
+
+Search files by content using full-text, vector similarity, or hybrid search.
+
+```typescript
+// Hybrid search (default)
+const { results, total } = await client.search.query({
+  query: 'payment terms',
+  mode: 'hybrid',  // 'text' | 'vector' | 'hybrid'
+  space: 'contracts',
+  limit: 20,
+});
+
+for (const result of results) {
+  console.log(`${result.file_id} (${result.score}): ${result.snippet}`);
+}
+```
+
+### Q&A
+
+Ask questions about your files using RAG (Retrieval Augmented Generation). Returns a generated answer with source citations.
+
+```typescript
+// Ask a question
+const { answer, sources } = await client.qa.ask({
+  question: 'What are the payment terms?',
+  space: 'contracts',
+  topK: 5,
+});
+
+console.log(answer);
+for (const source of sources) {
+  console.log(`  - ${source.filename} (${source.score})`);
+}
+```
+
+### Typed Variants
+
+When retrieving variants, the SDK returns discriminated union types based on the variant type. This gives you full type safety for each variant's unique fields.
+
+```typescript
+const variants = await client.files.listVariants('file-abc123');
+
+for (const variant of variants.variants) {
+  switch (variant.type) {
+    case 'markdown':
+      // MarkdownVariant: content, pageCount, wordCount, characterCount
+      console.log(`Markdown: ${variant.wordCount} words, ${variant.pageCount} pages`);
+      console.log(variant.content.slice(0, 200));
+      break;
+
+    case 'embeddings':
+      // EmbeddingsVariant: chunks[], model, dimensions, totalChunks
+      console.log(`Embeddings: ${variant.totalChunks} chunks, ${variant.dimensions}d (${variant.model})`);
+      break;
+
+    case 'metadata':
+      // MetadataVariant: pageCount, language, extractionConfidence, qualityWarnings
+      console.log(`Metadata: ${variant.language}, confidence ${variant.extractionConfidence}`);
+      if (variant.qualityWarnings.length > 0) {
+        console.log(`  Warnings: ${variant.qualityWarnings.join(', ')}`);
+      }
+      break;
+
+    case 'thumbnail':
+      // ThumbnailVariant: url, width, height, format
+      console.log(`Thumbnail: ${variant.width}x${variant.height} ${variant.format}`);
+      break;
+
+    case 'searchable-index':
+      // SearchableIndexVariant: indexedAt, termCount, segmentCount
+      console.log(`Index: ${variant.termCount} terms, ${variant.segmentCount} segments`);
+      break;
+  }
+}
+```
+
+**Variant type reference:**
+
+| Type | Fields |
+|------|--------|
+| `MarkdownVariant` | `content`, `pageCount`, `wordCount`, `characterCount` |
+| `EmbeddingsVariant` | `chunks[]`, `model`, `dimensions`, `totalChunks` |
+| `MetadataVariant` | `pageCount`, `language`, `extractionConfidence`, `qualityWarnings` |
+| `ThumbnailVariant` | `url`, `width`, `height`, `format` |
+| `SearchableIndexVariant` | `indexedAt`, `termCount`, `segmentCount` |
+
+### Webhook Verification
+
+Verify incoming webhook signatures to ensure payloads are authentic.
+
+```typescript
+import { verifyWebhookSignature } from '@roset/sdk';
+
+// In your webhook handler (e.g., Express)
+app.post('/webhook', async (req, res) => {
+  const signature = req.headers['x-roset-signature'];
+  const rawBody = req.body; // raw string body
+
+  try {
+    const event = await verifyWebhookSignature(rawBody, signature, process.env.WEBHOOK_SECRET);
+    console.log(`Received: ${event.type}`);
+    // Handle the event...
+    res.sendStatus(200);
+  } catch (err) {
+    console.error('Invalid signature');
+    res.sendStatus(401);
+  }
+});
+```
+
+## Error Handling
+
+All API errors are thrown as typed exceptions with the HTTP status code, error message, and request ID for debugging.
+
+```typescript
+import { RosetClient, NotFoundError, RateLimitError } from '@roset/sdk';
+
+try {
+  await client.files.get('nonexistent');
+} catch (err) {
+  if (err instanceof NotFoundError) {
+    console.log('File not found');
+  } else if (err instanceof RateLimitError) {
+    // Retry after the delay specified in the response
+    console.log('Rate limited, retry after', err.retryAfter);
+  } else {
+    throw err;
+  }
+}
+```
+
+Available error classes:
+
+| Class | HTTP Status | Description |
+|-------|------------|-------------|
+| `ValidationError` | 400 | Invalid request parameters |
+| `UnauthorizedError` | 401 | Missing or invalid API key |
+| `ForbiddenError` | 403 | Insufficient permissions |
+| `NotFoundError` | 404 | Resource does not exist |
+| `ConflictError` | 409 | Resource conflict |
+| `RateLimitError` | 429 | Too many requests |
+| `QuotaExceededError` | 402 | Usage quota exceeded |
+| `TimeoutError` | 408 | Request timed out |
+| `ServerError` | 500 | Internal server error |
+| `ServiceUnavailableError` | 503 | Service temporarily unavailable |
+| `NetworkError` | -- | Network connectivity issue |
+
+## Next Steps
+
+- [API Reference](/docs/reference/api) -- full REST API documentation.
+- [Quickstart](/docs/start/quickstart) -- upload your first file.
+- [Webhooks](/docs/guides/webhooks) -- react to processing events in real time.

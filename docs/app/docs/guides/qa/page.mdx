@@ -1,0 +1,102 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'Q&A',
+  description: 'Ask questions about your files and get answers with citations using RAG.',
+}
+
+# Q&A
+
+Ask natural language questions about your files. Roset uses **Retrieval Augmented Generation (RAG)** to find relevant documents via vector search, then generates an answer with source citations.
+
+## How It Works
+
+1. Your question is embedded using OpenAI `text-embedding-3-small`
+2. Vector search finds the most relevant document chunks
+3. The matched content is sent as context to `gpt-4o-mini`
+4. You get an answer with citations back to specific files
+
+## Quick Start
+
+<Tabs>
+<Tab label="TypeScript">
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+const roset = new RosetClient({ apiKey: 'rsk_...' });
+
+const { answer, sources } = await roset.qa.ask({
+  question: 'What are the payment terms in the contract?',
+});
+
+console.log(answer);
+
+for (const source of sources) {
+  console.log(`  - ${source.filename} (score: ${source.score})`);
+}
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# Non-streaming
+curl -X POST https://api.roset.dev/v1/qa \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What are the payment terms?", "stream": false}'
+
+# Streaming (SSE)
+curl -N -X POST https://api.roset.dev/v1/qa \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What are the payment terms?", "stream": true}'
+```
+</Tab>
+</Tabs>
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `question` | string | required | The question to ask |
+| `space` | string | all spaces | Scope Q&A to a specific space |
+| `topK` | number | `5` | Number of context documents (max 10) |
+| `stream` | boolean | `false` | Stream the response via SSE |
+
+## Response
+
+```json
+{
+  "answer": "The payment terms are net 30 days from the invoice date...",
+  "sources": [
+    {
+      "fileId": "abc-123",
+      "filename": "contract.pdf",
+      "snippet": "Payment shall be made within thirty (30) days...",
+      "score": 0.89
+    }
+  ],
+  "question": "What are the payment terms?"
+}
+```
+
+## Streaming
+
+When `stream: true`, the response is an SSE stream with three event types:
+
+```
+data: {"type": "chunk", "content": "The payment"}
+data: {"type": "chunk", "content": " terms are"}
+data: {"type": "chunk", "content": " net 30 days..."}
+data: {"type": "sources", "sources": [...]}
+data: [DONE]
+```
+
+<Callout type="note">
+Q&A requires an OpenAI API key for both embedding and answer generation. Configure one via the console or `PUT /v1/org/provider-keys`.
+</Callout>
+
+## Next Steps
+
+- [Search](/docs/guides/search) — Lower-level search without LLM answer generation
+- [TypeScript SDK](/docs/sdks/typescript) — Full SDK reference

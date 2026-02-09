@@ -1,0 +1,176 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'Webhooks',
+  description: 'Receive real-time HTTP callbacks when files are processed, variants are ready, and connections sync.',
+}
+
+# Webhooks
+
+Webhooks are HTTP callbacks that Roset sends to your application when processing events occur. Instead of polling the API to check if a file has finished processing, register a webhook endpoint and Roset will POST event payloads to it in real time.
+
+This is the recommended way to react to processing completion in production applications.
+
+## Event Types
+
+| Event | When it fires |
+|-------|------------|
+| `file.created` | A new file record was created via upload |
+| `file.processing.started` | The extraction job began processing |
+| `file.processing.completed` | Extraction finished successfully and variants are available |
+| `file.processing.failed` | Extraction failed (check the job for error details) |
+| `file.variant.ready` | A new variant (markdown, embeddings) is available on the file |
+| `file.deleted` | A file and its variants were deleted |
+| `connection.synced` | A storage connection finished syncing metadata from the bucket |
+
+## Create a Webhook
+
+<Tabs>
+<Tab label="TypeScript">
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+const client = new RosetClient({ apiKey: 'rsk_...' });
+
+// Register an endpoint for processing lifecycle events
+const webhook = await client.webhooks.create({
+  url: 'https://example.com/roset-webhook',
+  events: ['file.processing.completed', 'file.processing.failed'],
+});
+
+console.log(webhook.id);     // "wh-abc123"
+console.log(webhook.secret); // Save this -- used to verify signatures
+```
+</Tab>
+<Tab label="Python">
+```python
+from roset import Client
+
+client = Client(api_key="rsk_...")
+
+# Register an endpoint for processing lifecycle events
+webhook = client.webhooks.create(
+    url="https://example.com/roset-webhook",
+    events=["file.processing.completed", "file.processing.failed"],
+)
+
+print(webhook["id"])      # "wh-abc123"
+print(webhook["secret"])  # Save this -- used to verify signatures
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# Register an endpoint for processing lifecycle events
+curl -X POST https://api.roset.dev/v1/webhooks \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/roset-webhook",
+    "events": ["file.processing.completed", "file.processing.failed"]
+  }'
+```
+</Tab>
+</Tabs>
+
+## Payload Format
+
+Each delivery sends a JSON payload with an event type, timestamp, and event-specific data:
+
+```json
+{
+  "id": "evt-123",
+  "type": "file.processing.completed",
+  "timestamp": "2025-06-15T10:30:00Z",
+  "data": {
+    "file_id": "abc-123",
+    "space": "default",
+    "filename": "report.pdf",
+    "status": "completed"
+  }
+}
+```
+
+## Verify Signatures
+
+Every webhook delivery includes an `X-Roset-Signature` header containing an HMAC SHA-256 signature of the request body. Use your webhook secret (returned when you created the webhook) to verify authenticity.
+
+```typescript
+import crypto from 'crypto';
+
+// Verify that the webhook payload was sent by Roset
+function verifyWebhook(body: string, signature: string, secret: string): boolean {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(body)
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expected),
+  );
+}
+```
+
+<Callout type="caution" title="Always Verify Signatures">
+Verify the signature on every webhook delivery to confirm it originated from Roset and was not tampered with in transit.
+</Callout>
+
+## Retry Policy
+
+Failed deliveries (non-2xx responses or timeouts) are retried up to 3 times with exponential backoff:
+
+| Attempt | Delay |
+|---------|-------|
+| 1st retry | ~1 minute |
+| 2nd retry | ~5 minutes |
+| 3rd retry | ~30 minutes |
+
+After 3 failed attempts, the delivery is marked as `failed`. You can view failed deliveries in the console or via the [deliveries endpoint](/docs/reference/api#get-v1webhooksiddeliveries).
+
+## Manage Webhooks
+
+<Tabs>
+<Tab label="TypeScript">
+```typescript
+// List all registered webhooks
+const { webhooks } = await client.webhooks.list();
+
+// Update which events a webhook subscribes to
+await client.webhooks.update('wh-abc123', {
+  events: ['file.processing.completed'],
+});
+
+// Send a test event to verify your endpoint
+await client.webhooks.test('wh-abc123');
+
+// View delivery history for debugging
+const { deliveries } = await client.webhooks.deliveries('wh-abc123');
+
+// Delete a webhook
+await client.webhooks.delete('wh-abc123');
+```
+</Tab>
+<Tab label="Python">
+```python
+# List all registered webhooks
+result = client.webhooks.list()
+
+# Update which events a webhook subscribes to
+client.webhooks.update("wh-abc123", events=["file.processing.completed"])
+
+# Send a test event to verify your endpoint
+client.webhooks.test("wh-abc123")
+
+# View delivery history for debugging
+deliveries = client.webhooks.deliveries("wh-abc123")
+
+# Delete a webhook
+client.webhooks.delete("wh-abc123")
+```
+</Tab>
+</Tabs>
+
+## Next Steps
+
+- [API Reference](/docs/reference/api#webhooks) -- full webhook endpoint documentation.
+- [Storage Connections](/docs/guides/connections) -- connect your cloud storage buckets.

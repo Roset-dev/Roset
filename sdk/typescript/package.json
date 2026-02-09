@@ -1,0 +1,66 @@
+{
+  "name": "@roset/sdk",
+  "version": "0.1.1",
+  "description": "TypeScript SDK for the Roset transformation engine — upload files, get markdown, embeddings, metadata, thumbnails, and searchable index",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./errors": {
+      "import": "./dist/errors.js",
+      "types": "./dist/errors.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^22.10.2",
+    "eslint": "^9.39.2",
+    "globals": "^16.5.0",
+    "openapi-typescript": "^7.10.1",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.50.1",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "roset",
+    "document-processing",
+    "file-extraction",
+    "embeddings",
+    "markdown",
+    "unstructured-data",
+    "transformation",
+    "sdk",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Roset-dev/Roset.git",
+    "directory": "sdk/typescript"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "Apache-2.0"
+}

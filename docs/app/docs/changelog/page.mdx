@@ -1,0 +1,53 @@
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'Changelog',
+  description: 'Release notes and version history for the Roset transformation engine.',
+}
+
+# Changelog
+
+## v0.1.1 (Beta)
+
+Initial public beta of Roset -- the transformation engine for unstructured data.
+
+### File Processing Orchestration
+
+Upload any document and Roset orchestrates the full extraction pipeline. Roset routes files to the right provider based on content type: **Reducto** for documents (PDF, DOCX, PPTX), **Gemini** for images, and **Whisper** for audio transcription. If an OpenAI provider key is configured, vector embeddings are generated automatically as a second variant.
+
+Roset never proxies or stores your file bytes. File uploads go directly to your storage via signed URLs, and extraction providers access files directly.
+
+### Processing Jobs
+
+Every upload creates a processing job that moves through a state machine: `queued` -> `processing` -> `completed` or `failed`. Cancel queued jobs or retry failed ones through the API. Jobs track which provider handled the extraction and how long it took.
+
+### Variants
+
+Extraction outputs are stored as **variants** linked to the parent file. Each processed file can have multiple variants -- typically extracted markdown and optionally vector embeddings -- all accessible through a single unified API.
+
+### Storage Connections
+
+Link your existing cloud storage buckets (S3, GCS, Azure Blob Storage, MinIO) to Roset. Sync file metadata from your bucket, browse files as nodes, and download via signed URLs. Roset reads metadata only and never modifies your bucket contents.
+
+### Multi-Space Isolation
+
+Optionally organize files by space namespace for B2B SaaS applications. Each space gets its own file counts and storage statistics. Spaces default to `"default"` -- most users can skip this feature entirely.
+
+### Bring Your Own Keys (BYOK)
+
+Configure your own API keys for extraction and embedding providers (BYOK). All tiers use Bring Your Own Keys. A small managed trial quota is included for evaluation. Roset orchestrates the providers using your credentials.
+
+### Webhooks
+
+Register HTTP endpoints to receive real-time callbacks for processing events: file created, processing started, processing completed, processing failed, and variant ready. Deliveries are retried with exponential backoff on failure.
+
+### SDKs and API
+
+- **TypeScript SDK** (`@roset/sdk`) with typed methods for all resources
+- **Python SDK** (`roset`) for Python 3.9+
+- **REST API** with consistent JSON responses and error handling
+- **Developer Console** at [console.roset.dev](https://console.roset.dev) for visual file management, job monitoring, and settings
+
+<Callout type="note">
+Roset is in public beta. The API is stable, but new features and providers are being added regularly. Breaking changes will be communicated in advance.
+</Callout>
