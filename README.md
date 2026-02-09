@@ -65,7 +65,7 @@ variants = client.files.list_variants(result["file_id"])
 - **Unified Upload** — `roset.files.upload(file)` handles PDFs, images, audio, DOCX, PPTX. One API for all file types.
 - **5 Variant Types** — Every upload produces markdown (readable), embeddings (searchable), metadata (filterable), thumbnails (previewable), and a searchable index (queryable).
 - **Multi-Provider Routing** — Automatically routes to Reducto (documents), Gemini (images), Whisper (audio), OpenAI (embeddings).
-- **Managed Keys Included** — All tiers include managed extraction keys. BYOK available on Growth+ plans for 40% off overage rates.
+- **BYOK-First** — Bring your own extraction provider keys (Reducto, OpenAI, Gemini, Whisper). Zero markup on provider costs. Small managed trial quota included for evaluation.
 - **Processing State Machine** — `uploading → queued → processing → completed / failed` with retries and dead-letter handling.
 - **Search & Q&A** — Full-text, vector, and hybrid search. RAG-powered Q&A with source citations.
 - **Storage Connectors** — Connect existing S3, GCS, Azure Blob, MinIO, Cloudflare R2, or Supabase Storage buckets.
