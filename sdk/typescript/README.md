@@ -19,7 +19,7 @@
 
 <br />
 
-Upload any unstructured file — get back markdown, embeddings, metadata, thumbnails, and a searchable index. The TypeScript SDK for the Roset unstructured-to-structured transformation engine.
+Upload any unstructured file — get back markdown, embeddings, metadata, and a searchable index. The TypeScript SDK for the Roset unstructured-to-structured transformation engine.
 
 ## Installation
 
@@ -59,7 +59,7 @@ for (const v of variants) {
 
 | Resource | Methods | Description |
 |----------|---------|-------------|
-| `files` | upload, list, get, delete, getVariants, process, processBatch, uploadBatch, getBatch | Upload files, retrieve variants (markdown, embeddings, thumbnails, metadata) |
+| `files` | upload, list, get, delete, getVariants, process, processBatch, uploadBatch, getBatch | Upload files, retrieve variants (markdown, embeddings, metadata) |
 | `jobs` | list, get, cancel, retry | Track processing status, cancel or retry jobs |
 | `connections` | create, list, get, delete, test, sync, enumerate | Manage storage provider connections (S3, GCS, Azure, R2, MinIO, Supabase) |
 | `nodes` | list, get, delete, download, upload, move, rename, listChildren, search | Browse and manipulate files/folders in connected storage |

@@ -20,7 +20,7 @@
 
 <br />
 
-Upload any unstructured file — get back markdown, embeddings, metadata, thumbnails, and a searchable index. The Python SDK for the Roset unstructured-to-structured transformation engine.
+Upload any unstructured file — get back markdown, embeddings, metadata, and a searchable index. The Python SDK for the Roset unstructured-to-structured transformation engine.
 
 ## Installation
 
@@ -46,7 +46,7 @@ print(job["status"])  # "completed"
 
 # Retrieve extracted variants
 variants = client.files.list_variants(file_id)
-# -> markdown, embeddings, metadata, thumbnails, searchable-index
+# -> markdown, embeddings, metadata, searchable-index
 
 # Get a specific variant
 markdown = client.files.get_variant(file_id, "markdown")
@@ -61,7 +61,7 @@ client.jobs.retry(job_id)
 | Resource | Description |
 |----------|-------------|
 | `upload` | Upload files -- automatic provider routing (Reducto, Gemini, Whisper) |
-| `files` | List, get, delete files and retrieve variants (markdown, embeddings, metadata, thumbnails, searchable-index) |
+| `files` | List, get, delete files and retrieve variants (markdown, embeddings, metadata, searchable-index) |
 | `jobs` | Track processing status, cancel, retry |
 | `spaces` | Optional namespace scoping for B2B SaaS multi-tenancy |
 | `connections` | Connect external storage providers (S3, GCS, Azure Blob, R2, MinIO, Supabase Storage) |
@@ -89,7 +89,6 @@ variants = client.files.list_variants("file-id")
 # Get a specific variant type
 markdown = client.files.get_variant("file-id", "markdown")
 embeddings = client.files.get_variant("file-id", "embeddings")
-thumbnail = client.files.get_variant("file-id", "thumbnail")
 metadata = client.files.get_variant("file-id", "metadata")
 index = client.files.get_variant("file-id", "searchable-index")
 ```

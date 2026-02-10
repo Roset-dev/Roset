@@ -3,12 +3,12 @@ import { Callout } from '@/components/callout'
 
 export const metadata = {
   title: 'Variant Types',
-  description: 'Deep dive on the 5 variant types: markdown, embeddings, metadata, thumbnail, and searchable-index.',
+  description: 'Deep dive on the 4 variant types: markdown, embeddings, metadata, and searchable-index.',
 }
 
 # Variant Types
 
-Variants are the structured outputs of Roset's transformation pipeline. Each variant is a different representation of the same source file, linked by lineage. When you upload a file, Roset produces up to 5 variant types automatically.
+Variants are the structured outputs of Roset's transformation pipeline. Each variant is a different representation of the same source file, linked by lineage. When you upload a file, Roset produces up to 4 variant types automatically.
 
 ## Overview
 
@@ -17,7 +17,6 @@ Variants are the structured outputs of Roset's transformation pipeline. Each var
 | `markdown` | Extracted text in markdown format | Reducto, Gemini, Whisper | Display, downstream processing |
 | `embeddings` | Vector embeddings for each chunk | OpenAI | Semantic search, RAG |
 | `metadata` | Page count, language, confidence | Extraction provider | Filtering, quality checks |
-| `thumbnail` | Visual preview image | Extraction provider | File browsers, previews |
 | `searchable-index` | Full-text search index | Roset | Keyword search |
 
 ## Markdown
@@ -138,44 +137,6 @@ if (metadata.qualityWarnings.length > 0) {
 <Tab label="cURL">
 ```bash
 curl https://api.roset.dev/v1/files/FILE_ID/variants/metadata \
-  -H "Authorization: ApiKey rsk_..."
-```
-</Tab>
-</Tabs>
-
-## Thumbnail
-
-A visual preview image of the file, useful for file browsers and preview UIs.
-
-**Fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `url` | string | Signed URL to the thumbnail image |
-| `width` | number | Image width in pixels |
-| `height` | number | Image height in pixels |
-| `format` | string | Image format (e.g., `png`, `jpeg`) |
-
-**When it's produced:** For documents and images that have a visual representation.
-
-<Tabs>
-<Tab label="Python">
-```python
-thumbnail = client.files.get_variant(file_id, "thumbnail")
-print(f"Size: {thumbnail.get('width')}x{thumbnail.get('height')} {thumbnail.get('format')}")
-print(f"URL: {thumbnail.get('url')}")
-```
-</Tab>
-<Tab label="TypeScript">
-```typescript
-const thumbnail = await client.files.getVariant(fileId, 'thumbnail');
-console.log(`Size: ${thumbnail.width}x${thumbnail.height} ${thumbnail.format}`);
-console.log(`URL: ${thumbnail.url}`);
-```
-</Tab>
-<Tab label="cURL">
-```bash
-curl https://api.roset.dev/v1/files/FILE_ID/variants/thumbnail \
   -H "Authorization: ApiKey rsk_..."
 ```
 </Tab>

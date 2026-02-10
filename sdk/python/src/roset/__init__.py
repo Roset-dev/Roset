@@ -1,8 +1,8 @@
 """Roset Python SDK -- The Transformation Engine for Unstructured Data.
 
 The ``roset`` package provides a Python client for the Roset API. Upload any
-document and get back five structured outputs: markdown, embeddings, metadata,
-thumbnails, and a searchable index. Roset orchestrates extraction providers
+document and get back four structured outputs: markdown, embeddings, metadata,
+and a searchable index. Roset orchestrates extraction providers
 (Reducto for documents, Gemini for images, Whisper for audio, OpenAI for
 embeddings) and manages queues, retries, variant tracking, and multi-space
 isolation. File bytes go directly to storage via signed URLs.
@@ -29,7 +29,7 @@ Key concepts:
 * **Jobs** -- Processing state machine (uploading -> queued -> processing ->
   completed / failed). Track extraction progress and support cancel/retry.
 * **Variants** -- Outputs produced by extraction providers: markdown text,
-  vector embeddings, thumbnails, and structured metadata.
+  vector embeddings, and structured metadata.
 * **Spaces** -- Optional namespace for B2B SaaS multi-tenancy. Defaults to
   ``"default"``; most single-space applications never need to change this.
 * **API Keys** -- Authentication tokens prefixed with ``rsk_``.

@@ -371,11 +371,6 @@ for (const variant of variants.variants) {
       }
       break;
 
-    case 'thumbnail':
-      // ThumbnailVariant: url, width, height, format
-      console.log(`Thumbnail: ${variant.width}x${variant.height} ${variant.format}`);
-      break;
-
     case 'searchable-index':
       // SearchableIndexVariant: indexedAt, termCount, segmentCount
       console.log(`Index: ${variant.termCount} terms, ${variant.segmentCount} segments`);
@@ -391,7 +386,6 @@ for (const variant of variants.variants) {
 | `MarkdownVariant` | `content`, `pageCount`, `wordCount`, `characterCount` |
 | `EmbeddingsVariant` | `chunks[]`, `model`, `dimensions`, `totalChunks` |
 | `MetadataVariant` | `pageCount`, `language`, `extractionConfidence`, `qualityWarnings` |
-| `ThumbnailVariant` | `url`, `width`, `height`, `format` |
 | `SearchableIndexVariant` | `indexedAt`, `termCount`, `segmentCount` |
 
 ### Webhook Verification

@@ -6,7 +6,7 @@
       {
         "heading": null,
         "id": null,
-        "content": "# Transform Unstructured Files into Structured Data\n\nRoset is currently in public beta (v0.1.1). The API is stable, but expect new features and providers regularly. Breaking changes will be communicated in advance.\n\nRoset is the transformation engine for unstructured data. Upload any file -- PDF, image, audio, document -- and Roset routes it to the right extraction provider, generates embeddings, and gives you back five structured variants: markdown, embeddings, metadata, thumbnails, and a searc"
+        "content": "# Transform Unstructured Files into Structured Data\n\nRoset is currently in public beta (v0.1.1). The API is stable, but expect new features and providers regularly. Breaking changes will be communicated in advance.\n\nRoset is the transformation engine for unstructured data. Upload any file -- PDF, image, audio, document -- and Roset routes it to the right extraction provider, generates embeddings, and gives you back four structured variants: markdown, embeddings, metadata, and a searchable index."
       },
       {
         "heading": "Quick Start",
@@ -31,7 +31,7 @@
       {
         "heading": "Core Concepts",
         "id": "core-concepts",
-        "content": "- Files are documents tracked by Roset's metadata store. Each file has a processing status and zero or more variants.\n- Variants are the extraction outputs linked to a parent file -- extracted markdown, vector embeddings, thumbnails, or structured metadata. See Variant Types for details.\n- Jobs represent the processing pipeline for a file. Each job moves through a state machine: queued -> processing -> completed or failed.\n- Connections are linked storage buckets (S3, GCS, Azure Blob Storage, Mi"
+        "content": "- Files are documents tracked by Roset's metadata store. Each file has a processing status and zero or more variants.\n- Variants are the extraction outputs linked to a parent file -- extracted markdown, vector embeddings, or structured metadata. See Variant Types for details.\n- Jobs represent the processing pipeline for a file. Each job moves through a state machine: queued -> processing -> completed or failed.\n- Connections are linked storage buckets (S3, GCS, Azure Blob Storage, MinIO, Cloudfl"
       },
       {
         "heading": "Next Steps",
@@ -140,12 +140,12 @@
       {
         "heading": null,
         "id": null,
-        "content": "# Variant Types\n\nVariants are the structured outputs of Roset's transformation pipeline. Each variant is a different representation of the same source file, linked by lineage. When you upload a file, Roset produces up to 5 variant types automatically."
+        "content": "# Variant Types\n\nVariants are the structured outputs of Roset's transformation pipeline. Each variant is a different representation of the same source file, linked by lineage. When you upload a file, Roset produces up to 4 variant types automatically."
       },
       {
         "heading": "Overview",
         "id": "overview",
-        "content": "| Type | What it contains | Produced by | Use case |\n|------|-----------------|-------------|----------|\n| markdown | Extracted text in markdown format | Reducto, Gemini, Whisper | Display, downstream processing |\n| embeddings | Vector embeddings for each chunk | OpenAI | Semantic search, RAG |\n| metadata | Page count, language, confidence | Extraction provider | Filtering, quality checks |\n| thumbnail | Visual preview image | Extraction provider | File browsers, previews |\n| searchable-index | "
+        "content": "| Type | What it contains | Produced by | Use case |\n|------|-----------------|-------------|----------|\n| markdown | Extracted text in markdown format | Reducto, Gemini, Whisper | Display, downstream processing |\n| embeddings | Vector embeddings for each chunk | OpenAI | Semantic search, RAG |\n| metadata | Page count, language, confidence | Extraction provider | Filtering, quality checks |\n| searchable-index | Full-text search index | Roset | Keyword search |"
       },
       {
         "heading": "Markdown",
@@ -161,11 +161,6 @@
         "heading": "Metadata",
         "id": "metadata",
         "content": "Extraction metadata including page count, detected language, and quality signals.\n\nFields:\n\n| Field | Type | Description |\n|-------|------|-------------|\n| pageCount | number | Number of pages in the source file |\n| language | string | Detected language (ISO 639-1) |\n| extractionConfidence | number | Confidence score (0--1) |\n| qualityWarnings | string[] | Any quality issues detected |\n\nWhen it's produced: Alongside the markdown variant during extraction.\n\n`python\nmetadata = client.files.get_var"
-      },
-      {
-        "heading": "Thumbnail",
-        "id": "thumbnail",
-        "content": "A visual preview image of the file, useful for file browsers and preview UIs.\n\nFields:\n\n| Field | Type | Description |\n|-------|------|-------------|\n| url | string | Signed URL to the thumbnail image |\n| width | number | Image width in pixels |\n| height | number | Image height in pixels |\n| format | string | Image format (e.g., png, jpeg) |\n\nWhen it's produced: For documents and images that have a visual representation.\n\n`python\nthumbnail = client.files.get_variant(file_id, \"thumbnail\")\nprint(f"
       },
       {
         "heading": "Searchable Index",
@@ -262,7 +257,7 @@
       {
         "heading": "Variants",
         "id": "variants",
-        "content": "Variants are extraction outputs linked to a parent file. When Roset processes a file, the extraction provider produces one or more variants -- typically markdown from the document content, and optionally vector embeddings if an OpenAI key is configured.\n\nCommon variant types: markdown, embeddings, thumbnail, metadata, searchable-index.\n\n### GET /v1/files/:file_id/variants\n\nList all variants for a file.\n\n`bash\ncurl https://api.roset.dev/v1/files/abc-123/variants \\\n  -H \"Authorization: ApiKey rsk_"
+        "content": "Variants are extraction outputs linked to a parent file. When Roset processes a file, the extraction provider produces one or more variants -- typically markdown from the document content, and optionally vector embeddings if an OpenAI key is configured.\n\nCommon variant types: markdown, embeddings, metadata, searchable-index.\n\n### GET /v1/files/:file_id/variants\n\nList all variants for a file.\n\n`bash\ncurl https://api.roset.dev/v1/files/abc-123/variants \\\n  -H \"Authorization: ApiKey rsk_...\"\n`\n\nRes"
       },
       {
         "heading": "Spaces",
@@ -681,12 +676,12 @@
       {
         "heading": null,
         "id": null,
-        "content": "# Transform Any File\n\nUpload a single file to Roset and get back every structured representation your app needs: markdown, embeddings, metadata, thumbnails, and a searchable index. This is the core workflow -- one API call triggers the full transformation pipeline."
+        "content": "# Transform Any File\n\nUpload a single file to Roset and get back every structured representation your app needs: markdown, embeddings, metadata, and a searchable index. This is the core workflow -- one API call triggers the full transformation pipeline."
       },
       {
         "heading": "The Workflow",
         "id": "the-workflow",
-        "content": "``\nYour File --> Roset --> Route to Provider --> Extract --> Embed --> 5 Variants\n`\n\n1. Upload your file (PDF, image, audio, or document)\n2. Roset routes it to the right extraction provider (Reducto, Gemini, or Whisper)\n3. Extraction produces markdown and metadata\n4. Embedding generates vector embeddings via OpenAI\n5. You retrieve any or all of the 5 variant types"
+        "content": "``\nYour File --> Roset --> Route to Provider --> Extract --> Embed --> 4 Variants\n`\n\n1. Upload your file (PDF, image, audio, or document)\n2. Roset routes it to the right extraction provider (Reducto, Gemini, or Whisper)\n3. Extraction produces markdown and metadata\n4. Embedding generates vector embeddings via OpenAI\n5. You retrieve any or all of the 4 variant types"
       },
       {
         "heading": "Complete Example",
@@ -696,7 +691,7 @@
       {
         "heading": "What Gets Produced",
         "id": "what-gets-produced",
-        "content": "Every file transformation produces up to 5 variant types. See Variant Types for details on each.\n\n| Variant | What it contains | Provider |\n|---------|-----------------|----------|\n| markdown | Extracted text in markdown format | Reducto, Gemini, or Whisper |\n| embeddings | Vector embeddings for each chunk | OpenAI |\n| metadata | Page count, language, extraction confidence | Extraction provider |\n| thumbnail | Visual preview image | Extraction provider |\n| searchable-index | Full-text search ind"
+        "content": "Every file transformation produces up to 4 variant types. See Variant Types for details on each.\n\n| Variant | What it contains | Provider |\n|---------|-----------------|----------|\n| markdown | Extracted text in markdown format | Reducto, Gemini, or Whisper |\n| embeddings | Vector embeddings for each chunk | OpenAI |\n| metadata | Page count, language, extraction confidence | Extraction provider |\n| searchable-index | Full-text search index | Roset |"
       },
       {
         "heading": "Provider Routing",
@@ -706,7 +701,7 @@
       {
         "heading": "Selective Variants",
         "id": "selective-variants",
-        "content": "By default, Roset generates all applicable variants. You can request only specific types:\n\n`python\n# Only generate markdown and embeddings (skip thumbnails, metadata, index)\nfile = client.files.upload(\n    filename=\"notes.pdf\",\n    content_type=\"application/pdf\",\n    size_bytes=12000,\n    variants=[\"markdown\", \"embeddings\"],\n)\n`\n\n`typescript\n// Only generate markdown and embeddings (skip thumbnails, metadata, index)\nconst file = await client.files.upload({\n  filename: 'notes.pdf',\n  content_type"
+        "content": "By default, Roset generates all applicable variants. You can request only specific types:\n\n`python\n# Only generate markdown and embeddings (skip metadata, index)\nfile = client.files.upload(\n    filename=\"notes.pdf\",\n    content_type=\"application/pdf\",\n    size_bytes=12000,\n    variants=[\"markdown\", \"embeddings\"],\n)\n`\n\n`typescript\n// Only generate markdown and embeddings (skip metadata, index)\nconst file = await client.files.upload({\n  filename: 'notes.pdf',\n  content_type: 'application/pdf',\n  s"
       },
       {
         "heading": "Batch Uploads",

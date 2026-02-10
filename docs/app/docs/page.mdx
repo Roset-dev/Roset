@@ -5,7 +5,7 @@ import { PromptCard } from '@/components/prompt-card'
 
 export const metadata = {
   title: 'Roset Documentation',
-  description: 'Transform unstructured files into structured data. Upload any document -- get back markdown, embeddings, metadata, thumbnails, and a searchable index.',
+  description: 'Transform unstructured files into structured data. Upload any document -- get back markdown, embeddings, metadata, and a searchable index.',
 }
 
 # Transform Unstructured Files into Structured Data
@@ -14,7 +14,7 @@ export const metadata = {
 Roset is currently in **public beta** (v0.1.1). The API is stable, but expect new features and providers regularly. Breaking changes will be communicated in advance.
 </Callout>
 
-Roset is the **transformation engine for unstructured data**. Upload any file -- PDF, image, audio, document -- and Roset routes it to the right extraction provider, generates embeddings, and gives you back five structured variants: **markdown**, **embeddings**, **metadata**, **thumbnails**, and a **searchable index**.
+Roset is the **transformation engine for unstructured data**. Upload any file -- PDF, image, audio, document -- and Roset routes it to the right extraction provider, generates embeddings, and gives you back four structured variants: **markdown**, **embeddings**, **metadata**, and a **searchable index**.
 
 ## Quick Start
 
@@ -106,7 +106,7 @@ curl https://api.roset.dev/v1/files/FILE_ID/variants \
 
 <PromptCard
   title="Get started faster with AI"
-  prompt="Roset (roset.dev) is a developer API that transforms unstructured files (PDFs, images, audio, DOCX) into structured variants: markdown, vector embeddings, metadata, thumbnails, and a searchable index. Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Key methods: `client.files.upload(filename, content_type, size_bytes)`, `client.files.get(file_id)` to poll status, `client.files.list_variants(file_id)` to retrieve outputs. Help me install the SDK, upload a PDF, poll until status is 'completed', then retrieve the markdown and embeddings variants."
+  prompt="Roset (roset.dev) is a developer API that transforms unstructured files (PDFs, images, audio, DOCX) into structured variants: markdown, vector embeddings, metadata, and a searchable index. Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Key methods: `client.files.upload(filename, content_type, size_bytes)`, `client.files.get(file_id)` to poll status, `client.files.list_variants(file_id)` to retrieve outputs. Help me install the SDK, upload a PDF, poll until status is 'completed', then retrieve the markdown and embeddings variants."
 />
 
 ## What Can You Build?
@@ -133,7 +133,7 @@ Upload --> Route (Reducto / Gemini / Whisper) --> Extract --> Embed (OpenAI) -->
 ## Core Concepts
 
 - **Files** are documents tracked by Roset's metadata store. Each file has a processing status and zero or more variants.
-- **Variants** are the extraction outputs linked to a parent file -- extracted markdown, vector embeddings, thumbnails, or structured metadata. See [Variant Types](/docs/features/variants) for details.
+- **Variants** are the extraction outputs linked to a parent file -- extracted markdown, vector embeddings, or structured metadata. See [Variant Types](/docs/features/variants) for details.
 - **Jobs** represent the processing pipeline for a file. Each job moves through a state machine: `queued` -> `processing` -> `completed` or `failed`.
 - **Connections** are linked storage buckets (S3, GCS, Azure Blob Storage, MinIO, Cloudflare R2, Supabase Storage).
 - **Spaces** provide optional namespace isolation for multi-tenant applications. Defaults to `"default"`.

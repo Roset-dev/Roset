@@ -10,7 +10,6 @@ export type {
   EmbeddingChunk,
   EmbeddingsVariant,
   MetadataVariant,
-  ThumbnailVariant,
   SearchableIndexVariant,
   TypedVariant,
   VariantType,

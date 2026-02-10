@@ -18,7 +18,7 @@
 
 <br />
 
-Upload any document — get back markdown, embeddings, metadata, thumbnails, and a searchable index. What takes 7 weeks of plumbing to build, Roset handles in 5 minutes.
+Upload any document — get back markdown, embeddings, metadata, and a searchable index. What takes 7 weeks of plumbing to build, Roset handles in 5 minutes.
 
 Roset doesn't compete with extraction services (Reducto, Gemini, Whisper). It **orchestrates** them — managing queues, retries, normalization, variant tracking, and a unified output schema across all file types.
 
@@ -41,7 +41,7 @@ await fetch(upload_url, { method: "PUT", body: fileBuffer });
 
 // Retrieve structured variants
 const { variants } = await roset.files.listVariants(file_id);
-// → markdown, embeddings, metadata, thumbnails, searchable-index
+// → markdown, embeddings, metadata, searchable-index
 ```
 
 ```python
@@ -63,7 +63,7 @@ variants = client.files.list_variants(result["file_id"])
 ## Features
 
 - **Unified Upload** — `roset.files.upload(file)` handles PDFs, images, audio, DOCX, PPTX. One API for all file types.
-- **5 Variant Types** — Every upload produces markdown (readable), embeddings (searchable), metadata (filterable), thumbnails (previewable), and a searchable index (queryable).
+- **4 Variant Types** — Every upload produces markdown (readable), embeddings (searchable), metadata (filterable), and a searchable index (queryable).
 - **Multi-Provider Routing** — Automatically routes to Reducto (documents), Gemini (images), Whisper (audio), OpenAI (embeddings).
 - **Managed Keys by Default** — Roset manages extraction provider keys (Reducto, OpenAI, Gemini, Whisper) so you can start processing immediately. Optionally bring your own keys (BYOK) in Settings.
 - **Processing State Machine** — `uploading → queued → processing → completed / failed` with retries and dead-letter handling.
@@ -95,7 +95,7 @@ Roset is a **transformation engine** that sits between your storage and everythi
 
 1. **Upload** — Files go in unstructured (PDF, image, audio, document).
 2. **Transform** — Roset routes to the right extraction provider (Reducto, Gemini, Whisper, OpenAI) and produces structured variants.
-3. **Query** — Downstream systems consume the structured outputs: markdown for LLMs, embeddings for RAG, metadata for filtering, thumbnails for previews, searchable index for full-text search.
+3. **Query** — Downstream systems consume the structured outputs: markdown for LLMs, embeddings for RAG, metadata for filtering, searchable index for full-text search.
 
 ## License
 

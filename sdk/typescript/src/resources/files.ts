@@ -6,7 +6,7 @@
  * creates a processing job that routes the file to the appropriate
  * extraction provider (Reducto for documents, Gemini for images, Whisper for
  * audio). After processing completes, variants (markdown, embeddings,
- * thumbnails) become available on the file.
+ * metadata) become available on the file.
  *
  * Roset never proxies file bytes -- the SDK receives a signed upload URL and
  * your application uploads directly to the storage bucket.
@@ -75,7 +75,7 @@ export interface FileRecord {
   /** ISO 8601 timestamp of the last update. */
   updated_at: string;
 
-  /** Processing variants (markdown, embeddings, thumbnails) if requested via include. */
+  /** Processing variants (markdown, embeddings, metadata) if requested via include. */
   variants?: VariantRecord[];
 }
 
@@ -84,7 +84,7 @@ export interface FileRecord {
  *
  * Variants are created by extraction providers during processing. Common types
  * include `"markdown"` (extracted text), `"embedding"` (vector representation),
- * `"thumbnail"` (preview image), and `"metadata"` (structured extraction output).
+ * and `"metadata"` (structured extraction output).
  */
 export interface VariantRecord {
   /** Unique variant identifier (UUID). */
@@ -93,7 +93,7 @@ export interface VariantRecord {
   /** ID of the parent file this variant was derived from. */
   file_id: string;
 
-  /** Variant type: `"markdown"`, `"embedding"`, `"thumbnail"`, or `"metadata"`. */
+  /** Variant type: `"markdown"`, `"embedding"`, or `"metadata"`. */
   type: string;
 
   /** Extraction provider that produced this variant (e.g. `"reducto"`, `"openai"`), or null. */
@@ -233,8 +233,8 @@ export class FilesResource {
     embedding_model?: string;
     /** Chunking configuration for embeddings generation. */
     chunking?: { chunk_size?: number; chunk_overlap?: number; strategy?: 'recursive' | 'paragraph' | 'sentence' };
-    /** Subset of variant types to generate. Defaults to all 5. */
-    variants?: Array<'markdown' | 'embeddings' | 'metadata' | 'thumbnail' | 'searchable-index'>;
+    /** Subset of variant types to generate. Defaults to all 4. */
+    variants?: Array<'markdown' | 'embeddings' | 'metadata' | 'searchable-index'>;
     /** Skip processing — create file record without triggering extraction. */
     skip_processing?: boolean;
     /**
@@ -358,7 +358,7 @@ export class FilesResource {
    * Retrieve all processing variants for a file.
    *
    * Variants are outputs produced by extraction providers: markdown text,
-   * vector embeddings, thumbnails, and structured metadata. They become
+   * vector embeddings, and structured metadata. They become
    * available after the file's processing job completes.
    *
    * @param id - The file's unique identifier (UUID).
@@ -390,8 +390,8 @@ export class FilesResource {
       embedding_model?: string;
       /** Chunking configuration for embeddings generation. */
       chunking?: { chunk_size?: number; chunk_overlap?: number; strategy?: 'recursive' | 'paragraph' | 'sentence' };
-      /** Subset of variant types to generate. Defaults to all 5. */
-      variants?: Array<'markdown' | 'embeddings' | 'metadata' | 'thumbnail' | 'searchable-index'>;
+      /** Subset of variant types to generate. Defaults to all 4. */
+      variants?: Array<'markdown' | 'embeddings' | 'metadata' | 'searchable-index'>;
     },
   ): Promise<{ file_id: string; job_id: string; status: string }> {
     return this.http.post<{ file_id: string; job_id: string; status: string }>(
@@ -445,7 +445,7 @@ export class FilesResource {
       provider?: 'reducto' | 'llamaparse' | 'gemini' | 'whisper' | 'openai';
       embedding_model?: string;
       chunking?: { chunk_size?: number; chunk_overlap?: number; strategy?: 'recursive' | 'paragraph' | 'sentence' };
-      variants?: Array<'markdown' | 'embeddings' | 'metadata' | 'thumbnail' | 'searchable-index'>;
+      variants?: Array<'markdown' | 'embeddings' | 'metadata' | 'searchable-index'>;
       skip_processing?: boolean;
     }>,
     options?: {

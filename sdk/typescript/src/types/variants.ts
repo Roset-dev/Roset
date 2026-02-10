@@ -95,19 +95,6 @@ export interface MetadataVariant {
   providerRaw: Record<string, unknown>;
 }
 
-/** Thumbnail variant — visual preview image for the file. */
-export interface ThumbnailVariant {
-  type: 'thumbnail';
-  /** Signed URL to the thumbnail image. */
-  url: string;
-  /** Thumbnail width in pixels. */
-  width: number;
-  /** Thumbnail height in pixels. */
-  height: number;
-  /** Image format (e.g. `"png"`, `"webp"`). */
-  format: string;
-}
-
 /** Searchable index variant — full-text search index entry. */
 export interface SearchableIndexVariant {
   type: 'searchable-index';
@@ -128,7 +115,6 @@ export interface SearchableIndexVariant {
  *   case 'markdown': variant.content; break;
  *   case 'embeddings': variant.chunks; break;
  *   case 'metadata': variant.extractionConfidence; break;
- *   case 'thumbnail': variant.url; break;
  *   case 'searchable-index': variant.termCount; break;
  * }
  * ```
@@ -137,7 +123,6 @@ export type TypedVariant =
   | MarkdownVariant
   | EmbeddingsVariant
   | MetadataVariant
-  | ThumbnailVariant
   | SearchableIndexVariant;
 
 /** All possible variant type strings. */

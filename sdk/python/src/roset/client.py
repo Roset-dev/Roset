@@ -32,7 +32,7 @@ class FilesResource:
     Files represent documents uploaded for processing. Each file tracks its
     original metadata (filename, MIME type, size) and is associated with one
     or more processing jobs. Once processing completes, extracted outputs are
-    available as **variants** (markdown, embeddings, thumbnails, etc.).
+    available as **variants** (markdown, embeddings, metadata, etc.).
 
     This resource maps to the ``/v1/files`` API endpoints. For most use cases,
     prefer :meth:`Client.upload` which handles multipart upload and job
@@ -134,7 +134,7 @@ class FilesResource:
 
         Returns:
             A dict containing the file record and a ``"variants"`` list with
-            all extracted outputs (markdown, embeddings, thumbnails, etc.).
+            all extracted outputs (markdown, embeddings, metadata, etc.).
 
         Raises:
             RosetNotFoundError: If no file exists with the given ID.
@@ -164,8 +164,8 @@ class FilesResource:
         """List all variants produced by processing a file.
 
         Variants are the extracted outputs from the processing pipeline:
-        markdown text, vector embeddings, thumbnails, structured metadata,
-        and other derivative formats.
+        markdown text, vector embeddings, structured metadata, and other
+        derivative formats.
 
         Args:
             file_id: Unique file identifier (UUID).
@@ -185,8 +185,7 @@ class FilesResource:
         Args:
             file_id: Unique file identifier (UUID).
             variant_type: The variant type to retrieve. Common types include
-                ``"markdown"``, ``"embeddings"``, ``"thumbnail"``, and
-                ``"metadata"``.
+                ``"markdown"``, ``"embeddings"``, and ``"metadata"``.
 
         Returns:
             A dict containing the variant record with its ``type``,

@@ -2,8 +2,8 @@
  * @roset/sdk -- TypeScript SDK for the Roset file processing orchestration API.
  *
  * Roset is the transformation engine for unstructured data. Upload any document
- * and get back structured outputs: markdown, embeddings, metadata, thumbnails,
- * and a searchable index. Roset orchestrates extraction providers (Reducto,
+ * and get back structured outputs: markdown, embeddings, metadata, and a
+ * searchable index. Roset orchestrates extraction providers (Reducto,
  * Gemini, Whisper, OpenAI), managing queues, retries, variant tracking, and
  * space isolation. File bytes go directly to storage via signed URLs.
  *
@@ -114,7 +114,6 @@ export type {
   EmbeddingChunk,
   EmbeddingsVariant,
   MetadataVariant,
-  ThumbnailVariant,
   SearchableIndexVariant,
   TypedVariant,
   VariantType,

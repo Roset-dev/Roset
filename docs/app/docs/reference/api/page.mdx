@@ -68,7 +68,7 @@ The response includes an `upload_url` field. Upload the file bytes directly to t
 | `provider` | string | No | Force a specific extraction provider (`reducto`, `gemini`, `whisper`) instead of auto-routing |
 | `embedding_model` | string | No | Override the default embedding model |
 | `chunking` | object | No | Chunking config: `{ strategy, chunk_size, chunk_overlap }` |
-| `variants` | string[] | No | Variant types to generate (e.g., `["markdown", "embeddings", "thumbnail"]`). Defaults to all applicable types. |
+| `variants` | string[] | No | Variant types to generate (e.g., `["markdown", "embeddings"]`). Defaults to all applicable types. |
 | `skip_processing` | boolean | No | If `true`, create the file record without starting a processing job |
 | `metadata` | object | No | Custom key-value metadata (max 50 keys, string values) |
 
@@ -442,7 +442,7 @@ Response `200`:
 
 Variants are extraction outputs linked to a parent file. When Roset processes a file, the extraction provider produces one or more variants -- typically markdown from the document content, and optionally vector embeddings if an OpenAI key is configured.
 
-Common variant types: `markdown`, `embeddings`, `thumbnail`, `metadata`, `searchable-index`.
+Common variant types: `markdown`, `embeddings`, `metadata`, `searchable-index`.
 
 ### GET /v1/files/:file_id/variants
 
@@ -1444,7 +1444,7 @@ Response `200`:
     "chunk_size": 1000,
     "chunk_overlap": 200
   },
-  "default_variants": ["markdown", "embeddings", "metadata", "thumbnail", "searchable-index"]
+  "default_variants": ["markdown", "embeddings", "metadata", "searchable-index"]
 }
 ```
 
