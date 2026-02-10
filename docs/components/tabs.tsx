@@ -1,34 +1,40 @@
-/**
- * Tabbed content switcher for documentation pages.
- * Commonly used to present language-specific code examples (TypeScript / Python / cURL)
- * or alternative configuration approaches side by side.
- *
- * @module components/tabs
- */
 "use client";
 
-import { useState, Children, isValidElement } from "react";
+import { useState, useEffect, Children, isValidElement } from "react";
+import { useSdkPreference } from "@/lib/sdk-preference";
 
-/**
- * Container that renders a row of tab buttons and displays one {@link Tab} panel at a time.
- * Automatically discovers child `<Tab>` elements and uses their `label` prop as button text.
- *
- * @param props.children - One or more `<Tab label="...">` elements.
- *
- * @example
- * ```mdx
- * <Tabs>
- *   <Tab label="TypeScript">```ts ... ```</Tab>
- *   <Tab label="Python">```python ... ```</Tab>
- * </Tabs>
- * ```
- */
+const LABEL_TO_SDK: Record<string, string> = {
+  python: "python",
+  typescript: "typescript",
+  curl: "curl",
+  ts: "typescript",
+  bash: "curl",
+  shell: "curl",
+};
+
+function normalizeLabel(label: string): string | null {
+  return LABEL_TO_SDK[label.toLowerCase()] ?? null;
+}
+
 export function Tabs({ children }: { children: React.ReactNode }) {
+  const { sdk } = useSdkPreference();
   const [active, setActive] = useState(0);
 
+  // Identify Tab children by their `label` prop rather than by reference identity,
+  // because Turbopack can split modules across chunks causing child.type !== Tab.
   const tabs = Children.toArray(children).filter(
-    (child) => isValidElement(child) && child.type === Tab
-  ) as React.ReactElement<{ label: string; children: React.ReactNode }>[];
+    (child): child is React.ReactElement<{ label: string; children: React.ReactNode }> =>
+      isValidElement(child) &&
+      typeof (child.props as Record<string, unknown>).label === "string"
+  );
+
+  // Sync active tab when SDK preference changes
+  useEffect(() => {
+    const idx = tabs.findIndex(
+      (tab) => normalizeLabel(tab.props.label) === sdk
+    );
+    if (idx >= 0) setActive(idx);
+  }, [sdk]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="my-6 bg-surface-elevated border border-code-border rounded-xl overflow-hidden">
@@ -52,14 +58,6 @@ export function Tabs({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * Individual tab panel within a {@link Tabs} container.
- * The `label` prop is read by the parent `Tabs` to render the tab button; this component
- * itself simply renders its children as a fragment.
- *
- * @param props.label - Text displayed on the tab button (consumed by parent `Tabs`).
- * @param props.children - Content shown when this tab is active.
- */
 export function Tab({
   children,
 }: {

@@ -27,6 +27,23 @@ This is the recommended way to react to processing completion in production appl
 ## Create a Webhook
 
 <Tabs>
+<Tab label="Python">
+```python
+import os
+from roset import Client
+
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+
+# Register an endpoint for processing lifecycle events
+webhook = client.webhooks.create(
+    url="https://example.com/roset-webhook",
+    events=["file.processing.completed", "file.processing.failed"],
+)
+
+print(webhook["id"])      # "wh-abc123"
+print(webhook["secret"])  # Save this -- used to verify signatures
+```
+</Tab>
 <Tab label="TypeScript">
 ```typescript
 import { RosetClient } from '@roset/sdk';
@@ -41,22 +58,6 @@ const webhook = await client.webhooks.create({
 
 console.log(webhook.id);     // "wh-abc123"
 console.log(webhook.secret); // Save this -- used to verify signatures
-```
-</Tab>
-<Tab label="Python">
-```python
-from roset import Client
-
-client = Client(api_key="rsk_...")
-
-# Register an endpoint for processing lifecycle events
-webhook = client.webhooks.create(
-    url="https://example.com/roset-webhook",
-    events=["file.processing.completed", "file.processing.failed"],
-)
-
-print(webhook["id"])      # "wh-abc123"
-print(webhook["secret"])  # Save this -- used to verify signatures
 ```
 </Tab>
 <Tab label="cURL">
@@ -95,10 +96,25 @@ Each delivery sends a JSON payload with an event type, timestamp, and event-spec
 
 Every webhook delivery includes an `X-Roset-Signature` header containing an HMAC SHA-256 signature of the request body. Use your webhook secret (returned when you created the webhook) to verify authenticity.
 
+<Tabs>
+<Tab label="Python">
+```python
+import hashlib
+import hmac
+
+def verify_webhook(body: bytes, signature: str, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        body,
+        hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(signature, expected)
+```
+</Tab>
+<Tab label="TypeScript">
 ```typescript
 import crypto from 'crypto';
 
-// Verify that the webhook payload was sent by Roset
 function verifyWebhook(body: string, signature: string, secret: string): boolean {
   const expected = crypto
     .createHmac('sha256', secret)
@@ -110,6 +126,8 @@ function verifyWebhook(body: string, signature: string, secret: string): boolean
   );
 }
 ```
+</Tab>
+</Tabs>
 
 <Callout type="caution" title="Always Verify Signatures">
 Verify the signature on every webhook delivery to confirm it originated from Roset and was not tampered with in transit.
@@ -130,6 +148,24 @@ After 3 failed attempts, the delivery is marked as `failed`. You can view failed
 ## Manage Webhooks
 
 <Tabs>
+<Tab label="Python">
+```python
+# List all registered webhooks
+result = client.webhooks.list()
+
+# Update which events a webhook subscribes to
+client.webhooks.update("wh-abc123", events=["file.processing.completed"])
+
+# Send a test event to verify your endpoint
+client.webhooks.test("wh-abc123")
+
+# View delivery history for debugging
+deliveries = client.webhooks.deliveries("wh-abc123")
+
+# Delete a webhook
+client.webhooks.delete("wh-abc123")
+```
+</Tab>
 <Tab label="TypeScript">
 ```typescript
 // List all registered webhooks
@@ -150,27 +186,9 @@ const { deliveries } = await client.webhooks.deliveries('wh-abc123');
 await client.webhooks.delete('wh-abc123');
 ```
 </Tab>
-<Tab label="Python">
-```python
-# List all registered webhooks
-result = client.webhooks.list()
-
-# Update which events a webhook subscribes to
-client.webhooks.update("wh-abc123", events=["file.processing.completed"])
-
-# Send a test event to verify your endpoint
-client.webhooks.test("wh-abc123")
-
-# View delivery history for debugging
-deliveries = client.webhooks.deliveries("wh-abc123")
-
-# Delete a webhook
-client.webhooks.delete("wh-abc123")
-```
-</Tab>
 </Tabs>
 
 ## Next Steps
 
 - [API Reference](/docs/reference/api#webhooks) -- full webhook endpoint documentation.
-- [Storage Connections](/docs/guides/connections) -- connect your cloud storage buckets.
+- [Sync Cloud Storage](/docs/workflows/sync-storage) -- connect buckets and get notified on sync.

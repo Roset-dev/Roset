@@ -19,6 +19,22 @@ Every file processed by Roset produces a **searchable-index** variant (plain tex
 ## Quick Start
 
 <Tabs>
+<Tab label="Python">
+```python
+import os
+from roset import Client
+
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+
+# Hybrid search (default)
+results = client.search.query(query="payment terms")
+
+for r in results["results"]:
+    print(f"{r['fileId']} -- score: {r['score']}")
+    if r.get("snippet"):
+        print(f"  {r['snippet']}")
+```
+</Tab>
 <Tab label="TypeScript">
 ```typescript
 import { RosetClient } from '@roset/sdk';
@@ -117,6 +133,6 @@ Vector and hybrid modes use OpenAI embeddings. Roset provides a managed key by d
 
 ## Next Steps
 
-- [Q&A](/docs/guides/qa) — Ask questions about your files and get answers with citations
-- [Webhooks](/docs/guides/webhooks) — Get notified when new variants are ready for search
-- [TypeScript SDK](/docs/sdks/typescript) — Full SDK reference
+- [Q&A](/docs/features/qa) -- ask questions about your files and get answers with citations.
+- [Webhooks](/docs/features/webhooks) -- get notified when new variants are ready for search.
+- [Build a Knowledge Base](/docs/workflows/knowledge-base) -- end-to-end search + Q&A workflow.

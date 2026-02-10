@@ -11,7 +11,7 @@
 import type { MDXComponents } from "mdx/types";
 import Link from "next/link";
 import { Children, isValidElement } from "react";
-import { CopyButton } from "@/components/code-block";
+import { SnippetMenu } from "@/components/snippet-menu";
 
 /**
  * Inline anchor icon appended to headings (h2, h3, h4).
@@ -38,7 +38,7 @@ function HeadingAnchor({ id }: { id?: string }) {
  * Used by the `pre` override to wrap Shiki/rehype-pretty-code output.
  *
  * @param props.lang - Programming language identifier (e.g., `"ts"`, `"bash"`), or `null`.
- * @param props.text - Raw code text passed to the {@link CopyButton}.
+ * @param props.text - Raw code text passed to the {@link SnippetMenu}.
  * @param props.children - The syntax-highlighted `<pre>` element from the MDX pipeline.
  */
 function CodeBlockWrapper({
@@ -60,7 +60,7 @@ function CodeBlockWrapper({
         ) : (
           <span />
         )}
-        <CopyButton text={text} />
+        <SnippetMenu code={text} lang={lang} />
       </div>
       <div className="bg-[#171927] rounded-lg m-2 p-4 overflow-x-auto border border-td-border">
         {children}

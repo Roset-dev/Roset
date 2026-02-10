@@ -64,6 +64,18 @@ export interface JobRecord {
 
   /** ISO 8601 timestamp of when processing finished, or null if still running. */
   completed_at: string | null;
+
+  /** Current pipeline step: `"extracting"`, `"variants"`, `"embedding"`, `"completed"`, or null if not yet started. */
+  current_step: string | null;
+
+  /** Variant types requested for this job (e.g. `["markdown", "embeddings"]`), or null. */
+  variants_requested: string[] | null;
+
+  /** Variant types completed so far (e.g. `["markdown", "metadata"]`), or null. */
+  variants_completed: string[] | null;
+
+  /** Variant types with stored output, derived from the variants table. Present on GET /v1/jobs/:id. */
+  variants_ready?: string[];
 }
 
 /**
@@ -143,11 +155,58 @@ export class JobsResource {
    * re-enters the queue and is routed to the appropriate extraction provider.
    *
    * @param id - The job's unique identifier (UUID).
+   * @param options - Optional retry parameters.
+   * @param options.skipExistingVariants - When true, skip variant types that already have stored output.
    * @returns The updated job record with re-queued status.
    * @throws {NotFoundError} If the job does not exist.
    * @throws {ConflictError} If the job is not in a failed state.
    */
-  async retry(id: string): Promise<JobRecord> {
-    return this.http.post<JobRecord>(`/v1/jobs/${id}/retry`);
+  async retry(id: string, options?: { skipExistingVariants?: boolean }): Promise<JobRecord> {
+    return this.http.post<JobRecord>(`/v1/jobs/${id}/retry`, options || {});
+  }
+
+  /**
+   * Poll a job until the specified variant types are ready.
+   *
+   * Returns as soon as all requested variants appear in `variants_ready`,
+   * without waiting for the full pipeline to finish. Useful for reacting to
+   * the earliest usable output (e.g. markdown) while embeddings are still
+   * generating.
+   *
+   * @param id - The job's unique identifier (UUID).
+   * @param variants - Variant types to wait for (e.g. `["markdown"]`).
+   * @param options - Polling options.
+   * @param options.intervalMs - Polling interval in milliseconds. Defaults to 2000.
+   * @param options.timeoutMs - Maximum wait time in milliseconds. Defaults to 600000 (10 min).
+   * @returns The job record once all requested variants are ready.
+   * @throws {Error} If timeout is reached before all variants are ready.
+   */
+  async waitForVariants(
+    id: string,
+    variants: string[],
+    options?: { intervalMs?: number; timeoutMs?: number },
+  ): Promise<JobRecord> {
+    const interval = options?.intervalMs ?? 2000;
+    const timeout = options?.timeoutMs ?? 600_000;
+    const deadline = Date.now() + timeout;
+    const wanted = new Set(variants);
+
+    while (Date.now() < deadline) {
+      const job = await this.get(id);
+
+      // Check if all wanted variants are ready
+      const ready = new Set(job.variants_ready || []);
+      const allReady = [...wanted].every(v => ready.has(v));
+      if (allReady) return job;
+
+      // Terminal failure — no point polling further
+      if (job.status === "failed") {
+        throw new Error(`Job ${id} failed before variants were ready: ${job.error || "unknown error"}`);
+      }
+
+      await new Promise(r => setTimeout(r, interval));
+    }
+
+    throw new Error(`Timed out waiting for variants [${variants.join(", ")}] on job ${id}`);
   }
 }

@@ -7,9 +7,28 @@ export const metadata = {
 
 # Installation
 
-Roset provides an official TypeScript SDK plus direct REST API access for any HTTP client. The SDK handles authentication, request formatting, and typed responses so you can focus on your application logic.
+Roset provides official Python and TypeScript SDKs plus direct REST API access for any HTTP client. The SDKs handle authentication, request formatting, and typed responses so you can focus on your application logic.
 
-## TypeScript SDK (Recommended)
+## Python SDK
+
+Install the SDK with pip:
+
+```bash
+pip install roset
+```
+
+Requires Python 3.9 or later.
+
+### Verify the Installation
+
+```python
+from roset import Client
+
+client = Client(api_key="rsk_...")
+print("Connected to Roset")
+```
+
+## TypeScript SDK
 
 Install the SDK with npm, pnpm, or yarn:
 
@@ -24,7 +43,6 @@ Requires Node.js 18 or later. Also works in edge runtimes (Cloudflare Workers, D
 ```typescript
 import { RosetClient } from '@roset/sdk';
 
-// Initialize with your API key
 const client = new RosetClient({ apiKey: 'rsk_...' });
 console.log('Connected to Roset');
 ```
@@ -39,10 +57,16 @@ export ROSET_API_KEY=rsk_your_key_here
 
 Then reference it in your code:
 
+```python
+import os
+from roset import Client
+
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+```
+
 ```typescript
 import { RosetClient } from '@roset/sdk';
 
-// Read the API key from the environment
 const client = new RosetClient({
   apiKey: process.env.ROSET_API_KEY!,
 });

@@ -29,6 +29,10 @@ export interface ProgressEvent {
   stage: 'uploading' | 'queued' | 'processing' | 'completed' | 'failed';
   /** Variant type being generated, if applicable. */
   variant?: string;
+  /** Current pipeline step (e.g. `"extracting"`, `"variants"`, `"embedding"`). */
+  current_step?: string;
+  /** Variant types completed so far. */
+  variants_completed?: string[];
   /** ISO 8601 timestamp of this event. */
   timestamp: string;
 }
@@ -261,6 +265,8 @@ export class FilesResource {
     onProgress: (event: ProgressEvent) => void,
   ): Promise<void> {
     let lastStage = 'uploading';
+    let lastStep = '';
+    let lastCompletedCount = 0;
     const POLL_INTERVAL_MS = 2000;
     const MAX_POLLS = 300; // 10 minutes max
 
@@ -281,9 +287,20 @@ export class FilesResource {
       }
 
       const stage = job.status as ProgressEvent['stage'];
-      if (stage !== lastStage) {
-        onProgress({ stage, timestamp: new Date().toISOString() });
+      const step = job.current_step || '';
+      const completedCount = (job.variants_completed || []).length;
+
+      // Emit on stage change, step change, or new variant completion
+      if (stage !== lastStage || step !== lastStep || completedCount !== lastCompletedCount) {
+        onProgress({
+          stage,
+          current_step: job.current_step || undefined,
+          variants_completed: job.variants_completed || undefined,
+          timestamp: new Date().toISOString(),
+        });
         lastStage = stage;
+        lastStep = step;
+        lastCompletedCount = completedCount;
       }
 
       if (stage === 'completed' || stage === 'failed') {

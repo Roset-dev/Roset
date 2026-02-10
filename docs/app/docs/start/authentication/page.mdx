@@ -27,6 +27,15 @@ API keys are shown only once at creation time. Store yours in an environment var
 ### Use an API Key
 
 <Tabs>
+<Tab label="Python">
+```python
+import os
+from roset import Client
+
+# Pass your API key to the client constructor
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+```
+</Tab>
 <Tab label="TypeScript">
 ```typescript
 import { RosetClient } from '@roset/sdk';
@@ -35,15 +44,6 @@ import { RosetClient } from '@roset/sdk';
 const client = new RosetClient({
   apiKey: process.env.ROSET_API_KEY!,
 });
-```
-</Tab>
-<Tab label="Python">
-```python
-import os
-from roset import Client
-
-# Pass your API key to the client constructor
-client = Client(api_key=os.getenv("ROSET_API_KEY"))
 ```
 </Tab>
 <Tab label="cURL">

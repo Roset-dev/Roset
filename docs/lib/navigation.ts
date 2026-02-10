@@ -44,19 +44,30 @@ export const navigation: NavEntry[] = [
     ],
   },
   {
-    label: "Guides",
+    label: "Workflows",
     defaultOpen: true,
     items: [
-      { label: "Storage Connections", href: "/docs/guides/connections" },
-      { label: "Webhooks", href: "/docs/guides/webhooks" },
-      { label: "Search", href: "/docs/guides/search" },
-      { label: "Q&A", href: "/docs/guides/qa" },
+      { label: "Transform Any File", href: "/docs/workflows/transform" },
+      { label: "Build a Knowledge Base", href: "/docs/workflows/knowledge-base" },
+      { label: "Multi-Tenant Spaces", href: "/docs/workflows/spaces" },
+      { label: "Sync Cloud Storage", href: "/docs/workflows/sync-storage" },
+    ],
+  },
+  {
+    label: "Features",
+    defaultOpen: true,
+    items: [
+      { label: "Search", href: "/docs/features/search" },
+      { label: "Q&A", href: "/docs/features/qa" },
+      { label: "Webhooks", href: "/docs/features/webhooks" },
+      { label: "Variant Types", href: "/docs/features/variants" },
     ],
   },
   {
     label: "SDKs",
     defaultOpen: true,
     items: [
+      { label: "Python", href: "/docs/sdks/python" },
       { label: "TypeScript", href: "/docs/sdks/typescript" },
     ],
   },

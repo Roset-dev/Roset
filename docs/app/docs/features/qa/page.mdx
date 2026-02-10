@@ -20,6 +20,20 @@ Ask natural language questions about your files. Roset uses **Retrieval Augmente
 ## Quick Start
 
 <Tabs>
+<Tab label="Python">
+```python
+import os
+from roset import Client
+
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+
+result = client.qa.ask(question="What are the payment terms in the contract?")
+
+print(result["answer"])
+for source in result["sources"]:
+    print(f"  - {source['filename']} (score: {source['score']})")
+```
+</Tab>
 <Tab label="TypeScript">
 ```typescript
 import { RosetClient } from '@roset/sdk';
@@ -98,5 +112,5 @@ Q&A uses OpenAI for both embedding and answer generation. Roset provides a manag
 
 ## Next Steps
 
-- [Search](/docs/guides/search) — Lower-level search without LLM answer generation
-- [TypeScript SDK](/docs/sdks/typescript) — Full SDK reference
+- [Search](/docs/features/search) -- lower-level search without LLM answer generation.
+- [Build a Knowledge Base](/docs/workflows/knowledge-base) -- end-to-end upload + search + Q&A workflow.

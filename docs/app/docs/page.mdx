@@ -1,31 +1,54 @@
 import { Tabs, Tab } from '@/components/tabs'
 import { Callout } from '@/components/callout'
+import { Card, CardGrid } from '@/components/cards'
+import { PromptCard } from '@/components/prompt-card'
 
 export const metadata = {
   title: 'Roset Documentation',
-  description: 'The transformation engine for unstructured data. Upload any document — get back markdown, embeddings, metadata, thumbnails, and a searchable index.',
+  description: 'Transform unstructured files into structured data. Upload any document -- get back markdown, embeddings, metadata, thumbnails, and a searchable index.',
 }
 
-# Roset Documentation
+# Transform Unstructured Files into Structured Data
 
 <Callout type="note">
 Roset is currently in **public beta** (v0.1.1). The API is stable, but expect new features and providers regularly. Breaking changes will be communicated in advance.
 </Callout>
 
-Roset is the **transformation engine for unstructured data**. Upload any document, and Roset routes it to the right extraction provider -- Reducto for PDFs, Gemini for images, Whisper for audio -- then generates vector embeddings via OpenAI. You get back five structured outputs: markdown, embeddings, metadata, thumbnails, and a searchable index.
-
-Roset is not an extraction service. It **orchestrates** extraction services, managing the queues, retries, provider routing, variant tracking, and space isolation so you do not have to.
-
-**How it works:** You upload files via signed URLs (bytes go directly to storage, never through Roset). Roset coordinates extraction providers to transform your files and tracks every variant with lineage back to the source.
+Roset is the **transformation engine for unstructured data**. Upload any file -- PDF, image, audio, document -- and Roset routes it to the right extraction provider, generates embeddings, and gives you back five structured variants: **markdown**, **embeddings**, **metadata**, **thumbnails**, and a **searchable index**.
 
 ## Quick Start
 
 <Tabs>
+<Tab label="Python">
+```python
+from roset import Client
+
+client = Client(api_key="rsk_...")
+
+# Upload a file -- Roset routes it to the right extraction provider
+file = client.files.upload(
+    filename="invoice.pdf",
+    content_type="application/pdf",
+    size_bytes=45678,
+)
+
+# Poll until processing completes
+import time
+status = file["status"]
+while status not in ("completed", "failed"):
+    current = client.files.get(file["id"])
+    status = current["status"]
+    time.sleep(2)
+
+# Retrieve the extracted markdown variant
+variants = client.files.list_variants(file["id"])
+print(variants)
+```
+</Tab>
 <Tab label="TypeScript">
 ```typescript
 import { RosetClient } from '@roset/sdk';
 
-// Initialize the client with your API key
 const client = new RosetClient({ apiKey: 'rsk_...' });
 
 // Upload a file -- Roset routes it to the right extraction provider
@@ -66,6 +89,34 @@ curl https://api.roset.dev/v1/files/FILE_ID/variants \
 </Tabs>
 
 
+## Choose Your Path
+
+<CardGrid>
+  <Card
+    title="I have files to upload"
+    description="Upload documents via the SDK and get structured variants back -- markdown, embeddings, metadata, and more."
+    href="/docs/start/quickstart"
+  />
+  <Card
+    title="I have files in S3/GCS/Azure"
+    description="Connect your existing bucket, sync metadata, and auto-process files already in cloud storage."
+    href="/docs/workflows/sync-storage"
+  />
+</CardGrid>
+
+<PromptCard
+  title="Get started faster with AI"
+  prompt="Roset (roset.dev) is a developer API that transforms unstructured files (PDFs, images, audio, DOCX) into structured variants: markdown, vector embeddings, metadata, thumbnails, and a searchable index. Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Key methods: `client.files.upload(filename, content_type, size_bytes)`, `client.files.get(file_id)` to poll status, `client.files.list_variants(file_id)` to retrieve outputs. Help me install the SDK, upload a PDF, poll until status is 'completed', then retrieve the markdown and embeddings variants."
+/>
+
+## What Can You Build?
+
+- **[Transform Any File](/docs/workflows/transform)** -- Upload a file and get markdown + embeddings + metadata in one call. The "hello world" story.
+- **[Build a Knowledge Base](/docs/workflows/knowledge-base)** -- Upload many files, search across them, and Q&A with citations. End-to-end RAG pipeline.
+- **[Multi-Tenant Spaces](/docs/workflows/spaces)** -- Scope files per customer with spaces and portal tokens. B2B SaaS isolation pattern.
+- **[Sync Cloud Storage](/docs/workflows/sync-storage)** -- Connect an S3/GCS/Azure bucket, sync files, auto-process, and get webhook notifications.
+
+
 ## How It Works
 
 1. **Upload** a file via multipart form data or a signed URL. Roset stores metadata only -- file bytes go directly to your storage.
@@ -79,38 +130,21 @@ Upload --> Route (Reducto / Gemini / Whisper) --> Extract --> Embed (OpenAI) -->
 ```
 
 
-## Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `POST /v1/upload` | Upload a file for processing |
-| `GET /v1/files` | List files |
-| `GET /v1/files/:id` | Get a file and its variants |
-| `DELETE /v1/files/:id` | Delete a file and its variants |
-| `GET /v1/jobs` | List processing jobs |
-| `GET /v1/jobs/:id` | Get job details |
-| `POST /v1/jobs/:id/cancel` | Cancel a queued or in-progress job |
-| `POST /v1/jobs/:id/retry` | Retry a failed job |
-| `GET /v1/files/:id/variants` | List extraction outputs for a file |
-| `GET /v1/files/:id/variants/:type` | Get a specific variant (markdown, embeddings) |
-| `GET /v1/spaces` | List spaces |
-| `GET /v1/spaces/:name/stats` | Get space statistics |
-
-
 ## Core Concepts
 
 - **Files** are documents tracked by Roset's metadata store. Each file has a processing status and zero or more variants.
-- **Jobs** represent the processing pipeline for a file. Each job moves through a state machine: `queued` -> `processing` -> `completed` or `failed`. Jobs are created automatically on upload.
-- **Variants** are the extraction outputs linked to a parent file -- extracted markdown, vector embeddings, thumbnails, or structured metadata. Each variant has a type and is produced by a specific provider.
-- **Connections** are linked storage buckets (S3, GCS, Azure Blob Storage, MinIO, Cloudflare R2, Supabase Storage). Roset reads file metadata from your bucket without copying bytes.
-- **Spaces** provide optional namespace isolation for multi-space applications. If you are not building a B2B SaaS product, you can ignore spaces entirely -- files default to a `"default"` space.
-- **Provider Keys** are optional BYOK credentials for extraction providers (Reducto, OpenAI, Gemini, Whisper). Roset uses managed keys by default -- optionally provide your own keys in Settings to use your provider accounts instead.
-- **Webhooks** deliver HTTP callbacks when processing events occur (file completed, variant ready, job failed).
+- **Variants** are the extraction outputs linked to a parent file -- extracted markdown, vector embeddings, thumbnails, or structured metadata. See [Variant Types](/docs/features/variants) for details.
+- **Jobs** represent the processing pipeline for a file. Each job moves through a state machine: `queued` -> `processing` -> `completed` or `failed`.
+- **Connections** are linked storage buckets (S3, GCS, Azure Blob Storage, MinIO, Cloudflare R2, Supabase Storage).
+- **Spaces** provide optional namespace isolation for multi-tenant applications. Defaults to `"default"`.
+- **Provider Keys** are optional BYOK credentials for extraction providers. Roset uses managed keys by default.
+- **Webhooks** deliver HTTP callbacks when processing events occur.
 
 
 ## Next Steps
 
 - [Quickstart](/docs/start/quickstart) -- upload your first file in under 5 minutes.
-- [Installation](/docs/start/installation) -- set up the TypeScript or Python SDK.
-- [Authentication](/docs/start/authentication) -- configure API keys and bearer tokens.
-- [API Reference](/docs/reference/api) -- full endpoint documentation.
+- [Installation](/docs/start/installation) -- set up the Python or TypeScript SDK.
+- [Python SDK](/docs/sdks/python) -- full Python client reference.
+- [TypeScript SDK](/docs/sdks/typescript) -- full TypeScript client reference.
+- [API Reference](/docs/reference/api) -- complete endpoint documentation.

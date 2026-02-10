@@ -1,0 +1,265 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+import { PromptCard } from '@/components/prompt-card'
+
+export const metadata = {
+  title: 'Build a Knowledge Base',
+  description: 'Upload files, search across them, and ask questions with citations -- an end-to-end RAG pipeline.',
+}
+
+# Build a Knowledge Base
+
+Upload a collection of files, let Roset transform them into structured data, then search across everything and ask questions with citations. This workflow builds a complete RAG (Retrieval Augmented Generation) pipeline with no infrastructure to manage.
+
+## The Workflow
+
+```
+Upload Files --> Transform --> Search Index + Embeddings --> Search / Q&A
+```
+
+1. **Upload** your files (contracts, reports, manuals -- any mix)
+2. **Roset transforms** each file into markdown + embeddings + searchable index
+3. **Search** across all files with text, vector, or hybrid search
+4. **Ask questions** and get answers with source citations
+
+## Step 1: Upload Your Files
+
+<Tabs>
+<Tab label="Python">
+```python
+import os
+from roset import Client
+
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+
+# Upload a batch of documents
+files = [
+    {"filename": "employee-handbook.pdf", "content_type": "application/pdf", "size_bytes": 245000},
+    {"filename": "benefits-guide.pdf", "content_type": "application/pdf", "size_bytes": 180000},
+    {"filename": "it-policies.pdf", "content_type": "application/pdf", "size_bytes": 95000},
+    {"filename": "onboarding-checklist.docx", "content_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "size_bytes": 42000},
+]
+
+batch = client.files.upload_batch(files)
+print(f"Uploaded {len(batch['files'])} files")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+const client = new RosetClient({ apiKey: process.env.ROSET_API_KEY! });
+
+// Upload a batch of documents
+const batch = await client.files.uploadBatch([
+  { filename: 'employee-handbook.pdf', content_type: 'application/pdf', size_bytes: 245000 },
+  { filename: 'benefits-guide.pdf', content_type: 'application/pdf', size_bytes: 180000 },
+  { filename: 'it-policies.pdf', content_type: 'application/pdf', size_bytes: 95000 },
+  { filename: 'onboarding-checklist.docx', content_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size_bytes: 42000 },
+]);
+
+console.log(`Uploaded ${batch.length} files`);
+```
+</Tab>
+</Tabs>
+
+## Step 2: Wait for Transformation
+
+Use webhooks for production (recommended) or poll until all files complete.
+
+<Tabs>
+<Tab label="Python">
+```python
+import time
+
+# Poll until all files are done
+file_ids = [f["id"] for f in batch["files"]]
+while True:
+    statuses = [client.files.get(fid)["status"] for fid in file_ids]
+    done = all(s in ("completed", "failed") for s in statuses)
+    print(f"Statuses: {statuses}")
+    if done:
+        break
+    time.sleep(3)
+
+completed = sum(1 for s in statuses if s == "completed")
+print(f"{completed}/{len(file_ids)} files transformed successfully")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// Poll until all files are done
+const fileIds = batch.map(f => f.id);
+let allDone = false;
+while (!allDone) {
+  const statuses = await Promise.all(fileIds.map(id => client.files.get(id)));
+  allDone = statuses.every(f => f.status === 'completed' || f.status === 'failed');
+  console.log(`Statuses: ${statuses.map(f => f.status).join(', ')}`);
+  if (!allDone) await new Promise(r => setTimeout(r, 3000));
+}
+
+const completed = (await Promise.all(fileIds.map(id => client.files.get(id))))
+  .filter(f => f.status === 'completed').length;
+console.log(`${completed}/${fileIds.length} files transformed successfully`);
+```
+</Tab>
+</Tabs>
+
+## Step 3: Search Your Knowledge Base
+
+Once files are transformed, search across all of them using text, vector, or hybrid search.
+
+<Tabs>
+<Tab label="Python">
+```python
+# Hybrid search (default) -- combines text + vector for best results
+results = client.search.query(query="vacation policy")
+
+for r in results["results"]:
+    print(f"{r['fileId']} (score: {r['score']})")
+    if r.get("snippet"):
+        print(f"  {r['snippet'][:200]}")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// Hybrid search (default) -- combines text + vector for best results
+const { results } = await client.search.query({
+  query: 'vacation policy',
+});
+
+for (const r of results) {
+  console.log(`${r.fileId} (score: ${r.score})`);
+  if (r.snippet) console.log(`  ${r.snippet.slice(0, 200)}`);
+}
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl -X POST https://api.roset.dev/v1/search \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"query": "vacation policy"}'
+```
+</Tab>
+</Tabs>
+
+## Step 4: Ask Questions with Citations
+
+Use Q&A to ask natural language questions. Roset finds relevant documents via vector search, then generates an answer with source citations.
+
+<Tabs>
+<Tab label="Python">
+```python
+# Ask a question -- Roset searches, retrieves context, and generates an answer
+result = client.qa.ask(question="How many vacation days do new employees get?")
+
+print(result["answer"])
+print()
+for source in result["sources"]:
+    print(f"  Source: {source['filename']} (score: {source['score']})")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// Ask a question -- Roset searches, retrieves context, and generates an answer
+const { answer, sources } = await client.qa.ask({
+  question: 'How many vacation days do new employees get?',
+});
+
+console.log(answer);
+console.log();
+for (const source of sources) {
+  console.log(`  Source: ${source.filename} (score: ${source.score})`);
+}
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl -X POST https://api.roset.dev/v1/qa \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How many vacation days do new employees get?"}'
+```
+</Tab>
+</Tabs>
+
+<Callout type="note">
+Q&A uses OpenAI for both embedding and answer generation. Roset provides a managed key by default -- no configuration needed.
+</Callout>
+
+## Putting It Together
+
+Here's the complete end-to-end flow in a single script:
+
+<Tabs>
+<Tab label="Python">
+```python
+import os
+import time
+from roset import Client
+
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+
+# Upload
+file = client.files.upload(
+    filename="company-handbook.pdf",
+    content_type="application/pdf",
+    size_bytes=245000,
+)
+
+# Wait
+while client.files.get(file["id"])["status"] not in ("completed", "failed"):
+    time.sleep(2)
+
+# Search
+results = client.search.query(query="remote work policy")
+print(f"Found {results['total']} results")
+
+# Q&A
+answer = client.qa.ask(question="What is the remote work policy?")
+print(answer["answer"])
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+const client = new RosetClient({ apiKey: process.env.ROSET_API_KEY! });
+
+// Upload
+const file = await client.files.upload({
+  filename: 'company-handbook.pdf',
+  content_type: 'application/pdf',
+  size_bytes: 245000,
+});
+
+// Wait
+let status = file.status;
+while (status !== 'completed' && status !== 'failed') {
+  status = (await client.files.get(file.id)).status;
+  await new Promise(r => setTimeout(r, 2000));
+}
+
+// Search
+const { results, total } = await client.search.query({ query: 'remote work policy' });
+console.log(`Found ${total} results`);
+
+// Q&A
+const { answer } = await client.qa.ask({ question: 'What is the remote work policy?' });
+console.log(answer);
+```
+</Tab>
+</Tabs>
+
+<PromptCard
+  title="Build this with AI"
+  prompt="Roset (roset.dev) is a developer API that transforms unstructured files into structured data (markdown, embeddings, searchable index). Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Upload: `client.files.upload(filename, content_type, size_bytes)`. Search: `client.search.query(query='...', mode='hybrid')` returns ranked results with snippets. Q&A: `client.qa.ask(question='...')` returns an answer with source citations. Write me a complete Python script that: 1) uploads 3 PDF files, 2) waits for all to finish processing, 3) runs a hybrid search query, 4) asks a Q&A question and prints the answer with citations."
+/>
+
+## Next Steps
+
+- [Search](/docs/features/search) -- deep dive on text, vector, and hybrid search modes.
+- [Q&A](/docs/features/qa) -- streaming responses, parameters, and configuration.
+- [Multi-Tenant Spaces](/docs/workflows/spaces) -- scope knowledge bases per customer.
+- [Webhooks](/docs/features/webhooks) -- replace polling with real-time notifications.

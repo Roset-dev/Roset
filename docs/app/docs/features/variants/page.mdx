@@ -1,0 +1,282 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'Variant Types',
+  description: 'Deep dive on the 5 variant types: markdown, embeddings, metadata, thumbnail, and searchable-index.',
+}
+
+# Variant Types
+
+Variants are the structured outputs of Roset's transformation pipeline. Each variant is a different representation of the same source file, linked by lineage. When you upload a file, Roset produces up to 5 variant types automatically.
+
+## Overview
+
+| Type | What it contains | Produced by | Use case |
+|------|-----------------|-------------|----------|
+| `markdown` | Extracted text in markdown format | Reducto, Gemini, Whisper | Display, downstream processing |
+| `embeddings` | Vector embeddings for each chunk | OpenAI | Semantic search, RAG |
+| `metadata` | Page count, language, confidence | Extraction provider | Filtering, quality checks |
+| `thumbnail` | Visual preview image | Extraction provider | File browsers, previews |
+| `searchable-index` | Full-text search index | Roset | Keyword search |
+
+## Markdown
+
+The primary extraction output. Contains the full text content of the file converted to markdown format.
+
+**Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `content` | string | The extracted text in markdown |
+| `pageCount` | number | Number of pages extracted |
+| `wordCount` | number | Total word count |
+| `characterCount` | number | Total character count |
+
+**When it's produced:** For every file that has textual content. Documents (PDF, DOCX) via Reducto, images via Gemini (OCR), audio via Whisper (transcription).
+
+<Tabs>
+<Tab label="Python">
+```python
+markdown = client.files.get_variant(file_id, "markdown")
+print(f"Pages: {markdown.get('pageCount')}")
+print(f"Words: {markdown.get('wordCount')}")
+print(markdown["content"][:500])
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+const markdown = await client.files.getVariant(fileId, 'markdown');
+console.log(`Pages: ${markdown.pageCount}`);
+console.log(`Words: ${markdown.wordCount}`);
+console.log(markdown.content.slice(0, 500));
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl https://api.roset.dev/v1/files/FILE_ID/variants/markdown \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+## Embeddings
+
+Vector embeddings generated from the extracted text, chunked for semantic search and RAG.
+
+**Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `chunks` | array | Array of chunk objects with text and vector |
+| `model` | string | Embedding model used (e.g., `text-embedding-3-small`) |
+| `dimensions` | number | Vector dimensions (e.g., 1536) |
+| `totalChunks` | number | Number of chunks generated |
+
+**When it's produced:** After markdown extraction completes, if an OpenAI key is available (managed by default).
+
+<Tabs>
+<Tab label="Python">
+```python
+embeddings = client.files.get_variant(file_id, "embeddings")
+print(f"Model: {embeddings.get('model')}")
+print(f"Chunks: {embeddings.get('totalChunks')}")
+print(f"Dimensions: {embeddings.get('dimensions')}")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+const embeddings = await client.files.getVariant(fileId, 'embeddings');
+console.log(`Model: ${embeddings.model}`);
+console.log(`Chunks: ${embeddings.totalChunks}`);
+console.log(`Dimensions: ${embeddings.dimensions}`);
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl https://api.roset.dev/v1/files/FILE_ID/variants/embeddings \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+## Metadata
+
+Extraction metadata including page count, detected language, and quality signals.
+
+**Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `pageCount` | number | Number of pages in the source file |
+| `language` | string | Detected language (ISO 639-1) |
+| `extractionConfidence` | number | Confidence score (0--1) |
+| `qualityWarnings` | string[] | Any quality issues detected |
+
+**When it's produced:** Alongside the markdown variant during extraction.
+
+<Tabs>
+<Tab label="Python">
+```python
+metadata = client.files.get_variant(file_id, "metadata")
+print(f"Language: {metadata.get('language')}")
+print(f"Confidence: {metadata.get('extractionConfidence')}")
+if metadata.get("qualityWarnings"):
+    print(f"Warnings: {', '.join(metadata['qualityWarnings'])}")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+const metadata = await client.files.getVariant(fileId, 'metadata');
+console.log(`Language: ${metadata.language}`);
+console.log(`Confidence: ${metadata.extractionConfidence}`);
+if (metadata.qualityWarnings.length > 0) {
+  console.log(`Warnings: ${metadata.qualityWarnings.join(', ')}`);
+}
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl https://api.roset.dev/v1/files/FILE_ID/variants/metadata \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+## Thumbnail
+
+A visual preview image of the file, useful for file browsers and preview UIs.
+
+**Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `url` | string | Signed URL to the thumbnail image |
+| `width` | number | Image width in pixels |
+| `height` | number | Image height in pixels |
+| `format` | string | Image format (e.g., `png`, `jpeg`) |
+
+**When it's produced:** For documents and images that have a visual representation.
+
+<Tabs>
+<Tab label="Python">
+```python
+thumbnail = client.files.get_variant(file_id, "thumbnail")
+print(f"Size: {thumbnail.get('width')}x{thumbnail.get('height')} {thumbnail.get('format')}")
+print(f"URL: {thumbnail.get('url')}")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+const thumbnail = await client.files.getVariant(fileId, 'thumbnail');
+console.log(`Size: ${thumbnail.width}x${thumbnail.height} ${thumbnail.format}`);
+console.log(`URL: ${thumbnail.url}`);
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl https://api.roset.dev/v1/files/FILE_ID/variants/thumbnail \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+## Searchable Index
+
+A full-text search index built from the extracted content. Powers text and hybrid search modes.
+
+**Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `indexedAt` | string | When the index was last built |
+| `termCount` | number | Number of unique terms indexed |
+| `segmentCount` | number | Number of text segments |
+
+**When it's produced:** After markdown extraction completes. Used internally by the search API.
+
+<Tabs>
+<Tab label="Python">
+```python
+index = client.files.get_variant(file_id, "searchable-index")
+print(f"Terms: {index.get('termCount')}")
+print(f"Segments: {index.get('segmentCount')}")
+print(f"Indexed at: {index.get('indexedAt')}")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+const index = await client.files.getVariant(fileId, 'searchable-index');
+console.log(`Terms: ${index.termCount}`);
+console.log(`Segments: ${index.segmentCount}`);
+console.log(`Indexed at: ${index.indexedAt}`);
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl https://api.roset.dev/v1/files/FILE_ID/variants/searchable-index \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+## List All Variants for a File
+
+<Tabs>
+<Tab label="Python">
+```python
+result = client.files.list_variants(file_id)
+for v in result["variants"]:
+    print(f"  {v['type']}: {v['size_bytes']} bytes (provider: {v.get('provider', 'roset')})")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+const { variants } = await client.files.listVariants(fileId);
+for (const v of variants) {
+  console.log(`  ${v.type}: ${v.size_bytes} bytes (provider: ${v.provider ?? 'roset'})`);
+}
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl https://api.roset.dev/v1/files/FILE_ID/variants \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+## Selective Variant Generation
+
+You can request only specific variant types when uploading:
+
+<Tabs>
+<Tab label="Python">
+```python
+# Only generate markdown and embeddings
+file = client.files.upload(
+    filename="report.pdf",
+    content_type="application/pdf",
+    size_bytes=45678,
+    variants=["markdown", "embeddings"],
+)
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// Only generate markdown and embeddings
+const file = await client.files.upload({
+  filename: 'report.pdf',
+  content_type: 'application/pdf',
+  size_bytes: 45678,
+  variants: ['markdown', 'embeddings'],
+});
+```
+</Tab>
+</Tabs>
+
+## Next Steps
+
+- [Transform Any File](/docs/workflows/transform) -- the complete transformation workflow.
+- [Search](/docs/features/search) -- how variants power search.
+- [API Reference](/docs/reference/api#variants) -- full variant endpoint documentation.

@@ -11,6 +11,7 @@
 import { useState, useEffect } from "react";
 import { SiteTitle } from "./site-title";
 import { Sidebar } from "./sidebar";
+import { SdkSelector } from "./sdk-selector";
 
 /**
  * Hamburger toggle button and slide-in sidebar drawer for mobile viewports.
@@ -82,6 +83,7 @@ export function MobileSidebarToggle() {
           <SiteTitle />
         </div>
         <div className="flex-1 overflow-y-auto px-3 pb-8">
+          <SdkSelector />
           <Sidebar />
         </div>
       </div>

@@ -1,0 +1,265 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+import { PromptCard } from '@/components/prompt-card'
+
+export const metadata = {
+  title: 'Transform Any File',
+  description: 'Upload a file and get markdown, embeddings, metadata, thumbnails, and a searchable index in one call.',
+}
+
+# Transform Any File
+
+Upload a single file to Roset and get back every structured representation your app needs: markdown, embeddings, metadata, thumbnails, and a searchable index. This is the core workflow -- one API call triggers the full transformation pipeline.
+
+## The Workflow
+
+```
+Your File --> Roset --> Route to Provider --> Extract --> Embed --> 5 Variants
+```
+
+1. **Upload** your file (PDF, image, audio, or document)
+2. **Roset routes** it to the right extraction provider (Reducto, Gemini, or Whisper)
+3. **Extraction** produces markdown and metadata
+4. **Embedding** generates vector embeddings via OpenAI
+5. **You retrieve** any or all of the 5 variant types
+
+## Complete Example
+
+<Tabs>
+<Tab label="Python">
+```python
+import os
+import time
+from roset import Client
+
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+
+# 1. Upload a file
+file = client.files.upload(
+    filename="quarterly-report.pdf",
+    content_type="application/pdf",
+    size_bytes=128000,
+)
+print(f"File {file['id']} uploaded, job: {file['job_id']}")
+
+# 2. Wait for transformation to complete
+while True:
+    current = client.files.get(file["id"])
+    status = current["status"]
+    print(f"Status: {status}")
+    if status in ("completed", "failed"):
+        break
+    time.sleep(2)
+
+if status == "failed":
+    print("Transformation failed")
+    exit(1)
+
+# 3. Retrieve all variants
+result = client.files.list_variants(file["id"])
+for v in result["variants"]:
+    print(f"  {v['type']}: {v['size_bytes']} bytes")
+
+# 4. Get specific variants
+markdown = client.files.get_variant(file["id"], "markdown")
+print(markdown["content"][:500])
+
+metadata = client.files.get_variant(file["id"], "metadata")
+print(f"Pages: {metadata.get('pageCount')}, Language: {metadata.get('language')}")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+const client = new RosetClient({ apiKey: process.env.ROSET_API_KEY! });
+
+// 1. Upload a file
+const file = await client.files.upload({
+  filename: 'quarterly-report.pdf',
+  content_type: 'application/pdf',
+  size_bytes: 128000,
+});
+console.log(`File ${file.id} uploaded, job: ${file.job_id}`);
+
+// 2. Wait for transformation to complete
+let status = file.status;
+while (status !== 'completed' && status !== 'failed') {
+  const current = await client.files.get(file.id);
+  status = current.status;
+  console.log(`Status: ${status}`);
+  if (status !== 'completed' && status !== 'failed') {
+    await new Promise(r => setTimeout(r, 2000));
+  }
+}
+
+if (status === 'failed') {
+  console.error('Transformation failed');
+  process.exit(1);
+}
+
+// 3. Retrieve all variants
+const { variants } = await client.files.listVariants(file.id);
+for (const v of variants) {
+  console.log(`  ${v.type}: ${v.size_bytes} bytes`);
+}
+
+// 4. Get specific variants
+const markdown = await client.files.getVariant(file.id, 'markdown');
+console.log(markdown.content?.slice(0, 500));
+
+const metadata = await client.files.getVariant(file.id, 'metadata');
+console.log(`Pages: ${metadata.pageCount}, Language: ${metadata.language}`);
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# 1. Upload a file
+curl -X POST https://api.roset.dev/v1/upload \
+  -H "Authorization: ApiKey rsk_..." \
+  -F "file=@quarterly-report.pdf"
+
+# 2. Poll for completion
+curl https://api.roset.dev/v1/files/FILE_ID \
+  -H "Authorization: ApiKey rsk_..."
+
+# 3. List all variants
+curl https://api.roset.dev/v1/files/FILE_ID/variants \
+  -H "Authorization: ApiKey rsk_..."
+
+# 4. Get the markdown variant
+curl https://api.roset.dev/v1/files/FILE_ID/variants/markdown \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+## What Gets Produced
+
+Every file transformation produces up to 5 variant types. See [Variant Types](/docs/features/variants) for details on each.
+
+| Variant | What it contains | Provider |
+|---------|-----------------|----------|
+| `markdown` | Extracted text in markdown format | Reducto, Gemini, or Whisper |
+| `embeddings` | Vector embeddings for each chunk | OpenAI |
+| `metadata` | Page count, language, extraction confidence | Extraction provider |
+| `thumbnail` | Visual preview image | Extraction provider |
+| `searchable-index` | Full-text search index | Roset |
+
+## Provider Routing
+
+Roset automatically selects the right extraction provider based on content type:
+
+| Content Type | Provider | File Types |
+|-------------|----------|-----------|
+| Documents | Reducto | PDF, DOCX, PPTX, XLSX |
+| Images | Gemini | PNG, JPG, TIFF, WEBP |
+| Audio | Whisper | MP3, WAV, M4A, OGG |
+
+You can override the provider per-upload:
+
+<Tabs>
+<Tab label="Python">
+```python
+# Force Gemini for a specific PDF (e.g., scanned images)
+file = client.files.upload(
+    filename="scanned-doc.pdf",
+    content_type="application/pdf",
+    size_bytes=500000,
+    provider="gemini",
+)
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// Force Gemini for a specific PDF (e.g., scanned images)
+const file = await client.files.upload({
+  filename: 'scanned-doc.pdf',
+  content_type: 'application/pdf',
+  size_bytes: 500000,
+  provider: 'gemini',
+});
+```
+</Tab>
+</Tabs>
+
+## Selective Variants
+
+By default, Roset generates all applicable variants. You can request only specific types:
+
+<Tabs>
+<Tab label="Python">
+```python
+# Only generate markdown and embeddings (skip thumbnails, metadata, index)
+file = client.files.upload(
+    filename="notes.pdf",
+    content_type="application/pdf",
+    size_bytes=12000,
+    variants=["markdown", "embeddings"],
+)
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// Only generate markdown and embeddings (skip thumbnails, metadata, index)
+const file = await client.files.upload({
+  filename: 'notes.pdf',
+  content_type: 'application/pdf',
+  size_bytes: 12000,
+  variants: ['markdown', 'embeddings'],
+});
+```
+</Tab>
+</Tabs>
+
+## Batch Uploads
+
+Process many files at once with batch upload:
+
+<Tabs>
+<Tab label="Python">
+```python
+# Upload multiple files in one call
+batch = client.files.upload_batch([
+    {"filename": "report-q1.pdf", "content_type": "application/pdf", "size_bytes": 45678},
+    {"filename": "report-q2.pdf", "content_type": "application/pdf", "size_bytes": 56789},
+    {"filename": "photo.jpg", "content_type": "image/jpeg", "size_bytes": 234567},
+])
+
+for f in batch["files"]:
+    print(f"  {f['filename']}: {f['id']}")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// Upload multiple files in one call
+const batch = await client.files.uploadBatch(
+  [
+    { filename: 'report-q1.pdf', content_type: 'application/pdf', size_bytes: 45678 },
+    { filename: 'report-q2.pdf', content_type: 'application/pdf', size_bytes: 56789 },
+    { filename: 'photo.jpg', content_type: 'image/jpeg', size_bytes: 234567 },
+  ],
+  { concurrency: 3 }
+);
+
+for (const f of batch) {
+  console.log(`  ${f.filename}: ${f.id}`);
+}
+```
+</Tab>
+</Tabs>
+
+<Callout type="note">
+For production workloads, use [webhooks](/docs/features/webhooks) instead of polling. Roset will POST to your endpoint when each file's transformation completes.
+</Callout>
+
+<PromptCard
+  title="Build this with AI"
+  prompt="Roset (roset.dev) is a developer API that transforms unstructured files into structured data. You upload a file and get back variants: markdown, embeddings, metadata, thumbnails, searchable index. Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Upload: `client.files.upload(filename='doc.pdf', content_type='application/pdf', size_bytes=N)`. Poll: `client.files.get(file_id)` until status is 'completed'. Retrieve: `client.files.list_variants(file_id)`. Write me a complete Python script that uploads a PDF, waits for processing, and prints the markdown and embeddings variants."
+/>
+
+## Next Steps
+
+- [Build a Knowledge Base](/docs/workflows/knowledge-base) -- search across many transformed files with Q&A.
+- [Variant Types](/docs/features/variants) -- deep dive on what each variant contains.
+- [Webhooks](/docs/features/webhooks) -- get notified instead of polling.

@@ -29,6 +29,9 @@ const sampleJob: JobRecord = {
   created_at: '2026-01-01T00:00:00Z',
   started_at: '2026-01-01T00:00:01Z',
   completed_at: '2026-01-01T00:00:02Z',
+  current_step: null,
+  variants_requested: null,
+  variants_completed: null,
 }
 
 describe('JobsResource', () => {

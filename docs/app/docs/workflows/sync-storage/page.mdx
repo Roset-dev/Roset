@@ -1,0 +1,262 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+import { PromptCard } from '@/components/prompt-card'
+
+export const metadata = {
+  title: 'Sync Cloud Storage',
+  description: 'Connect an S3, GCS, or Azure Blob Storage bucket to Roset, sync files, and auto-process with webhook notifications.',
+}
+
+# Sync Cloud Storage
+
+Connect your existing cloud storage bucket to Roset, sync file metadata, and auto-process files through the transformation pipeline. Roset reads your bucket's file listing without copying or proxying bytes -- your data stays in your storage.
+
+## The Workflow
+
+```
+Your Bucket --> Connect --> Sync Metadata --> Process Files --> Webhook Notification
+```
+
+1. **Connect** your S3, GCS, Azure, or MinIO bucket
+2. **Sync** file metadata from the bucket into Roset
+3. **Process** synced files through the transformation pipeline
+4. **Get notified** via webhook when transformations complete
+
+## Supported Providers
+
+| Provider | Setup Method | Bucket Types |
+|----------|-------------|--------------|
+| AWS | CloudFormation role | S3, S3-compatible |
+| GCP | Service Account | GCS buckets |
+| Azure | Service Principal | Blob containers |
+| MinIO | Access Key | MinIO buckets |
+| Cloudflare R2 | Access Key | R2 buckets |
+| Supabase Storage | Access Key | Supabase buckets |
+
+## Step 1: Create a Connection
+
+<Tabs>
+<Tab label="Python">
+```python
+import os
+from roset import Client
+
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+
+# Link an S3 bucket to Roset
+connection = client.connections.create(
+    provider="s3",
+    name="Production Bucket",
+    bucket="my-company-files",
+    region="us-east-1",
+    prefix="uploads/",    # only sync files under this prefix
+)
+print(f"Connection: {connection['id']}")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+const client = new RosetClient({ apiKey: process.env.ROSET_API_KEY! });
+
+// Link an S3 bucket to Roset
+const connection = await client.connections.create({
+  provider: 's3',
+  name: 'Production Bucket',
+  bucket: 'my-company-files',
+  region: 'us-east-1',
+  prefix: 'uploads/',    // only sync files under this prefix
+});
+console.log(`Connection: ${connection.id}`);
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl -X POST https://api.roset.dev/v1/connections \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "s3",
+    "name": "Production Bucket",
+    "bucket": "my-company-files",
+    "region": "us-east-1",
+    "prefix": "uploads/"
+  }'
+```
+</Tab>
+</Tabs>
+
+## Step 2: Test the Connection
+
+Verify that Roset can reach your bucket and has the required permissions.
+
+<Tabs>
+<Tab label="Python">
+```python
+result = client.connections.test(connection["id"])
+print(result)  # {"success": True}
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+const result = await client.connections.test(connection.id);
+console.log(result); // { success: true }
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl -X POST https://api.roset.dev/v1/connections/conn-abc123/test \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+## Step 3: Sync Files
+
+Syncing enumerates files from your bucket and creates **node** records in Roset. This is a metadata-only operation -- Roset reads the file listing but does not transfer any file bytes.
+
+<Tabs>
+<Tab label="Python">
+```python
+sync = client.connections.sync(connection["id"])
+print(f"Synced {sync['synced_count']} files")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+const sync = await client.connections.sync(connection.id);
+console.log(`Synced ${sync.synced_count} files`);
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl -X POST https://api.roset.dev/v1/connections/conn-abc123/sync \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+## Step 4: Browse Synced Files
+
+After syncing, browse files through the nodes API. Nodes mirror your bucket's directory structure.
+
+<Tabs>
+<Tab label="Python">
+```python
+# List nodes from the synced connection
+result = client.nodes.list(connection_id=connection["id"])
+for node in result["nodes"]:
+    print(f"{node['type']} {node['name']} ({node['size_bytes']} bytes)")
+
+# Get a signed download URL (direct from your bucket)
+download = client.nodes.download("node-xyz")
+print(download["url"])
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// List nodes from the synced connection
+const { nodes } = await client.nodes.list({
+  connection_id: connection.id,
+});
+for (const node of nodes) {
+  console.log(`${node.type} ${node.name} (${node.size_bytes} bytes)`);
+}
+
+// Get a signed download URL (direct from your bucket)
+const download = await client.nodes.download('node-xyz');
+console.log(download.url);
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# List nodes from a synced connection
+curl "https://api.roset.dev/v1/nodes?connection_id=conn-abc123" \
+  -H "Authorization: ApiKey rsk_..."
+
+# Get a signed download URL
+curl https://api.roset.dev/v1/nodes/node-xyz/download \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+## Step 5: Set Up Webhooks
+
+Register a webhook to get notified when syncs complete and files finish processing.
+
+<Tabs>
+<Tab label="Python">
+```python
+webhook = client.webhooks.create(
+    url="https://example.com/roset-webhook",
+    events=[
+        "connection.synced",
+        "file.processing.completed",
+        "file.processing.failed",
+    ],
+)
+print(f"Webhook: {webhook['id']}")
+print(f"Secret: {webhook['secret']}")  # Save this for signature verification
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+const webhook = await client.webhooks.create({
+  url: 'https://example.com/roset-webhook',
+  events: [
+    'connection.synced',
+    'file.processing.completed',
+    'file.processing.failed',
+  ],
+});
+console.log(`Webhook: ${webhook.id}`);
+console.log(`Secret: ${webhook.secret}`); // Save this for signature verification
+```
+</Tab>
+</Tabs>
+
+## Manage Connections
+
+<Tabs>
+<Tab label="Python">
+```python
+# List all connections
+result = client.connections.list()
+
+# Get a specific connection
+conn = client.connections.get("conn-abc123")
+
+# Delete a connection (your bucket is unaffected)
+client.connections.delete("conn-abc123")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// List all connections
+const { connections } = await client.connections.list();
+
+// Get a specific connection
+const conn = await client.connections.get('conn-abc123');
+
+// Delete a connection (your bucket is unaffected)
+await client.connections.delete('conn-abc123');
+```
+</Tab>
+</Tabs>
+
+<Callout type="note" title="Metadata Only">
+Deleting a connection removes the metadata records from Roset. Your files in the cloud storage bucket are never modified or deleted by Roset.
+</Callout>
+
+<PromptCard
+  title="Build this with AI"
+  prompt="Roset (roset.dev) is a developer API that transforms unstructured files into structured data (markdown, embeddings, metadata). It can connect to cloud storage buckets and auto-process files. Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Connect bucket: `client.connections.create(provider='aws', bucket='my-bucket', region='us-east-1')`. Sync files: `client.connections.sync(connection_id)`. Process synced files: `client.files.process(file_id)`. Webhooks: `client.webhooks.create(url='https://myapp.com/webhook', events=['file.completed'])`. Write me Python code that connects an S3 bucket, syncs file metadata, triggers processing on all synced files, and sets up a webhook for completion notifications."
+/>
+
+## Next Steps
+
+- [Transform Any File](/docs/workflows/transform) -- understand the transformation pipeline that processes synced files.
+- [Webhooks](/docs/features/webhooks) -- deep dive on event types and signature verification.
+- [API Reference](/docs/reference/api#connections) -- full connection and node endpoint documentation.

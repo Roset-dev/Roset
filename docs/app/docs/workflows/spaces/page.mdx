@@ -1,0 +1,272 @@
+import { Tabs, Tab } from '@/components/tabs'
+import { Callout } from '@/components/callout'
+import { PromptCard } from '@/components/prompt-card'
+
+export const metadata = {
+  title: 'Multi-Tenant Spaces',
+  description: 'Use spaces to scope files per customer. Portal tokens. B2B SaaS isolation pattern.',
+}
+
+# Multi-Tenant Spaces
+
+Spaces let you scope files per customer in a B2B SaaS application. Each space is an isolated namespace -- files, search results, and Q&A answers are all scoped to a space. Combine spaces with portal tokens to give each customer their own searchable document workspace.
+
+<Callout type="note">
+If you're not building a multi-tenant application, you can skip this page. All files default to the `"default"` space.
+</Callout>
+
+## The Pattern
+
+```
+Your Customer A --> Space "acme"    --> Files, Search, Q&A scoped to Acme
+Your Customer B --> Space "globex"  --> Files, Search, Q&A scoped to Globex
+```
+
+1. **Assign a space** when uploading files for each customer
+2. **Scope search and Q&A** to that customer's space
+3. **Issue portal tokens** for each customer's space to power embeddable UIs
+
+## Upload Files to a Space
+
+Pass the `space` parameter when uploading to scope files to a customer.
+
+<Tabs>
+<Tab label="Python">
+```python
+import os
+from roset import Client
+
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+
+# Upload a file scoped to the "acme" customer space
+file = client.files.upload(
+    filename="acme-contract.pdf",
+    content_type="application/pdf",
+    size_bytes=85000,
+    space="acme",
+)
+print(f"File {file['id']} uploaded to space: {file['space']}")
+
+# Upload a file scoped to the "globex" customer space
+file2 = client.files.upload(
+    filename="globex-invoice.pdf",
+    content_type="application/pdf",
+    size_bytes=42000,
+    space="globex",
+)
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+const client = new RosetClient({ apiKey: process.env.ROSET_API_KEY! });
+
+// Upload a file scoped to the "acme" customer space
+const file = await client.files.upload({
+  filename: 'acme-contract.pdf',
+  content_type: 'application/pdf',
+  size_bytes: 85000,
+  space: 'acme',
+});
+console.log(`File ${file.id} uploaded to space: ${file.space}`);
+
+// Upload a file scoped to the "globex" customer space
+const file2 = await client.files.upload({
+  filename: 'globex-invoice.pdf',
+  content_type: 'application/pdf',
+  size_bytes: 42000,
+  space: 'globex',
+});
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# Upload a file scoped to the "acme" customer space
+curl -X POST https://api.roset.dev/v1/upload \
+  -H "Authorization: ApiKey rsk_..." \
+  -F "file=@acme-contract.pdf" \
+  -F "space=acme"
+```
+</Tab>
+</Tabs>
+
+## Search Within a Space
+
+Scope search to a specific customer's files by passing the `space` parameter.
+
+<Tabs>
+<Tab label="Python">
+```python
+# Search only within the "acme" space
+results = client.search.query(
+    query="payment terms",
+    space="acme",
+)
+print(f"Found {results['total']} results in acme's space")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// Search only within the "acme" space
+const { results, total } = await client.search.query({
+  query: 'payment terms',
+  space: 'acme',
+});
+console.log(`Found ${total} results in acme's space`);
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl -X POST https://api.roset.dev/v1/search \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"query": "payment terms", "space": "acme"}'
+```
+</Tab>
+</Tabs>
+
+## Q&A Within a Space
+
+Q&A answers are also scoped to the space -- your customers only see answers from their own documents.
+
+<Tabs>
+<Tab label="Python">
+```python
+# Ask a question scoped to Acme's documents
+answer = client.qa.ask(
+    question="What are the payment terms?",
+    space="acme",
+)
+print(answer["answer"])
+# Sources will only include files from the "acme" space
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// Ask a question scoped to Acme's documents
+const { answer, sources } = await client.qa.ask({
+  question: 'What are the payment terms?',
+  space: 'acme',
+});
+console.log(answer);
+// Sources will only include files from the "acme" space
+```
+</Tab>
+</Tabs>
+
+## Portal Tokens
+
+Portal tokens grant temporary, scoped access to a space. Use them to power embedded UIs where your customers can browse, search, and ask questions about their documents.
+
+<Tabs>
+<Tab label="Python">
+```python
+# Issue a portal token for a customer's space (valid for 1 hour)
+token = client.portal.create_token(
+    space="acme",
+    ttl=3600,
+)
+print(f"Portal token: {token['token']}")
+print(f"Expires: {token['expires_at']}")
+
+# Your frontend uses this token to authenticate portal API calls:
+# Authorization: PortalToken ptk_abc123...
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// Issue a portal token for a customer's space (valid for 1 hour)
+const token = await client.portal.createToken({
+  space: 'acme',
+  ttl: 3600,
+});
+console.log(`Portal token: ${token.token}`);
+console.log(`Expires: ${token.expires_at}`);
+
+// Your frontend uses this token to authenticate portal API calls:
+// Authorization: PortalToken ptk_abc123...
+```
+</Tab>
+<Tab label="cURL">
+```bash
+# Issue a portal token for a customer's space
+curl -X POST https://api.roset.dev/v1/portal/tokens \
+  -H "Authorization: ApiKey rsk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"space": "acme", "ttl": 3600}'
+```
+</Tab>
+</Tabs>
+
+## List Spaces
+
+View all spaces with file counts and statistics.
+
+<Tabs>
+<Tab label="Python">
+```python
+# List all spaces
+result = client.spaces.list()
+for s in result["spaces"]:
+    print(f"  {s['space']}: {s['file_count']} files")
+```
+</Tab>
+<Tab label="TypeScript">
+```typescript
+// List all spaces
+const { spaces } = await client.spaces.list();
+for (const s of spaces) {
+  console.log(`  ${s.space}: ${s.file_count} files`);
+}
+```
+</Tab>
+<Tab label="cURL">
+```bash
+curl https://api.roset.dev/v1/spaces \
+  -H "Authorization: ApiKey rsk_..."
+```
+</Tab>
+</Tabs>
+
+## B2B SaaS Integration Pattern
+
+A typical integration looks like this:
+
+1. **On customer signup** -- create their space name (e.g., their org slug)
+2. **On file upload** -- pass `space: customerSlug` to scope the file
+3. **On search/Q&A** -- pass `space: customerSlug` to scope results
+4. **On dashboard render** -- issue a portal token for the customer's space and pass it to your frontend
+
+```python
+# In your backend route handler
+def handle_upload(request):
+    customer_space = request.user.org_slug  # e.g., "acme"
+
+    file = client.files.upload(
+        filename=request.file.name,
+        content_type=request.file.content_type,
+        size_bytes=request.file.size,
+        space=customer_space,
+    )
+    return {"file_id": file["id"]}
+
+def handle_search(request):
+    customer_space = request.user.org_slug
+    results = client.search.query(
+        query=request.query,
+        space=customer_space,
+    )
+    return results
+```
+
+<PromptCard
+  title="Build this with AI"
+  prompt="Roset (roset.dev) is a developer API that transforms unstructured files into structured data. It has a 'spaces' feature for multi-tenant isolation -- each space is a namespace that scopes files, search, and Q&A to one customer. Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Create space: `client.spaces.create(name='customer-123')`. Upload to space: `client.files.upload(filename, content_type, size_bytes, space='customer-123')`. Scoped search: `client.search.query(query='...', space='customer-123')`. Scoped Q&A: `client.qa.ask(question='...', space='customer-123')`. Write me a Python backend integration (FastAPI or Flask) that creates a space per customer on signup, uploads files to their space, and runs scoped search/Q&A."
+/>
+
+## Next Steps
+
+- [Build a Knowledge Base](/docs/workflows/knowledge-base) -- upload files and build a searchable knowledge base.
+- [Search](/docs/features/search) -- deep dive on search modes and parameters.
+- [API Reference](/docs/reference/api#spaces) -- full spaces endpoint documentation.
