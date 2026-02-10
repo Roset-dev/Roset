@@ -1,9 +1,8 @@
 /**
- * Provider Keys resource -- manage BYOK (Bring Your Own Key) extraction credentials.
+ * Provider Keys resource -- manage optional BYOK (Bring Your Own Key) extraction credentials.
  *
- * All tiers use BYOK (Bring Your Own Keys) for extraction providers. A small
- * managed trial quota (10–20 pages) is included for evaluation. After the
- * trial, users must configure their own provider keys.
+ * Roset uses managed keys by default for all extraction providers. Optionally
+ * configure your own provider keys to use your own accounts instead.
  *
  * Provider keys are stored encrypted and scoped to the organization. Only the
  * presence of a key (not its value) is exposed through the API.
@@ -31,12 +30,11 @@ export interface ProviderKeyRecord {
 }
 
 /**
- * Resource for managing BYOK extraction provider credentials.
+ * Resource for managing optional BYOK extraction provider credentials.
  *
  * Provides methods to set (create/update), list, and delete API keys for
- * extraction providers. These keys are used by the processing pipeline to
- * authenticate with third-party extraction services on behalf of the
- * organization.
+ * extraction providers. When configured, these keys override Roset's managed
+ * keys for the corresponding provider.
  */
 export class ProviderKeysResource {
   constructor(private http: HttpClient) {}
@@ -72,8 +70,7 @@ export class ProviderKeysResource {
   /**
    * Delete an extraction provider API key.
    *
-   * After deletion, processing jobs that require this provider will use the
-   * organization's trial quota (if remaining) or fail with a key-required error.
+   * After deletion, processing jobs will use Roset's managed key for this provider.
    *
    * @param provider - Extraction provider name: `"reducto"`, `"openai"`, `"gemini"`, or `"whisper"`.
    * @throws {NotFoundError} If no key is configured for the given provider.

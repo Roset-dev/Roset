@@ -176,7 +176,7 @@ import { QAResource } from "./resources/qa.js";
  * | `webhooks`       | Subscribe to processing lifecycle events |
  * | `spaces`         | List and inspect space namespaces (optional, for multi-tenant apps) |
  * | `apiKeys`        | Create, list, and revoke API keys |
- * | `providerKeys`   | Manage BYOK extraction provider credentials |
+ * | `providerKeys`   | Manage optional BYOK extraction provider credentials |
  * | `analytics`      | Query file processing metrics and statistics |
  *
  * @example
@@ -218,7 +218,7 @@ export class RosetClient {
   /** Create, list, and revoke organization API keys (prefixed `rsk_`). */
   public readonly apiKeys: ApiKeysResource;
 
-  /** Manage BYOK extraction provider credentials (Reducto, OpenAI, Gemini, Whisper). */
+  /** Manage optional BYOK extraction provider credentials (Reducto, OpenAI, Gemini, Whisper). Overrides managed keys when configured. */
   public readonly providerKeys: ProviderKeysResource;
 
   /** Query file processing analytics, trends, and failure metrics. */

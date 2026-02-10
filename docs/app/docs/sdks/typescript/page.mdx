@@ -255,7 +255,7 @@ await client.apiKeys.delete('key-abc');
 
 ### Provider Keys
 
-Provider keys are the API credentials for the extraction and embedding services that Roset orchestrates. All tiers use BYOK (Bring Your Own Keys). A small managed trial quota is included for evaluation — after the trial, configure your own provider keys.
+Provider keys are optional BYOK credentials for the extraction and embedding services that Roset orchestrates. Roset uses managed keys by default. Optionally provide your own keys to use your provider accounts instead.
 
 ```typescript
 // Save a provider key (e.g., Reducto for document extraction)

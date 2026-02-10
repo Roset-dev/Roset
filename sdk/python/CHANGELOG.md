@@ -29,7 +29,7 @@ Complete SDK rewrite aligned with Roset's file processing orchestration API.
 - **Jobs API**: `client.jobs.list()`, `client.jobs.get()`, `client.jobs.cancel()`, `client.jobs.retry()` for processing lifecycle.
 - **Variants API**: `client.files.variants(file_id)` to retrieve extracted markdown, embeddings, thumbnails, and metadata.
 - **Spaces API**: `client.spaces.list()`, `client.spaces.stats()` for multi-space file scoping.
-- **Provider Keys API**: `client.provider_keys.set()`, `client.provider_keys.get()`, `client.provider_keys.delete()` for BYOK management.
+- **Provider Keys API**: `client.provider_keys.set()`, `client.provider_keys.get()`, `client.provider_keys.delete()` for optional BYOK management (overrides managed keys).
 - **Async Client**: `AsyncRoset` with full async/await support.
 - Built-in retry logic with jitter and exponential backoff.
 

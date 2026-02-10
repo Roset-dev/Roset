@@ -71,7 +71,7 @@ curl https://api.roset.dev/v1/files/FILE_ID/variants \
 1. **Upload** a file via multipart form data or a signed URL. Roset stores metadata only -- file bytes go directly to your storage.
 2. **Route** to the right extraction provider. Roset selects Reducto for documents, Gemini for images, or Whisper for audio based on content type.
 3. **Extract** structured content. The provider returns markdown, and Roset stores the result as a variant on the file.
-4. **Embed** the extracted content. If an OpenAI key is configured, vector embeddings are generated automatically as a second variant.
+4. **Embed** the extracted content. Vector embeddings are generated automatically via OpenAI as a second variant.
 5. **Retrieve** the original file metadata, extracted markdown, or embeddings through a single unified API.
 
 ```
@@ -104,7 +104,7 @@ Upload --> Route (Reducto / Gemini / Whisper) --> Extract --> Embed (OpenAI) -->
 - **Variants** are the extraction outputs linked to a parent file -- extracted markdown, vector embeddings, thumbnails, or structured metadata. Each variant has a type and is produced by a specific provider.
 - **Connections** are linked storage buckets (S3, GCS, Azure Blob Storage, MinIO, Cloudflare R2, Supabase Storage). Roset reads file metadata from your bucket without copying bytes.
 - **Spaces** provide optional namespace isolation for multi-space applications. If you are not building a B2B SaaS product, you can ignore spaces entirely -- files default to a `"default"` space.
-- **Provider Keys** are the API credentials for extraction providers (Reducto, OpenAI, Gemini, Whisper). All tiers use BYOK (Bring Your Own Keys). A small managed trial quota is included for evaluation — after the trial, configure your own provider keys in Settings.
+- **Provider Keys** are optional BYOK credentials for extraction providers (Reducto, OpenAI, Gemini, Whisper). Roset uses managed keys by default -- optionally provide your own keys in Settings to use your provider accounts instead.
 - **Webhooks** deliver HTTP callbacks when processing events occur (file completed, variant ready, job failed).
 
 

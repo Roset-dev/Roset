@@ -128,7 +128,7 @@ curl https://api.roset.dev/v1/files/FILE_ID/variants/markdown \
 2. Roset created a file metadata record and a processing job.
 3. The job was routed to **Reducto** (for PDFs/documents), **Gemini** (for images), or **Whisper** (for audio) based on content type.
 4. The extraction provider returned structured markdown, which Roset stored as a **variant** on the file.
-5. If you configured an OpenAI provider key, vector embeddings were also generated as a second variant.
+5. Vector embeddings were generated via OpenAI as a second variant.
 
 Roset never touched the file bytes directly -- it orchestrated the extraction pipeline and stored the resulting metadata.
 

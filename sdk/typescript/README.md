@@ -68,7 +68,7 @@ for (const v of variants) {
 | `qa` | ask | RAG-powered Q&A with source citations |
 | `spaces` | list, getStats | Optional namespace isolation for multi-tenant apps |
 | `apiKeys` | create, list, delete | Create and revoke organization API keys |
-| `providerKeys` | set, get, delete | Manage BYOK extraction provider credentials |
+| `providerKeys` | set, get, delete | Manage optional BYOK extraction provider credentials |
 | `analytics` | overview, processing, fileTypes, spaces, failures, volume, trends, providers, topFailures, storageGrowth | Processing metrics and statistics |
 
 ## Authentication
@@ -295,7 +295,7 @@ await roset.apiKeys.delete("key-id");
 ### Provider Keys
 
 ```typescript
-// Set a BYOK extraction provider key
+// Set an optional BYOK extraction provider key (overrides managed key)
 await roset.providerKeys.set({ provider: "reducto", key: "rdc_..." });
 
 // Check which providers have keys configured

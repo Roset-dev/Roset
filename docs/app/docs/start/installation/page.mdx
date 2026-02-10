@@ -54,9 +54,9 @@ Never commit API keys to version control. Use environment variables or a secrets
 
 ## Provider Keys
 
-Roset orchestrates extraction providers on your behalf. All tiers use BYOK (Bring Your Own Keys) for extraction providers. A small managed trial quota is included for evaluation.
+Roset uses **managed keys by default** for all extraction providers (Reducto, OpenAI, Gemini, Whisper) -- you can start processing files immediately without any provider configuration.
 
-You can optionally add your own provider keys in the console under **Settings > Provider Keys**:
+Optionally, you can bring your own keys (BYOK) to use your own provider accounts instead. Configure them in the console under **Settings > Processing**:
 
 - **Reducto** -- document extraction (PDF, DOCX, PPTX)
 - **OpenAI** -- vector embeddings

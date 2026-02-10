@@ -16,7 +16,7 @@
       {
         "heading": "How It Works",
         "id": "how-it-works",
-        "content": "1. Upload a file via multipart form data or a signed URL. Roset stores metadata only -- file bytes go directly to your storage.\n2. Route to the right extraction provider. Roset selects Reducto for documents, Gemini for images, or Whisper for audio based on content type.\n3. Extract structured content. The provider returns markdown, and Roset stores the result as a variant on the file.\n4. Embed the extracted content. If an OpenAI key is configured, vector embeddings are generated automatically as "
+        "content": "1. Upload a file via multipart form data or a signed URL. Roset stores metadata only -- file bytes go directly to your storage.\n2. Route to the right extraction provider. Roset selects Reducto for documents, Gemini for images, or Whisper for audio based on content type.\n3. Extract structured content. The provider returns markdown, and Roset stores the result as a variant on the file.\n4. Embed the extracted content. Vector embeddings are generated automatically via OpenAI as a second variant.\n5. "
       },
       {
         "heading": "Endpoints",
@@ -47,7 +47,7 @@
       {
         "heading": "v0.1.1 (Beta)",
         "id": "v011-beta",
-        "content": "Initial public beta of Roset -- the transformation engine for unstructured data.\n\n### File Processing Orchestration\n\nUpload any document and Roset orchestrates the full extraction pipeline. Roset routes files to the right provider based on content type: Reducto for documents (PDF, DOCX, PPTX), Gemini for images, and Whisper for audio transcription. If an OpenAI provider key is configured, vector embeddings are generated automatically as a second variant.\n\nRoset never proxies or stores your file "
+        "content": "Initial public beta of Roset -- the transformation engine for unstructured data.\n\n### File Processing Orchestration\n\nUpload any document and Roset orchestrates the full extraction pipeline. Roset routes files to the right provider based on content type: Reducto for documents (PDF, DOCX, PPTX), Gemini for images, and Whisper for audio transcription. Vector embeddings are generated automatically via OpenAI as a second variant.\n\nRoset never proxies or stores your file bytes. File uploads go directl"
       }
     ]
   },
@@ -129,7 +129,7 @@
       {
         "heading": "Streaming",
         "id": "streaming",
-        "content": "When stream: true, the response is an SSE stream with three event types:\n\n`\ndata: {\"type\": \"chunk\", \"content\": \"The payment\"}\ndata: {\"type\": \"chunk\", \"content\": \" terms are\"}\ndata: {\"type\": \"chunk\", \"content\": \" net 30 days...\"}\ndata: {\"type\": \"sources\", \"sources\": [...]}\ndata: [DONE]\n`\n\nQ&A requires an OpenAI API key for both embedding and answer generation. Configure one via the console or PUT /v1/org/provider-keys`."
+        "content": "When stream: true, the response is an SSE stream with three event types:\n\n`\ndata: {\"type\": \"chunk\", \"content\": \"The payment\"}\ndata: {\"type\": \"chunk\", \"content\": \" terms are\"}\ndata: {\"type\": \"chunk\", \"content\": \" net 30 days...\"}\ndata: {\"type\": \"sources\", \"sources\": [...]}\ndata: [DONE]\n`\n\nQ&A uses OpenAI for both embedding and answer generation. Roset provides a managed key by default. You can optionally configure your own via the console or PUT /v1/org/provider-keys`."
       },
       {
         "heading": "Next Steps",
@@ -155,7 +155,7 @@
       {
         "heading": "Search Modes",
         "id": "search-modes",
-        "content": "### Text Search\n\nUses Postgres tsvector full-text search on the searchable-index variant. Returns results ranked by ts_rank with highlighted snippets.\n\n- Works immediately after file processing completes\n- Best for exact keyword and phrase matching\n- Supports pagination via offset\n\n### Vector Search\n\nEmbeds your query using OpenAI text-embedding-3-small, then queries Cloudflare Vectorize for the closest chunk vectors.\n\n- Requires an OpenAI provider key configured at /v1/org/provider-keys\n- Best "
+        "content": "### Text Search\n\nUses Postgres tsvector full-text search on the searchable-index variant. Returns results ranked by ts_rank with highlighted snippets.\n\n- Works immediately after file processing completes\n- Best for exact keyword and phrase matching\n- Supports pagination via offset\n\n### Vector Search\n\nEmbeds your query using OpenAI text-embedding-3-small, then queries Cloudflare Vectorize for the closest chunk vectors.\n\n- Uses OpenAI embeddings (managed by default, or your own key via /v1/org/pro"
       },
       {
         "heading": "Parameters",
@@ -165,7 +165,7 @@
       {
         "heading": "Response",
         "id": "response",
-        "content": "`json\n{\n  \"results\": [\n    {\n      \"fileId\": \"abc-123\",\n      \"score\": 0.034,\n      \"snippet\": \"The payment terms are net 30 days...\"\n    }\n  ],\n  \"total\": 42,\n  \"query\": \"payment terms\",\n  \"mode\": \"hybrid\"\n}\n`\n\nVector and hybrid modes require an OpenAI provider key. Configure one via the console or PUT /v1/org/provider-keys`."
+        "content": "`json\n{\n  \"results\": [\n    {\n      \"fileId\": \"abc-123\",\n      \"score\": 0.034,\n      \"snippet\": \"The payment terms are net 30 days...\"\n    }\n  ],\n  \"total\": 42,\n  \"query\": \"payment terms\",\n  \"mode\": \"hybrid\"\n}\n`\n\nVector and hybrid modes use OpenAI embeddings. Roset provides a managed key by default. You can optionally configure your own via the console or PUT /v1/org/provider-keys`."
       },
       {
         "heading": "Next Steps",
@@ -257,7 +257,7 @@
       {
         "heading": "Provider Keys",
         "id": "provider-keys",
-        "content": "Provider keys are API credentials for the extraction and embedding services that Roset orchestrates (Reducto, OpenAI, Gemini, Whisper). All tiers use BYOK (Bring Your Own Keys). A small managed trial quota is included for evaluation — after the trial, configure your own provider keys.\n\n### GET /v1/org/provider-keys\n\nList configured providers. Key values are redacted in the response for security.\n\n`bash\ncurl https://api.roset.dev/v1/org/provider-keys \\\n  -H \"Authorization: ApiKey rsk_...\"\n`\n\n### "
+        "content": "Provider keys are optional BYOK credentials for the extraction and embedding services that Roset orchestrates (Reducto, OpenAI, Gemini, Whisper). Roset uses managed keys by default. Optionally provide your own keys to use your provider accounts instead.\n\n### GET /v1/org/provider-keys\n\nList configured providers. Key values are redacted in the response for security.\n\n`bash\ncurl https://api.roset.dev/v1/org/provider-keys \\\n  -H \"Authorization: ApiKey rsk_...\"\n`\n\n### PUT /v1/org/provider-keys\n\nSave "
       },
       {
         "heading": "Connections",
@@ -400,7 +400,7 @@
       {
         "heading": "Provider Keys",
         "id": "provider-keys",
-        "content": "Roset orchestrates extraction providers on your behalf. All tiers use BYOK (Bring Your Own Keys) for extraction providers. A small managed trial quota is included for evaluation.\n\nYou can optionally add your own provider keys in the console under Settings > Provider Keys:\n\n- Reducto -- document extraction (PDF, DOCX, PPTX)\n- OpenAI -- vector embeddings\n- Gemini -- image processing\n- Whisper -- audio transcription\n\nYou can also manage provider keys through the API. See PUT /v1/org/provider-keys f"
+        "content": "Roset uses managed keys by default for all extraction providers (Reducto, OpenAI, Gemini, Whisper) -- you can start processing files immediately without any provider configuration.\n\nOptionally, you can bring your own keys (BYOK) to use your own provider accounts instead. Configure them in the console under Settings > Processing:\n\n- Reducto -- document extraction (PDF, DOCX, PPTX)\n- OpenAI -- vector embeddings\n- Gemini -- image processing\n- Whisper -- audio transcription\n\nYou can also manage prov"
       },
       {
         "heading": "Direct API Access",
@@ -446,7 +446,7 @@
       {
         "heading": "What Happened",
         "id": "what-happened",
-        "content": "1. You uploaded a document to Roset.\n2. Roset created a file metadata record and a processing job.\n3. The job was routed to Reducto (for PDFs/documents), Gemini (for images), or Whisper (for audio) based on content type.\n4. The extraction provider returned structured markdown, which Roset stored as a variant on the file.\n5. If you configured an OpenAI provider key, vector embeddings were also generated as a second variant.\n\nRoset never touched the file bytes directly -- it orchestrated the extra"
+        "content": "1. You uploaded a document to Roset.\n2. Roset created a file metadata record and a processing job.\n3. The job was routed to Reducto (for PDFs/documents), Gemini (for images), or Whisper (for audio) based on content type.\n4. The extraction provider returned structured markdown, which Roset stored as a variant on the file.\n5. Vector embeddings were generated via OpenAI as a second variant.\n\nRoset never touched the file bytes directly -- it orchestrated the extraction pipeline and stored the result"
       },
       {
         "heading": "Next Steps",

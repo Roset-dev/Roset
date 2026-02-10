@@ -73,7 +73,7 @@ Uses Postgres `tsvector` full-text search on the `searchable-index` variant. Ret
 
 Embeds your query using OpenAI `text-embedding-3-small`, then queries Cloudflare Vectorize for the closest chunk vectors.
 
-- Requires an OpenAI provider key configured at `/v1/org/provider-keys`
+- Uses OpenAI embeddings (managed by default, or your own key via `/v1/org/provider-keys`)
 - Best for semantic queries where exact words may not appear in the document
 - Results include the matched chunk text and chunk index
 
@@ -81,7 +81,7 @@ Embeds your query using OpenAI `text-embedding-3-small`, then queries Cloudflare
 
 Runs text and vector search in parallel, then merges results using Reciprocal Rank Fusion (RRF, k=60). This consistently outperforms either mode alone.
 
-- Falls back to text-only if no OpenAI key is configured
+- Uses managed OpenAI key by default; falls back to text-only if neither managed nor BYOK key is available
 - Default mode when `mode` is omitted
 
 ## Parameters
@@ -112,7 +112,7 @@ Runs text and vector search in parallel, then merges results using Reciprocal Ra
 ```
 
 <Callout type="note">
-Vector and hybrid modes require an OpenAI provider key. Configure one via the console or `PUT /v1/org/provider-keys`.
+Vector and hybrid modes use OpenAI embeddings. Roset provides a managed key by default. You can optionally configure your own via the console or `PUT /v1/org/provider-keys`.
 </Callout>
 
 ## Next Steps

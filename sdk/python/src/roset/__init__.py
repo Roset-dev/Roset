@@ -34,8 +34,8 @@ Key concepts:
   ``"default"``; most single-space applications never need to change this.
 * **API Keys** -- Authentication tokens prefixed with ``rsk_``.
 * **Provider Keys** -- Optional BYOK (Bring Your Own Key) credentials for
-  extraction services. All tiers use BYOK (Bring Your Own Keys). A small
-  managed trial quota is included for evaluation.
+  extraction services. Roset uses managed keys by default. Optionally provide
+  your own keys to use your provider accounts instead.
 
 Exception hierarchy:
 

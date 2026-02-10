@@ -13,7 +13,7 @@ Initial public beta of Roset -- the transformation engine for unstructured data.
 
 ### File Processing Orchestration
 
-Upload any document and Roset orchestrates the full extraction pipeline. Roset routes files to the right provider based on content type: **Reducto** for documents (PDF, DOCX, PPTX), **Gemini** for images, and **Whisper** for audio transcription. If an OpenAI provider key is configured, vector embeddings are generated automatically as a second variant.
+Upload any document and Roset orchestrates the full extraction pipeline. Roset routes files to the right provider based on content type: **Reducto** for documents (PDF, DOCX, PPTX), **Gemini** for images, and **Whisper** for audio transcription. Vector embeddings are generated automatically via OpenAI as a second variant.
 
 Roset never proxies or stores your file bytes. File uploads go directly to your storage via signed URLs, and extraction providers access files directly.
 
@@ -33,9 +33,9 @@ Link your existing cloud storage buckets (S3, GCS, Azure Blob Storage, MinIO) to
 
 Optionally organize files by space namespace for B2B SaaS applications. Each space gets its own file counts and storage statistics. Spaces default to `"default"` -- most users can skip this feature entirely.
 
-### Bring Your Own Keys (BYOK)
+### Managed Keys + Optional BYOK
 
-Configure your own API keys for extraction and embedding providers (BYOK). All tiers use Bring Your Own Keys. A small managed trial quota is included for evaluation. Roset orchestrates the providers using your credentials.
+Roset uses managed keys by default for all extraction and embedding providers -- start processing files immediately with zero configuration. Optionally bring your own API keys (BYOK) to use your provider accounts instead. Roset orchestrates the providers on your behalf.
 
 ### Webhooks
 
