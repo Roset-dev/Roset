@@ -254,7 +254,7 @@ console.log(answer);
 
 <PromptCard
   title="Build this with AI"
-  prompt="Roset (roset.dev) is a developer API that transforms unstructured files into structured data (markdown, embeddings, searchable index). Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Upload: `client.files.upload(filename, content_type, size_bytes)`. Search: `client.search.query(query='...', mode='hybrid')` returns ranked results with snippets. Q&A: `client.qa.ask(question='...')` returns an answer with source citations. Write me a complete Python script that: 1) uploads 3 PDF files, 2) waits for all to finish processing, 3) runs a hybrid search query, 4) asks a Q&A question and prints the answer with citations."
+  prompt="Roset (roset.dev) is a developer API that transforms unstructured files (PDFs, images, audio, DOCX) into structured data (markdown, embeddings, searchable index). Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Upload: `client.files.upload(filename, content_type, size_bytes)`. Poll: `client.files.get(file_id)` until status is 'completed'. Retrieve variants: `client.files.list_variants(file_id)`. Write me a complete Python script that: 1) uploads 3 files (a PDF, an image, and a DOCX), 2) waits for all to finish processing, 3) retrieves the markdown and embeddings variants for each."
 />
 
 ## Next Steps

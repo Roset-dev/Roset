@@ -254,7 +254,7 @@ For production workloads, use [webhooks](/docs/features/webhooks) instead of pol
 
 <PromptCard
   title="Build this with AI"
-  prompt="Roset (roset.dev) is a developer API that transforms unstructured files into structured data. You upload a file and get back variants: markdown, embeddings, metadata, searchable index. Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Upload: `client.files.upload(filename='doc.pdf', content_type='application/pdf', size_bytes=N)`. Poll: `client.files.get(file_id)` until status is 'completed'. Retrieve: `client.files.list_variants(file_id)`. Write me a complete Python script that uploads a PDF, waits for processing, and prints the markdown and embeddings variants."
+  prompt="Roset (roset.dev) is a developer API that transforms unstructured files into structured data. You upload a file and get back variants: markdown, embeddings, metadata, searchable index. Supported types: PDFs, images, audio, DOCX. Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Upload: `client.files.upload(filename, content_type, size_bytes)`. Poll: `client.files.get(file_id)` until status is 'completed'. Retrieve: `client.files.list_variants(file_id)`. Write me a complete Python script that uploads a file, waits for processing, and prints the markdown and embeddings variants."
 />
 
 ## Next Steps

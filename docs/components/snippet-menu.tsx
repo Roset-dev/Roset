@@ -53,14 +53,19 @@ export function SnippetMenu({ code, lang }: SnippetMenuProps) {
   }
 
   async function openInClaude() {
-    await navigator.clipboard.writeText(buildPrompt(code, lang));
+    const prompt = buildPrompt(code, lang);
+    await navigator.clipboard.writeText(prompt);
     window.open("https://claude.ai/new", "_blank");
-    setOpen(false);
+    showFeedback("Copied — paste in Claude");
   }
 
   async function openInChatGPT() {
-    await navigator.clipboard.writeText(buildPrompt(code, lang));
-    window.open("https://chatgpt.com", "_blank");
+    const prompt = buildPrompt(code, lang);
+    await navigator.clipboard.writeText(prompt);
+    window.open(
+      `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`,
+      "_blank",
+    );
     setOpen(false);
   }
 
@@ -110,13 +115,13 @@ export function SnippetMenu({ code, lang }: SnippetMenuProps) {
               <MenuItem
                 icon={<ExternalIcon />}
                 label="Open in Claude"
-                sublabel="Copies prompt"
+                sublabel="Paste with ⌘V"
                 onClick={openInClaude}
               />
               <MenuItem
                 icon={<ExternalIcon />}
                 label="Open in ChatGPT"
-                sublabel="Copies prompt"
+                sublabel="Pre-fills prompt"
                 onClick={openInChatGPT}
               />
             </>

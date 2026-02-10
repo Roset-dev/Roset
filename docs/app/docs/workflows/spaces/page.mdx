@@ -262,7 +262,7 @@ def handle_search(request):
 
 <PromptCard
   title="Build this with AI"
-  prompt="Roset (roset.dev) is a developer API that transforms unstructured files into structured data. It has a 'spaces' feature for multi-tenant isolation -- each space is a namespace that scopes files, search, and Q&A to one customer. Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Create space: `client.spaces.create(name='customer-123')`. Upload to space: `client.files.upload(filename, content_type, size_bytes, space='customer-123')`. Scoped search: `client.search.query(query='...', space='customer-123')`. Scoped Q&A: `client.qa.ask(question='...', space='customer-123')`. Write me a Python backend integration (FastAPI or Flask) that creates a space per customer on signup, uploads files to their space, and runs scoped search/Q&A."
+  prompt="Roset (roset.dev) is a developer API that transforms unstructured files (PDFs, images, audio, DOCX) into structured data. It has a 'spaces' feature for multi-tenant isolation — each space is a namespace that scopes files to one customer. Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Spaces: `client.spaces.create(name='customer-123')`. Upload to space: `client.files.upload(filename, content_type, size_bytes, space='customer-123')`. List files in space: `client.files.list(space='customer-123')`. Retrieve variants: `client.files.list_variants(file_id)`. Write me a Python backend integration (FastAPI or Flask) that creates a space per customer on signup, uploads files to their space, and retrieves structured variants."
 />
 
 ## Next Steps

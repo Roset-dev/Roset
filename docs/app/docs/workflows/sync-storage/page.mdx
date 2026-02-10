@@ -252,7 +252,7 @@ Deleting a connection removes the metadata records from Roset. Your files in the
 
 <PromptCard
   title="Build this with AI"
-  prompt="Roset (roset.dev) is a developer API that transforms unstructured files into structured data (markdown, embeddings, metadata). It can connect to cloud storage buckets and auto-process files. Python SDK: `pip install roset`. Init: `from roset import Client; client = Client(api_key='rsk_...')`. Connect bucket: `client.connections.create(provider='aws', bucket='my-bucket', region='us-east-1')`. Sync files: `client.connections.sync(connection_id)`. Process synced files: `client.files.process(file_id)`. Webhooks: `client.webhooks.create(url='https://myapp.com/webhook', events=['file.completed'])`. Write me Python code that connects an S3 bucket, syncs file metadata, triggers processing on all synced files, and sets up a webhook for completion notifications."
+  prompt="Roset (roset.dev) is a developer API that transforms unstructured files into structured data (markdown, embeddings, metadata, searchable index). It connects to cloud storage (S3, GCS, Azure Blob) and processes files in-place. Supported file types: PDFs, images, audio, DOCX. API endpoints: POST /v1/connections to connect a bucket, POST /v1/connections/:id/sync to sync files, GET /v1/files to list synced files, POST /v1/upload to process a file. Webhooks notify on file.completed. Write me a guide for connecting an S3 bucket to Roset via the API, syncing files, and setting up a webhook for completion notifications."
 />
 
 ## Next Steps

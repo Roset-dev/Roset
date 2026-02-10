@@ -23,11 +23,16 @@ export function PromptCard({ title, prompt }: PromptCardProps) {
   async function openInClaude() {
     await navigator.clipboard.writeText(prompt);
     window.open("https://claude.ai/new", "_blank");
+    showFeedback("Copied — paste in Claude");
   }
 
   async function openInChatGPT() {
     await navigator.clipboard.writeText(prompt);
-    window.open("https://chatgpt.com", "_blank");
+    window.open(
+      `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`,
+      "_blank",
+    );
+    showFeedback("Opened!");
   }
 
   return (
