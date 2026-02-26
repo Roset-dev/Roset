@@ -1,0 +1,30 @@
+export const metadata = {
+  title: 'Multi-tenant Portal',
+  description: 'Build tenant-isolated document search and Q&A experiences using spaces and portal tokens.',
+}
+
+# Multi-tenant Portal
+
+This cookbook is for SaaS products serving multiple customer workspaces.
+
+## Core Pattern
+
+1. Create or map each customer to a Roset `space`
+2. Ingest customer files into that space
+3. Issue short-lived portal tokens for customer-facing UI access
+4. Use portal search and Q&A endpoints scoped to the token space
+
+## Why This Works
+
+- Strong tenant isolation by design
+- No need to maintain custom indexing per customer
+- Fast path to embedded search/Q&A experiences
+
+## Recommended Controls
+
+- Short token TTLs
+- Tenant-aware audit logging in your app
+- Explicit fallback states when portal APIs are unavailable
+
+For full space setup details, start with **[Multi-Tenant Spaces](/docs/workflows/spaces)**.
+

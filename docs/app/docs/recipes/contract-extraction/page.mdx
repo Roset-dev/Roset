@@ -1,0 +1,30 @@
+export const metadata = {
+  title: 'Contract Extraction',
+  description: 'Recipe for extracting key clauses and obligations from contracts with source traceability.',
+}
+
+# Contract Extraction
+
+Use this recipe for legal-tech and procurement workflows where source traceability is mandatory.
+
+## Common Targets
+
+- Parties
+- Effective/termination dates
+- Renewal terms
+- Payment clauses
+- Liability or indemnity sections
+
+## Workflow
+
+1. Transform contracts with Roset
+2. Search for clause anchors (`termination`, `renewal`, `liability`)
+3. Run targeted extraction over relevant passages
+4. Persist structured fields with source snippets
+
+## Quality Checks
+
+- Flag ambiguous date formats
+- Capture confidence scores for risky clauses
+- Keep links to source snippets for reviewer verification
+

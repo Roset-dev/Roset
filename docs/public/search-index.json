@@ -1,0 +1,931 @@
+[
+  {
+    "href": "/docs",
+    "title": "Roset Documentation",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Transform Unstructured Files into Structured Data\n\nRoset is currently in public beta (v0.1.1). The API is stable, but expect new features and providers regularly. Breaking changes will be communicated in advance.\n\nRoset is the transformation engine for unstructured data. Upload any file -- PDF, image, audio, document -- and Roset routes it to the right extraction provider, generates embeddings, and gives you back four structured variants: markdown, embeddings, metadata, and a searchable index."
+      },
+      {
+        "heading": "Quick Start",
+        "id": "quick-start",
+        "content": "``python\nfrom roset import Client\n\nclient = Client(api_key=\"rsk_...\")\n\n# Upload a file -- Roset routes it to the right extraction provider\nfile = client.files.upload(\n    filename=\"invoice.pdf\",\n    content_type=\"application/pdf\",\n    size_bytes=45678,\n)\n\n# Poll until processing completes\n\nstatus = file[\"status\"]\nwhile status not in (\"completed\", \"failed\"):\n    current = client.files.get(file[\"id\"])\n    status = current[\"status\"]\n    time.sleep(2)\n\n# Retrieve the extracted markdown variant\nvaria"
+      },
+      {
+        "heading": "Choose Your Path",
+        "id": "choose-your-path",
+        "content": ""
+      },
+      {
+        "heading": "What Can You Build?",
+        "id": "what-can-you-build",
+        "content": "- Transform Any File -- Upload a file and get markdown + embeddings + metadata in one call. The \"hello world\" story.\n- Build a Knowledge Base -- Upload many files, search across them, and Q&A with citations. End-to-end RAG pipeline.\n- Multi-Tenant Spaces -- Scope files per customer with spaces and portal tokens. B2B SaaS isolation pattern.\n- Sync Cloud Storage -- Connect an S3/GCS/Azure bucket, sync files, auto-process, and get webhook notifications."
+      },
+      {
+        "heading": "How It Works",
+        "id": "how-it-works",
+        "content": "1. Upload a file via multipart form data or a signed URL. Roset stores metadata only -- file bytes go directly to your storage.\n2. Route to the right extraction provider. Roset selects Reducto for documents, Gemini for images, or Whisper for audio based on content type.\n3. Extract structured content. The provider returns markdown, and Roset stores the result as a variant on the file.\n4. Embed the extracted content. Vector embeddings are generated automatically via OpenAI as a second variant.\n5. "
+      },
+      {
+        "heading": "Core Concepts",
+        "id": "core-concepts",
+        "content": "- Files are documents tracked by Roset's metadata store. Each file has a processing status and zero or more variants.\n- Variants are the extraction outputs linked to a parent file -- extracted markdown, vector embeddings, or structured metadata. See Variant Types for details.\n- Jobs represent the processing pipeline for a file. Each job moves through a state machine: queued -> processing -> completed or failed.\n- Connections are linked storage buckets (S3, GCS, Azure Blob Storage, MinIO, Cloudfl"
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- Quickstart -- upload your first file in under 5 minutes.\n- Installation -- set up the Python or TypeScript SDK.\n- Python SDK -- full Python client reference.\n- TypeScript SDK -- full TypeScript client reference.\n- API Reference -- complete endpoint documentation."
+      }
+    ]
+  },
+  {
+    "href": "/docs/changelog",
+    "title": "Changelog",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Changelog"
+      },
+      {
+        "heading": "v0.1.1 (Beta)",
+        "id": "v011-beta",
+        "content": "Initial public beta of Roset -- the transformation engine for unstructured data.\n\n### File Processing Orchestration\n\nUpload any document and Roset orchestrates the full extraction pipeline. Roset routes files to the right provider based on content type: Reducto for documents (PDF, DOCX, PPTX), Gemini for images, and Whisper for audio transcription. Vector embeddings are generated automatically via OpenAI as a second variant.\n\nRoset never proxies or stores your file bytes. File uploads go directl"
+      }
+    ]
+  },
+  {
+    "href": "/docs/cookbooks/advanced-rag",
+    "title": "Advanced RAG",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Advanced RAG\n\nUse this pattern when you need stronger retrieval quality, strict source traceability, and predictable operations."
+      },
+      {
+        "heading": "Architecture",
+        "id": "architecture",
+        "content": "1. Upload files to Roset (/v1/files)\n2. Wait for processing completion (webhooks recommended)\n3. Use hybrid search (/v1/search, mode hybrid) for retrieval\n4. Use /v1/qa for answer generation with source citations\n5. Apply your own post-processing and policy checks in app logic"
+      },
+      {
+        "heading": "Retrieval Strategy",
+        "id": "retrieval-strategy",
+        "content": "- Default to hybrid mode for best relevance\n- Restrict by space/tenant for isolation\n- Cache high-value query results at application layer"
+      },
+      {
+        "heading": "Operational Guardrails",
+        "id": "operational-guardrails",
+        "content": "- Use idempotency on ingestion mutations\n- Verify webhook signatures before processing callbacks\n- Track zero-result and low-confidence patterns in Insights"
+      }
+    ]
+  },
+  {
+    "href": "/docs/cookbooks/multi-tenant-portal",
+    "title": "Multi-tenant Portal",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Multi-tenant Portal\n\nThis cookbook is for SaaS products serving multiple customer workspaces."
+      },
+      {
+        "heading": "Core Pattern",
+        "id": "core-pattern",
+        "content": "1. Create or map each customer to a Roset space\n2. Ingest customer files into that space\n3. Issue short-lived portal tokens for customer-facing UI access\n4. Use portal search and Q&A endpoints scoped to the token space"
+      },
+      {
+        "heading": "Why This Works",
+        "id": "why-this-works",
+        "content": "- Strong tenant isolation by design\n- No need to maintain custom indexing per customer\n- Fast path to embedded search/Q&A experiences"
+      },
+      {
+        "heading": "Recommended Controls",
+        "id": "recommended-controls",
+        "content": "- Short token TTLs\n- Tenant-aware audit logging in your app\n- Explicit fallback states when portal APIs are unavailable\n\nFor full space setup details, start with Multi-Tenant Spaces."
+      }
+    ]
+  },
+  {
+    "href": "/docs/features/qa",
+    "title": "Q&A",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Q&A\n\nAsk natural language questions about your files. Roset uses Retrieval Augmented Generation (RAG) to find relevant documents via vector search, then generates an answer with source citations."
+      },
+      {
+        "heading": "How It Works",
+        "id": "how-it-works",
+        "content": "1. Your question is embedded using OpenAI text-embedding-3-small\n2. Vector search finds the most relevant document chunks\n3. The matched content is sent as context to gpt-4o-mini\n4. You get an answer with citations back to specific files"
+      },
+      {
+        "heading": "Quick Start",
+        "id": "quick-start",
+        "content": "``python\n\nfrom roset import Client\n\nclient = Client(api_key=os.getenv(\"ROSET_API_KEY\"))\n\nresult = client.qa.ask(question=\"What are the payment terms in the contract?\")\n\nprint(result[\"answer\"])\nfor source in result[\"sources\"]:\n    print(f\"  - {source['filename']} (score: {source['score']})\")\n`\n\n`typescript\n\nconst roset = new RosetClient({ apiKey: 'rsk_...' });\n\nconst { answer, sources } = await roset.qa.ask({\n  question: 'What are the payment terms in the contract?',\n});\n\nconsole.log(answer);\n\nfo"
+      },
+      {
+        "heading": "Parameters",
+        "id": "parameters",
+        "content": "| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| question | string | required | The question to ask |\n| space | string | all spaces | Scope Q&A to a specific space |\n| topK | number | 5 | Number of context documents (max 10) |\n| stream | boolean | false | Stream the response via SSE |"
+      },
+      {
+        "heading": "Response",
+        "id": "response",
+        "content": "`json\n{\n  \"answer\": \"The payment terms are net 30 days from the invoice date...\",\n  \"sources\": [\n    {\n      \"fileId\": \"abc-123\",\n      \"filename\": \"contract.pdf\",\n      \"snippet\": \"Payment shall be made within thirty (30) days...\",\n      \"score\": 0.89\n    }\n  ],\n  \"question\": \"What are the payment terms?\"\n}\n`"
+      },
+      {
+        "heading": "Streaming",
+        "id": "streaming",
+        "content": "When stream: true, the response is an SSE stream with three event types:\n\n`\ndata: {\"type\": \"chunk\", \"content\": \"The payment\"}\ndata: {\"type\": \"chunk\", \"content\": \" terms are\"}\ndata: {\"type\": \"chunk\", \"content\": \" net 30 days...\"}\ndata: {\"type\": \"sources\", \"sources\": [...]}\ndata: [DONE]\n`\n\nQ&A uses OpenAI for both embedding and answer generation. Roset provides a managed key by default. You can optionally configure your own via the console or PUT /v1/org/provider-keys`."
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- Search -- lower-level search without LLM answer generation.\n- Build a Knowledge Base -- end-to-end upload + search + Q&A workflow."
+      }
+    ]
+  },
+  {
+    "href": "/docs/features/search",
+    "title": "Search",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Search\n\nEvery file processed by Roset produces a searchable-index variant (plain text) and chunked embeddings (vector). These power three search modes:\n\n| Mode | How it works | Best for |\n|------|-------------|----------|\n| text | Postgres full-text search on the searchable-index variant | Exact keyword matching |\n| vector | Cosine similarity via Cloudflare Vectorize on chunked embeddings | Semantic/conceptual search |\n| hybrid | Runs both in parallel, merges via Reciprocal Rank Fusion | Best "
+      },
+      {
+        "heading": "Quick Start",
+        "id": "quick-start",
+        "content": "``python\n\nfrom roset import Client\n\nclient = Client(api_key=os.getenv(\"ROSET_API_KEY\"))\n\n# Hybrid search (default)\nresults = client.search.query(query=\"payment terms\")\n\nfor r in results[\"results\"]:\n    print(f\"{r['fileId']} -- score: {r['score']}\")\n    if r.get(\"snippet\"):\n        print(f\"  {r['snippet']}\")\n`\n\n`typescript\n\nconst roset = new RosetClient({ apiKey: 'rsk_...' });\n\n// Hybrid search (default)\nconst { results } = await roset.search.query({\n  query: 'payment terms',\n});\n\nfor (const resu"
+      },
+      {
+        "heading": "Search Modes",
+        "id": "search-modes",
+        "content": "### Text Search\n\nUses Postgres tsvector full-text search on the searchable-index variant. Returns results ranked by ts_rank with highlighted snippets.\n\n- Works immediately after file processing completes\n- Best for exact keyword and phrase matching\n- Supports pagination via offset\n\n### Vector Search\n\nEmbeds your query using OpenAI text-embedding-3-small, then queries Cloudflare Vectorize for the closest chunk vectors.\n\n- Uses OpenAI embeddings (managed by default, or your own key via /v1/org/pro"
+      },
+      {
+        "heading": "Parameters",
+        "id": "parameters",
+        "content": "| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| query | string | required | The search query |\n| mode | string | \"hybrid\" | \"text\", \"vector\", or \"hybrid\" |\n| space | string | all spaces | Scope search to a specific space |\n| limit | number | 20 | Max results (up to 100) |\n| offset | number | 0 | Pagination offset (text mode only) |"
+      },
+      {
+        "heading": "Response",
+        "id": "response",
+        "content": "`json\n{\n  \"results\": [\n    {\n      \"fileId\": \"abc-123\",\n      \"score\": 0.034,\n      \"snippet\": \"The payment terms are net 30 days...\"\n    }\n  ],\n  \"total\": 42,\n  \"query\": \"payment terms\",\n  \"mode\": \"hybrid\"\n}\n`\n\nVector and hybrid modes use OpenAI embeddings. Roset provides a managed key by default. You can optionally configure your own via the console or PUT /v1/org/provider-keys`."
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- Q&A -- ask questions about your files and get answers with citations.\n- Webhooks -- get notified when new variants are ready for search.\n- Build a Knowledge Base -- end-to-end search + Q&A workflow."
+      }
+    ]
+  },
+  {
+    "href": "/docs/features/variants",
+    "title": "Variant Types",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Variant Types\n\nVariants are the structured outputs of Roset's transformation pipeline. Each variant is a different representation of the same source file, linked by lineage. When you upload a file, Roset produces up to 4 variant types automatically."
+      },
+      {
+        "heading": "Overview",
+        "id": "overview",
+        "content": "| Type | What it contains | Produced by | Use case |\n|------|-----------------|-------------|----------|\n| markdown | Extracted text in markdown format | Reducto, Gemini, Whisper | Display, downstream processing |\n| embeddings | Vector embeddings for each chunk | OpenAI | Semantic search, RAG |\n| metadata | Page count, language, confidence | Extraction provider | Filtering, quality checks |\n| searchable-index | Full-text search index | Roset | Keyword search |"
+      },
+      {
+        "heading": "Markdown",
+        "id": "markdown",
+        "content": "The primary extraction output. Contains the full text content of the file converted to markdown format.\n\nFields:\n\n| Field | Type | Description |\n|-------|------|-------------|\n| content | string | The extracted text in markdown |\n| pageCount | number | Number of pages extracted |\n| wordCount | number | Total word count |\n| characterCount | number | Total character count |\n\nWhen it's produced: For every file that has textual content. Documents (PDF, DOCX) via Reducto, images via Gemini (OCR), aud"
+      },
+      {
+        "heading": "Embeddings",
+        "id": "embeddings",
+        "content": "Vector embeddings generated from the extracted text, chunked for semantic search and RAG.\n\nFields:\n\n| Field | Type | Description |\n|-------|------|-------------|\n| chunks | array | Array of chunk objects with text and vector |\n| model | string | Embedding model used (e.g., text-embedding-3-small) |\n| dimensions | number | Vector dimensions (e.g., 1536) |\n| totalChunks | number | Number of chunks generated |\n\nWhen it's produced: After markdown extraction completes, if an OpenAI key is available ("
+      },
+      {
+        "heading": "Metadata",
+        "id": "metadata",
+        "content": "Extraction metadata including page count, detected language, and quality signals.\n\nFields:\n\n| Field | Type | Description |\n|-------|------|-------------|\n| pageCount | number | Number of pages in the source file |\n| language | string | Detected language (ISO 639-1) |\n| extractionConfidence | number | Confidence score (0--1) |\n| qualityWarnings | string[] | Any quality issues detected |\n\nWhen it's produced: Alongside the markdown variant during extraction.\n\n`python\nmetadata = client.files.get_var"
+      },
+      {
+        "heading": "Searchable Index",
+        "id": "searchable-index",
+        "content": "A full-text search index built from the extracted content. Powers text and hybrid search modes.\n\nFields:\n\n| Field | Type | Description |\n|-------|------|-------------|\n| indexedAt | string | When the index was last built |\n| termCount | number | Number of unique terms indexed |\n| segmentCount | number | Number of text segments |\n\nWhen it's produced: After markdown extraction completes. Used internally by the search API.\n\n`python\nindex = client.files.get_variant(file_id, \"searchable-index\")\nprint"
+      },
+      {
+        "heading": "List All Variants for a File",
+        "id": "list-all-variants-for-a-file",
+        "content": "`python\nresult = client.files.list_variants(file_id)\nfor v in result[\"variants\"]:\n    print(f\"  {v['type']}: {v['size_bytes']} bytes (provider: {v.get('provider', 'roset')})\")\n`\n\n`typescript\nconst { variants } = await client.files.listVariants(fileId);\nfor (const v of variants) {\n  console.log(  ${v.type}: ${v.size_bytes} bytes (provider: ${v.provider ?? 'roset'}));\n}\n`\n\n`bash\ncurl https://api.roset.dev/v1/files/FILE_ID/variants \\\n  -H \"Authorization: ApiKey rsk_...\"\n`"
+      },
+      {
+        "heading": "Selective Variant Generation",
+        "id": "selective-variant-generation",
+        "content": "You can request only specific variant types when uploading:\n\n`python\n# Only generate markdown and embeddings\nfile = client.files.upload(\n    filename=\"report.pdf\",\n    content_type=\"application/pdf\",\n    size_bytes=45678,\n    variants=[\"markdown\", \"embeddings\"],\n)\n`\n\n`typescript\n// Only generate markdown and embeddings\nconst file = await client.files.upload({\n  filename: 'report.pdf',\n  content_type: 'application/pdf',\n  size_bytes: 45678,\n  variants: ['markdown', 'embeddings'],\n});\n``"
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- Transform Any File -- the complete transformation workflow.\n- Search -- how variants power search.\n- API Reference -- full variant endpoint documentation."
+      }
+    ]
+  },
+  {
+    "href": "/docs/features/webhooks",
+    "title": "Webhooks",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Webhooks\n\nWebhooks are HTTP callbacks that Roset sends to your application when processing events occur. Instead of polling the API to check if a file has finished processing, register a webhook endpoint and Roset will POST event payloads to it in real time.\n\nThis is the recommended way to react to processing completion in production applications."
+      },
+      {
+        "heading": "Event Types",
+        "id": "event-types",
+        "content": "| Event | When it fires |\n|-------|------------|\n| file.created | A new file record was created via upload |\n| file.processing.started | The extraction job began processing |\n| file.processing.completed | Extraction finished successfully and variants are available |\n| file.processing.failed | Extraction failed (check the job for error details) |\n| file.variant.ready | A new variant (markdown, embeddings) is available on the file |\n| file.deleted | A file and its variants were deleted |\n| connect"
+      },
+      {
+        "heading": "Create a Webhook",
+        "id": "create-a-webhook",
+        "content": "``python\n\nfrom roset import Client\n\nclient = Client(api_key=os.getenv(\"ROSET_API_KEY\"))\n\n# Register an endpoint for processing lifecycle events\nwebhook = client.webhooks.create(\n    url=\"https://example.com/roset-webhook\",\n    events=[\"file.processing.completed\", \"file.processing.failed\"],\n)\n\nprint(webhook[\"id\"])      # \"wh-abc123\"\nprint(webhook[\"secret\"])  # Save this -- used to verify signatures\n`\n\n`typescript\n\nconst client = new RosetClient({ apiKey: 'rsk_...' });\n\n// Register an endpoint for"
+      },
+      {
+        "heading": "Payload Format",
+        "id": "payload-format",
+        "content": "Each delivery sends a JSON payload with an event type, timestamp, and event-specific data:\n\n`json\n{\n  \"id\": \"evt-123\",\n  \"type\": \"file.processing.completed\",\n  \"timestamp\": \"2025-06-15T10:30:00Z\",\n  \"data\": {\n    \"file_id\": \"abc-123\",\n    \"space\": \"default\",\n    \"filename\": \"report.pdf\",\n    \"status\": \"completed\"\n  }\n}\n`"
+      },
+      {
+        "heading": "Verify Signatures",
+        "id": "verify-signatures",
+        "content": "Every webhook delivery includes an X-Roset-Signature header containing an HMAC SHA-256 signature of the request body. Use your webhook secret (returned when you created the webhook) to verify authenticity.\n\n`python\n\ndef verify_webhook(body: bytes, signature: str, secret: str) -> bool:\n    expected = hmac.new(\n        secret.encode(),\n        body,\n        hashlib.sha256,\n    ).hexdigest()\n    return hmac.compare_digest(signature, expected)\n`\n\n`typescript\n\nfunction verifyWebhook(body: string, sig"
+      },
+      {
+        "heading": "Retry Policy",
+        "id": "retry-policy",
+        "content": "Failed deliveries (non-2xx responses or timeouts) are retried up to 3 times with exponential backoff:\n\n| Attempt | Delay |\n|---------|-------|\n| 1st retry | ~1 minute |\n| 2nd retry | ~5 minutes |\n| 3rd retry | ~30 minutes |\n\nAfter 3 failed attempts, the delivery is marked as failed. You can view failed deliveries in the console or via the deliveries endpoint."
+      },
+      {
+        "heading": "Manage Webhooks",
+        "id": "manage-webhooks",
+        "content": "`python\n# List all registered webhooks\nresult = client.webhooks.list()\n\n# Update which events a webhook subscribes to\nclient.webhooks.update(\"wh-abc123\", events=[\"file.processing.completed\"])\n\n# Send a test event to verify your endpoint\nclient.webhooks.test(\"wh-abc123\")\n\n# View delivery history for debugging\ndeliveries = client.webhooks.deliveries(\"wh-abc123\")\n\n# Delete a webhook\nclient.webhooks.delete(\"wh-abc123\")\n`\n\n`typescript\n// List all registered webhooks\nconst { webhooks } = await client."
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- API Reference -- full webhook endpoint documentation.\n- Sync Cloud Storage -- connect buckets and get notified on sync."
+      }
+    ]
+  },
+  {
+    "href": "/docs/guides/migration",
+    "title": "Migration Guide",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Migration Guide\n\nThis guide covers two common migrations:\n\n1. Legacy Roset Console URLs -> V2 canonical routes\n2. DIY / framework-only ingestion stacks -> Roset ingestion layer"
+      },
+      {
+        "heading": "Route Migration (Console)",
+        "id": "route-migration-console",
+        "content": "Legacy routes continue to redirect, but update deep links to canonical URLs:\n\n| Legacy | Canonical |\n| --- | --- |\n| /files | /transform |\n| /jobs | /runs |\n| /connections | /sources |\n| /processing | /pipeline |\n| /webhooks | /events |\n| /api-keys | /api |\n| /billing | /usage |\n| /analytics | /insights |\n| /members | /team |\n| /settings | /workspace |"
+      },
+      {
+        "heading": "API Migration Checklist",
+        "id": "api-migration-checklist",
+        "content": "If you already use Roset APIs, no endpoint version changes are required for this console redesign wave.\n\n- Keep /v1/* endpoints unchanged\n- Update UI links/documentation references to canonical pages\n- Re-run E2E checks for redirects and page-to-endpoint connectivity"
+      },
+      {
+        "heading": "DIY or Framework-Only Ingestion -> Roset",
+        "id": "diy-or-framework-only-ingestion---roset",
+        "content": "If your stack currently stitches OCR, chunking, embedding, and indexing manually:\n\n1. Keep your orchestration framework (LlamaIndex/LangChain/custom)\n2. Move ingestion to Roset (files.upload -> processing -> variants/search/qa)\n3. Use Roset outputs as inputs to your higher-level workflow logic\n\nThis reduces infra burden while preserving control at orchestration layer."
+      }
+    ]
+  },
+  {
+    "href": "/docs/integrations",
+    "title": "Integrations",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Integrations\n\nRoset is designed to plug into your existing stack instead of replacing it."
+      },
+      {
+        "heading": "Storage Sources",
+        "id": "storage-sources",
+        "content": "- Amazon S3\n- Google Cloud Storage\n- Azure Blob Storage\n- S3-compatible object stores\n\nUse Sync Cloud Storage to keep external buckets in sync with Roset."
+      },
+      {
+        "heading": "Application Integrations",
+        "id": "application-integrations",
+        "content": "- REST API (/v1/*) for ingestion, search, Q&A, webhooks, usage, and settings\n- TypeScript SDK and Python SDK for typed client access\n- Webhooks for processing lifecycle events"
+      },
+      {
+        "heading": "AI Stack Integrations",
+        "id": "ai-stack-integrations",
+        "content": "Roset can be used as the ingestion layer for external orchestration frameworks:\n\n- LlamaIndex workflows\n- LangChain pipelines\n- Internal agent runtimes\n\nRoset handles file transformation, chunking, embeddings, and retrieval surfaces. Your orchestrator handles task logic and tool chaining.\n\nManaged provider keys are the default runtime path. BYOK remains an optional override per provider."
+      }
+    ]
+  },
+  {
+    "href": "/docs/recipes/contract-extraction",
+    "title": "Contract Extraction",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Contract Extraction\n\nUse this recipe for legal-tech and procurement workflows where source traceability is mandatory."
+      },
+      {
+        "heading": "Common Targets",
+        "id": "common-targets",
+        "content": "- Parties\n- Effective/termination dates\n- Renewal terms\n- Payment clauses\n- Liability or indemnity sections"
+      },
+      {
+        "heading": "Workflow",
+        "id": "workflow",
+        "content": "1. Transform contracts with Roset\n2. Search for clause anchors (termination, renewal, liability)\n3. Run targeted extraction over relevant passages\n4. Persist structured fields with source snippets"
+      },
+      {
+        "heading": "Quality Checks",
+        "id": "quality-checks",
+        "content": "- Flag ambiguous date formats\n- Capture confidence scores for risky clauses\n- Keep links to source snippets for reviewer verification"
+      }
+    ]
+  },
+  {
+    "href": "/docs/recipes/invoice-extraction",
+    "title": "Invoice Extraction",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Invoice Extraction\n\nUse this recipe to pull normalized invoice data from transformed documents."
+      },
+      {
+        "heading": "Typical Fields",
+        "id": "typical-fields",
+        "content": "- Invoice number\n- Vendor name\n- Invoice date\n- Due date\n- Line items\n- Subtotal, tax, total"
+      },
+      {
+        "heading": "Workflow",
+        "id": "workflow",
+        "content": "1. Upload invoice files to Roset\n2. Wait for markdown variant completion\n3. Parse markdown with your extraction logic or template layer\n4. Store structured output alongside source citations"
+      },
+      {
+        "heading": "Validation Rules",
+        "id": "validation-rules",
+        "content": "- Ensure subtotal + tax ~= total\n- Reject missing invoice number/date\n- Keep citation references for auditability"
+      }
+    ]
+  },
+  {
+    "href": "/docs/recipes/resume-extraction",
+    "title": "Resume Extraction",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Resume Extraction\n\nUse this recipe for hiring workflows that need standardized candidate records from mixed resume formats."
+      },
+      {
+        "heading": "Typical Fields",
+        "id": "typical-fields",
+        "content": "- Candidate name\n- Contact details\n- Skills\n- Work experience timeline\n- Education"
+      },
+      {
+        "heading": "Workflow",
+        "id": "workflow",
+        "content": "1. Upload resume files (PDF/DOCX/image)\n2. Wait for transformation completion\n3. Extract profile attributes from markdown variant\n4. Index extracted fields for filtering and ranking"
+      },
+      {
+        "heading": "Practical Tips",
+        "id": "practical-tips",
+        "content": "- Normalize job titles and date ranges\n- Keep raw snippets for human review\n- Use search to validate extracted claims against source text"
+      }
+    ]
+  },
+  {
+    "href": "/docs/reference/api",
+    "title": "API Reference",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# API Reference\n\nThe Roset API is a REST API for file processing orchestration. It manages file uploads, processing jobs, extraction variants, storage connections, search, and webhooks. Files are uploaded via signed URLs (bytes go directly to storage) and Roset coordinates extraction providers to produce structured variants.\n\nBase URL: https://api.roset.dev\n\nAll requests require an Authorization header. See Authentication for details.\n\n``bash\nAuthorization: ApiKey rsk_...\n`"
+      },
+      {
+        "heading": "Upload",
+        "id": "upload",
+        "content": "### POST /v1/upload\n\nUpload a file for processing. Roset creates a file record and a processing job, then routes the file to the appropriate extraction provider based on content type.\n\nMultipart upload:\n\n`bash\n# Upload a PDF -- Roset routes it to Reducto for extraction\ncurl -X POST https://api.roset.dev/v1/upload \\\n  -H \"Authorization: ApiKey rsk_...\" \\\n  -F \"file=@document.pdf\"\n`\n\nResponse 201:\n\n`json\n{\n  \"id\": \"abc-123\",\n  \"space\": \"default\",\n  \"filename\": \"document.pdf\",\n  \"content_type\": \"ap"
+      },
+      {
+        "heading": "Files",
+        "id": "files",
+        "content": "Files are documents tracked by Roset's metadata store. Each file has a processing status, belongs to a space namespace, and can have zero or more variants (extraction outputs).\n\n### GET /v1/files\n\nList files with optional filtering.\n\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| space | string | Filter by space namespace |\n| status | string | Filter by status: uploading, uploaded, processing, completed, failed |\n| search | string | Search files by filename or content |\n"
+      },
+      {
+        "heading": "Jobs",
+        "id": "jobs",
+        "content": "Jobs represent the processing pipeline for a file. When you upload a file, Roset automatically creates a job that tracks extraction progress through a state machine. Each job is routed to a specific provider (Reducto, Gemini, Whisper) based on the file's content type.\n\n### Status Flow\n\n`\nqueued > processing > completed\n                    > failed > (retry) > queued\nqueued > cancelled\n`\n\n### GET /v1/jobs\n\nList jobs with optional filtering.\n\n| Parameter | Type | Description |\n|-----------|------|"
+      },
+      {
+        "heading": "Variants",
+        "id": "variants",
+        "content": "Variants are extraction outputs linked to a parent file. When Roset processes a file, the extraction provider produces one or more variants -- typically markdown from the document content, and optionally vector embeddings if an OpenAI key is configured.\n\nCommon variant types: markdown, embeddings, metadata, searchable-index.\n\n### GET /v1/files/:file_id/variants\n\nList all variants for a file.\n\n`bash\ncurl https://api.roset.dev/v1/files/abc-123/variants \\\n  -H \"Authorization: ApiKey rsk_...\"\n`\n\nRes"
+      },
+      {
+        "heading": "Spaces",
+        "id": "spaces",
+        "content": "Spaces provide optional namespace isolation for multi-space applications. If you are building a B2B SaaS product and need to scope files per customer, assign each customer a space name. Otherwise, all files default to the \"default\" space and you can ignore this section entirely.\n\n### GET /v1/spaces\n\nList all spaces with file counts.\n\n`bash\ncurl https://api.roset.dev/v1/spaces \\\n  -H \"Authorization: ApiKey rsk_...\"\n`\n\nResponse 200:\n\n`json\n{\n  \"spaces\": [\n    { \"space\": \"default\", \"file_count\": 10"
+      },
+      {
+        "heading": "Provider Keys",
+        "id": "provider-keys",
+        "content": "Provider keys are optional BYOK credentials for the extraction and embedding services that Roset orchestrates (Reducto, OpenAI, Gemini, Whisper). Roset uses managed keys by default. Optionally provide your own keys to use your provider accounts instead.\n\n### GET /v1/org/provider-keys\n\nList configured providers. Key values are redacted in the response for security.\n\n`bash\ncurl https://api.roset.dev/v1/org/provider-keys \\\n  -H \"Authorization: ApiKey rsk_...\"\n`\n\n### PUT /v1/org/provider-keys\n\nSave "
+      },
+      {
+        "heading": "Connections",
+        "id": "connections",
+        "content": "Connections link your cloud storage buckets to Roset. Once connected, Roset can enumerate files in your bucket and issue signed URLs for direct upload and download -- without ever copying or proxying file bytes.\n\n### POST /v1/connections\n\nCreate a new storage connection.\n\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| provider | string | Yes | s3, gcs, azure_blob, r2, minio, supabase_storage, b2, do_spaces, or wasabi |\n| name | string | Yes | Display name f"
+      },
+      {
+        "heading": "Nodes",
+        "id": "nodes",
+        "content": "Nodes represent files and folders discovered from synced storage connections. After syncing a connection, you can browse the bucket contents through the nodes API.\n\n### GET /v1/nodes\n\nList nodes with optional filtering.\n\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| connection_id | string | Filter by connection |\n| parent_id | string | Filter by parent folder |\n| type | string | file or folder |\n| limit | integer | Maximum results |\n| cursor | string | Pagination cursor"
+      },
+      {
+        "heading": "Webhooks",
+        "id": "webhooks",
+        "content": "Webhooks deliver HTTP callbacks when processing events occur. Register an endpoint, and Roset will POST event payloads to it in real time -- no polling required.\n\n### POST /v1/webhooks\n\nCreate a webhook endpoint.\n\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| url | string | Yes | HTTPS endpoint URL |\n| events | string[] | Yes | Event types to subscribe to |\n\n`bash\n# Subscribe to processing completion events\ncurl -X POST https://api.roset.dev/v1/webhooks \\\n"
+      },
+      {
+        "heading": "Analytics",
+        "id": "analytics",
+        "content": "Query processing metrics and usage data for your organization.\n\n### GET /v1/analytics/overview\n\nOrganization-wide statistics: total files, jobs, success rates, and connection counts.\n\n`bash\ncurl https://api.roset.dev/v1/analytics/overview \\\n  -H \"Authorization: ApiKey rsk_...\"\n`\n\nResponse 200:\n\n`json\n{\n  \"total_files\": 1234,\n  \"total_jobs\": 5678,\n  \"total_variants\": 4567,\n  \"total_connections\": 5,\n  \"success_rate\": 0.95,\n  \"files_by_status\": {\n    \"completed\": 1100,\n    \"processing\": 34,\n    \"fa"
+      },
+      {
+        "heading": "Organization",
+        "id": "organization",
+        "content": "### GET /v1/me\n\nGet the current authentication context. Returns the authenticated user or API key identity.\n\n`bash\ncurl https://api.roset.dev/v1/me \\\n  -H \"Authorization: ApiKey rsk_...\"\n`\n\nResponse 200:\n\n`json\n{\n  \"org_id\": \"org-abc123\",\n  \"auth_type\": \"api_key\",\n  \"key_name\": \"CI Pipeline\",\n  \"scopes\": [\"files:read\", \"files:write\", \"jobs:read\"]\n}\n`\n\n### GET /v1/org/settings\n\nGet organization settings including default processing configuration.\n\n`bash\ncurl https://api.roset.dev/v1/org/settings "
+      },
+      {
+        "heading": "API Keys",
+        "id": "api-keys",
+        "content": "### POST /v1/org/api-keys\n\nCreate a new API key.\n\n`bash\ncurl -X POST https://api.roset.dev/v1/org/api-keys \\\n  -H \"Authorization: ApiKey rsk_...\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"name\": \"CI Pipeline\", \"scopes\": [\"files:read\", \"files:write\"]}'\n`\n\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| name | string | Yes | Display name for the key |\n| scopes | string[] | No | Permission scopes (defaults to all) |\n| mode | string | No | live or test ("
+      },
+      {
+        "heading": "Search & Q&A",
+        "id": "search-qa",
+        "content": "### POST /v1/search\n\nSearch files by content using full-text, vector similarity, or hybrid search.\n\n`bash\ncurl -X POST https://api.roset.dev/v1/search \\\n  -H \"Authorization: ApiKey rsk_...\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\": \"payment terms\", \"mode\": \"hybrid\", \"limit\": 20}'\n`\n\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| query | string | Yes | Search query |\n| mode | string | No | text, vector, or hybrid (default: hybrid) |\n| space |"
+      },
+      {
+        "heading": "Portal",
+        "id": "portal",
+        "content": "Portal endpoints power the hosted portal UI. Most portal endpoints are authenticated with a portal token rather than an API key.\n\n### POST /v1/portal/tokens\n\nCreate a portal preview token. Use this to grant temporary access to the portal for a specific space.\n\n`bash\ncurl -X POST https://api.roset.dev/v1/portal/tokens \\\n  -H \"Authorization: ApiKey rsk_...\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"space\": \"default\", \"ttl\": 3600}'\n`\n\n| Field | Type | Required | Description |\n|-------|-----"
+      },
+      {
+        "heading": "Audit Logs",
+        "id": "audit-logs",
+        "content": "### GET /v1/api-logs\n\nList API request logs for your organization. Logs are retained for 7 days.\n\n`bash\ncurl \"https://api.roset.dev/v1/api-logs?limit=20\" \\\n  -H \"Authorization: ApiKey rsk_...\"\n`\n\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| method | string | Filter by HTTP method (GET, POST, DELETE, etc.) |\n| status | integer | Filter by HTTP status code |\n| path | string | Filter by request path prefix |\n| auth_type | string | Filter by auth type: api_key, jwt |\n| lim"
+      },
+      {
+        "heading": "Errors",
+        "id": "errors",
+        "content": "All error responses follow a consistent format with an error message, a machine-readable code, and a requestId for debugging with Roset support.\n\n`json\n{\n  \"error\": \"File not found\",\n  \"code\": \"NOT_FOUND\",\n  \"requestId\": \"req-123\"\n}\n`\n\n| Status | Code | Description |\n|--------|------|-------------|\n| 400 | BAD_REQUEST | Invalid request body or parameters |\n| 401 | UNAUTHORIZED | Missing or invalid authentication |\n| 402 | QUOTA_EXCEEDED | Usage quota exceeded for the current billing period |\n| 4"
+      }
+    ]
+  },
+  {
+    "href": "/docs/sdks/python",
+    "title": "Python SDK",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Python SDK\n\nThe roset package is the official Python client for the Roset file processing orchestration API. It provides methods for uploading files, managing processing jobs, retrieving extraction variants, and configuring connections and webhooks.\n\nRequires Python 3.9 or later."
+      },
+      {
+        "heading": "Installation",
+        "id": "installation",
+        "content": "``bash\npip install roset\n`"
+      },
+      {
+        "heading": "Quick Start",
+        "id": "quick-start",
+        "content": "`python\n\nfrom roset import Client\n\nclient = Client(api_key=os.getenv(\"ROSET_API_KEY\"))\n\n# Upload a file -- Roset routes it to the right extraction provider\nfile = client.files.upload(\n    filename=\"report.pdf\",\n    content_type=\"application/pdf\",\n    size_bytes=1024,\n)\n\n# List all completed files\nresult = client.files.list(status=\"completed\")\n`"
+      },
+      {
+        "heading": "Configuration",
+        "id": "configuration",
+        "content": "`python\nclient = Client(\n    api_key=\"rsk_...\",                     # Required -- your Roset API key\n    base_url=\"https://api.roset.dev\",      # Optional -- defaults to production\n    timeout=30,                            # Optional -- request timeout in seconds (default: 30)\n)\n`\n\nYou can also set the API key via environment variable:\n\n`bash\nexport ROSET_API_KEY=rsk_your_key_here\n`\n\n`python\n# Reads ROSET_API_KEY from environment automatically\nclient = Client()\n`"
+      },
+      {
+        "heading": "Resources",
+        "id": "resources",
+        "content": "### Files\n\nFiles are documents tracked by Roset's metadata store. Each file has a processing status and zero or more variants.\n\n`python\n# List files with optional filters\nresult = client.files.list(status=\"completed\", limit=20)\nfiles = result[\"files\"]\nnext_cursor = result.get(\"next_cursor\")\n\n# Get a file by ID (includes variant list)\nfile = client.files.get(\"file-abc123\")\n\n# Upload a file -- creates a file record and a processing job\nuploaded = client.files.upload(\n    filename=\"doc.pdf\",\n    co"
+      },
+      {
+        "heading": "Error Handling",
+        "id": "error-handling",
+        "content": "All API errors are raised as exceptions with the HTTP status code, error message, and request ID.\n\n`python\nfrom roset import Client\nfrom roset.exceptions import NotFoundError, RateLimitError\n\ntry:\n    client.files.get(\"nonexistent\")\nexcept NotFoundError:\n    print(\"File not found\")\nexcept RateLimitError as e:\n    print(f\"Rate limited, retry after {e.retry_after}\")\n`\n\nAvailable exception classes:\n\n| Class | HTTP Status | Description |\n|-------|------------|-------------|\n| ValidationError | 400 |"
+      },
+      {
+        "heading": "Async Support",
+        "id": "async-support",
+        "content": "The Python SDK supports async/await via AsyncClient:\n\n`python\n\nfrom roset import AsyncClient\n\nasync def main():\n    client = AsyncClient(api_key=\"rsk_...\")\n\n    # All methods are async\n    file = await client.files.upload(\n        filename=\"report.pdf\",\n        content_type=\"application/pdf\",\n        size_bytes=45678,\n    )\n\n    result = await client.files.list(status=\"completed\")\n    print(f\"Files: {len(result['files'])}\")\n\nasyncio.run(main())\n``"
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- API Reference -- full REST API documentation.\n- Quickstart -- upload your first file.\n- Webhooks -- react to processing events in real time."
+      }
+    ]
+  },
+  {
+    "href": "/docs/sdks/typescript",
+    "title": "TypeScript SDK",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# TypeScript SDK\n\nThe @roset/sdk package is the official TypeScript client for the Roset file processing orchestration API. It provides typed methods for uploading files, managing processing jobs, retrieving extraction variants, and configuring connections and webhooks.\n\nWorks in Node.js 18+ and modern edge runtimes (Cloudflare Workers, Deno, Bun)."
+      },
+      {
+        "heading": "Installation",
+        "id": "installation",
+        "content": "``bash\nnpm install @roset/sdk\n`"
+      },
+      {
+        "heading": "Quick Start",
+        "id": "quick-start",
+        "content": "`typescript\n\n// Initialize with your API key\nconst client = new RosetClient({ apiKey: 'rsk_...' });\n\n// Upload a file -- Roset routes it to the right extraction provider\nconst file = await client.files.upload({\n  filename: 'report.pdf',\n  content_type: 'application/pdf',\n  size_bytes: 1024,\n});\n\n// List all completed files\nconst { files } = await client.files.list({ status: 'completed' });\n`"
+      },
+      {
+        "heading": "Configuration",
+        "id": "configuration",
+        "content": "`typescript\nconst client = new RosetClient({\n  apiKey: 'rsk_...',                  // Required -- your Roset API key\n  baseUrl: 'https://api.roset.dev',   // Optional -- defaults to production\n  timeout: 30000,                     // Optional -- request timeout in ms (default: 30000)\n});\n`"
+      },
+      {
+        "heading": "Resources",
+        "id": "resources",
+        "content": "### Files\n\nFiles are documents tracked by Roset's metadata store. Each file has a processing status and zero or more variants.\n\n`typescript\n// List files with optional filters\nconst { files, next_cursor } = await client.files.list({\n  status: 'completed',\n  limit: 20,\n});\n\n// Get a file by ID (includes variant list)\nconst file = await client.files.get('file-abc123');\n\n// Upload a file -- creates a file record and a processing job\nconst uploaded = await client.files.upload({\n  filename: 'doc.pdf'"
+      },
+      {
+        "heading": "Error Handling",
+        "id": "error-handling",
+        "content": "All API errors are thrown as typed exceptions with the HTTP status code, error message, and request ID for debugging.\n\n`typescript\n\ntry {\n  await client.files.get('nonexistent');\n} catch (err) {\n  if (err instanceof NotFoundError) {\n    console.log('File not found');\n  } else if (err instanceof RateLimitError) {\n    // Retry after the delay specified in the response\n    console.log('Rate limited, retry after', err.retryAfter);\n  } else {\n    throw err;\n  }\n}\n`\n\nAvailable error classes:\n\n| Class "
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- API Reference -- full REST API documentation.\n- Quickstart -- upload your first file.\n- Webhooks -- react to processing events in real time."
+      }
+    ]
+  },
+  {
+    "href": "/docs/start/authentication",
+    "title": "Authentication",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Authentication\n\nEvery request to the Roset API must be authenticated. Roset supports two methods: API keys for server-side applications and bearer tokens for browser-based clients. Both are passed via the Authorization header."
+      },
+      {
+        "heading": "API Keys",
+        "id": "api-keys",
+        "content": "API keys are long-lived credentials designed for backend services, scripts, and CI/CD pipelines. All Roset API keys use the rsk_ prefix for easy identification.\n\n### Create an API Key\n\n1. Sign in to console.roset.dev.\n2. Go to Settings > API Keys.\n3. Click Create API Key and copy the key immediately.\n\nAPI keys are shown only once at creation time. Store yours in an environment variable or a secrets manager. Never commit keys to version control.\n\n### Use an API Key\n\n``python\n\nfrom roset import Cl"
+      },
+      {
+        "heading": "Bearer Tokens",
+        "id": "bearer-tokens",
+        "content": "For browser applications using Clerk, Auth0, or another identity provider, pass a JWT as a bearer token. This is how the Roset console authenticates its requests:\n\n`bash\n# Use the Bearer scheme with a JWT from your identity provider\ncurl https://api.roset.dev/v1/files \\\n  -H \"Authorization: Bearer eyJhbGc...\"\n``"
+      },
+      {
+        "heading": "Choosing a Method",
+        "id": "choosing-a-method",
+        "content": "| Use case | Method |\n|----------|--------|\n| Backend services and scripts | API Key |\n| CI/CD pipelines | API Key |\n| Browser applications | Bearer Token |\n| Mobile applications | Bearer Token |"
+      }
+    ]
+  },
+  {
+    "href": "/docs/start/installation",
+    "title": "Installation",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Installation\n\nRoset provides official Python and TypeScript SDKs plus direct REST API access for any HTTP client. The SDKs handle authentication, request formatting, and typed responses so you can focus on your application logic."
+      },
+      {
+        "heading": "Python SDK",
+        "id": "python-sdk",
+        "content": "Install the SDK with pip:\n\n``bash\npip install roset\n`\n\nRequires Python 3.9 or later.\n\n### Verify the Installation\n\n`python\nfrom roset import Client\n\nclient = Client(api_key=\"rsk_...\")\nprint(\"Connected to Roset\")\n`"
+      },
+      {
+        "heading": "TypeScript SDK",
+        "id": "typescript-sdk",
+        "content": "Install the SDK with npm, pnpm, or yarn:\n\n`bash\nnpm install @roset/sdk\n`\n\nRequires Node.js 18 or later. Also works in edge runtimes (Cloudflare Workers, Deno, Bun).\n\n### Verify the Installation\n\n`typescript\n\nconst client = new RosetClient({ apiKey: 'rsk_...' });\nconsole.log('Connected to Roset');\n`"
+      },
+      {
+        "heading": "Environment Setup",
+        "id": "environment-setup",
+        "content": "Store your API key as an environment variable instead of hardcoding it:\n\n`bash\nexport ROSET_API_KEY=rsk_your_key_here\n`\n\nThen reference it in your code:\n\n`python\n\nfrom roset import Client\n\nclient = Client(api_key=os.getenv(\"ROSET_API_KEY\"))\n`\n\n`typescript\n\nconst client = new RosetClient({\n  apiKey: process.env.ROSET_API_KEY!,\n});\n`\n\nNever commit API keys to version control. Use environment variables or a secrets manager."
+      },
+      {
+        "heading": "Provider Keys",
+        "id": "provider-keys",
+        "content": "Roset uses managed keys by default for all extraction providers (Reducto, OpenAI, Gemini, Whisper) -- you can start processing files immediately without any provider configuration.\n\nOptionally, you can bring your own keys (BYOK) to use your own provider accounts instead. Configure them in the console under Settings > Processing:\n\n- Reducto -- document extraction (PDF, DOCX, PPTX)\n- OpenAI -- vector embeddings\n- Gemini -- image processing\n- Whisper -- audio transcription\n\nYou can also manage prov"
+      },
+      {
+        "heading": "Direct API Access",
+        "id": "direct-api-access",
+        "content": "If you prefer not to use an SDK, all endpoints are accessible with any HTTP client. Roset is a standard REST API:\n\n`bash\n# List your files\ncurl https://api.roset.dev/v1/files \\\n  -H \"Authorization: ApiKey rsk_your_key\"\n``\n\nSee Authentication for details on supported auth methods."
+      }
+    ]
+  },
+  {
+    "href": "/docs/start/quickstart",
+    "title": "Quickstart",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Quickstart\n\nUpload a document, let Roset orchestrate extraction, and retrieve structured markdown -- all in under 5 minutes. This guide walks through the complete flow: upload, wait for processing, and retrieve variants."
+      },
+      {
+        "heading": "Prerequisites",
+        "id": "prerequisites",
+        "content": "Before you start, make sure you have:\n\n1. A Roset account at console.roset.dev\n2. An API key (starts with rsk_) from Settings > API Keys\n3. Python 3.9+ or Node.js 18+"
+      },
+      {
+        "heading": "Step 1: Install the SDK",
+        "id": "step-1-install-the-sdk",
+        "content": "``bash\npip install roset\n`\n\n`bash\nnpm install @roset/sdk\n`"
+      },
+      {
+        "heading": "Step 2: Upload a File",
+        "id": "step-2-upload-a-file",
+        "content": "Upload a document to Roset. The API creates a file record and a processing job automatically. Roset routes the file to the appropriate extraction provider based on content type.\n\n`python\n\nfrom roset import Client\n\nclient = Client(api_key=os.getenv(\"ROSET_API_KEY\"))\n\n# Upload a PDF -- Roset routes it to Reducto for extraction\nfile = client.files.upload(\n    filename=\"contract.pdf\",\n    content_type=\"application/pdf\",\n    size_bytes=45678,\n)\n\nprint(f\"Uploaded: {file['id']}, Job: {file['job_id']}\")"
+      },
+      {
+        "heading": "Step 3: Wait for Processing",
+        "id": "step-3-wait-for-processing",
+        "content": "Roset processes files asynchronously. The processing job moves through a state machine: queued -> processing -> completed or failed. Poll the file status until it reaches a terminal state.\n\n`python\n\nstatus = file[\"status\"]\nwhile status not in (\"completed\", \"failed\"):\n    current = client.files.get(file[\"id\"])\n    status = current[\"status\"]\n    print(f\"Status: {status}\")\n    if status not in (\"completed\", \"failed\"):\n        time.sleep(2)\n`\n\n`typescript\n// Poll until the processing job reaches a t"
+      },
+      {
+        "heading": "Step 4: Retrieve Results",
+        "id": "step-4-retrieve-results",
+        "content": "Once processing completes, the extracted content is available as variants on the file. Variants are the outputs of the extraction pipeline -- typically markdown and optionally vector embeddings.\n\n`python\n# List all variants (markdown, embeddings, etc.)\nresult = client.files.list_variants(file[\"id\"])\nfor v in result[\"variants\"]:\n    print(f\"{v['type']}: {v['size_bytes']} bytes\")\n\n# Retrieve the markdown variant specifically\nmarkdown = client.files.get_variant(file[\"id\"], \"markdown\")\nprint(markdow"
+      },
+      {
+        "heading": "What Happened",
+        "id": "what-happened",
+        "content": "1. You uploaded a document to Roset.\n2. Roset created a file metadata record and a processing job.\n3. The job was routed to Reducto (for PDFs/documents), Gemini (for images), or Whisper (for audio) based on content type.\n4. The extraction provider returned structured markdown, which Roset stored as a variant on the file.\n5. Vector embeddings were generated via OpenAI as a second variant.\n\nRoset never touched the file bytes directly -- it orchestrated the extraction pipeline and stored the result"
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- Transform Any File -- understand the full transformation workflow.\n- Sync Cloud Storage -- connect your S3, GCS, or Azure Blob Storage buckets.\n- Webhooks -- get notified when processing completes instead of polling.\n- Python SDK -- full Python client reference.\n- TypeScript SDK -- full TypeScript client reference.\n- API Reference -- complete endpoint documentation."
+      }
+    ]
+  },
+  {
+    "href": "/docs/whats-new",
+    "title": "What",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# What's New\n\nLatest highlights from recent releases. For full chronological release notes, see the Changelog."
+      },
+      {
+        "heading": "Console V2 Refresh",
+        "id": "console-v2-refresh",
+        "content": "- Product-first navigation (Transform, Runs, Sources, Pipeline, Events)\n- Capability hub on Home with live + beta cards\n- Improved command palette grouping and route naming consistency\n- Developer Console preserved as on-demand drawer"
+      },
+      {
+        "heading": "Docs and Discovery Improvements",
+        "id": "docs-and-discovery-improvements",
+        "content": "- Home rail now links to concrete docs destinations instead of generic placeholders\n- New docs sections for cookbooks, recipes, integrations, and migration guidance\n- Topbar What's New now points to this page by default"
+      },
+      {
+        "heading": "Feedback Workflow",
+        "id": "feedback-workflow",
+        "content": "- In-app feedback modal in console topbar\n- Submission API with durable persistence\n- Workspace-level feedback inbox for internal triage"
+      },
+      {
+        "heading": "Read More",
+        "id": "read-more",
+        "content": "- Changelog for full release history\n- Migration Guide for route and naming updates"
+      }
+    ]
+  },
+  {
+    "href": "/docs/workflows/knowledge-base",
+    "title": "Build a Knowledge Base",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Build a Knowledge Base\n\nUpload a collection of files, let Roset transform them into structured data, then search across everything and ask questions with citations. This workflow builds a complete RAG (Retrieval Augmented Generation) pipeline with no infrastructure to manage."
+      },
+      {
+        "heading": "The Workflow",
+        "id": "the-workflow",
+        "content": "``\nUpload Files --> Transform --> Search Index + Embeddings --> Search / Q&A\n`\n\n1. Upload your files (contracts, reports, manuals -- any mix)\n2. Roset transforms each file into markdown + embeddings + searchable index\n3. Search across all files with text, vector, or hybrid search\n4. Ask questions and get answers with source citations"
+      },
+      {
+        "heading": "Step 1: Upload Your Files",
+        "id": "step-1-upload-your-files",
+        "content": "`python\n\nfrom roset import Client\n\nclient = Client(api_key=os.getenv(\"ROSET_API_KEY\"))\n\n# Upload a batch of documents\nfiles = [\n    {\"filename\": \"employee-handbook.pdf\", \"content_type\": \"application/pdf\", \"size_bytes\": 245000},\n    {\"filename\": \"benefits-guide.pdf\", \"content_type\": \"application/pdf\", \"size_bytes\": 180000},\n    {\"filename\": \"it-policies.pdf\", \"content_type\": \"application/pdf\", \"size_bytes\": 95000},\n    {\"filename\": \"onboarding-checklist.docx\", \"content_type\": \"application/vnd.ope"
+      },
+      {
+        "heading": "Step 2: Wait for Transformation",
+        "id": "step-2-wait-for-transformation",
+        "content": "Use webhooks for production (recommended) or poll until all files complete.\n\n`python\n\n# Poll until all files are done\nfile_ids = [f[\"id\"] for f in batch[\"files\"]]\nwhile True:\n    statuses = [client.files.get(fid)[\"status\"] for fid in file_ids]\n    done = all(s in (\"completed\", \"failed\") for s in statuses)\n    print(f\"Statuses: {statuses}\")\n    if done:\n        break\n    time.sleep(3)\n\ncompleted = sum(1 for s in statuses if s == \"completed\")\nprint(f\"{completed}/{len(file_ids)} files transformed s"
+      },
+      {
+        "heading": "Step 3: Search Your Knowledge Base",
+        "id": "step-3-search-your-knowledge-base",
+        "content": "Once files are transformed, search across all of them using text, vector, or hybrid search.\n\n`python\n# Hybrid search (default) -- combines text + vector for best results\nresults = client.search.query(query=\"vacation policy\")\n\nfor r in results[\"results\"]:\n    print(f\"{r['fileId']} (score: {r['score']})\")\n    if r.get(\"snippet\"):\n        print(f\"  {r['snippet'][:200]}\")\n`\n\n`typescript\n// Hybrid search (default) -- combines text + vector for best results\nconst { results } = await client.search.quer"
+      },
+      {
+        "heading": "Step 4: Ask Questions with Citations",
+        "id": "step-4-ask-questions-with-citations",
+        "content": "Use Q&A to ask natural language questions. Roset finds relevant documents via vector search, then generates an answer with source citations.\n\n`python\n# Ask a question -- Roset searches, retrieves context, and generates an answer\nresult = client.qa.ask(question=\"How many vacation days do new employees get?\")\n\nprint(result[\"answer\"])\nprint()\nfor source in result[\"sources\"]:\n    print(f\"  Source: {source['filename']} (score: {source['score']})\")\n`\n\n`typescript\n// Ask a question -- Roset searches, r"
+      },
+      {
+        "heading": "Putting It Together",
+        "id": "putting-it-together",
+        "content": "Here's the complete end-to-end flow in a single script:\n\n`python\n\nfrom roset import Client\n\nclient = Client(api_key=os.getenv(\"ROSET_API_KEY\"))\n\n# Upload\nfile = client.files.upload(\n    filename=\"company-handbook.pdf\",\n    content_type=\"application/pdf\",\n    size_bytes=245000,\n)\n\n# Wait\nwhile client.files.get(file[\"id\"])[\"status\"] not in (\"completed\", \"failed\"):\n    time.sleep(2)\n\n# Search\nresults = client.search.query(query=\"remote work policy\")\nprint(f\"Found {results['total']} results\")\n\n# Q&A"
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- Search -- deep dive on text, vector, and hybrid search modes.\n- Q&A -- streaming responses, parameters, and configuration.\n- Multi-Tenant Spaces -- scope knowledge bases per customer.\n- Webhooks -- replace polling with real-time notifications."
+      }
+    ]
+  },
+  {
+    "href": "/docs/workflows/spaces",
+    "title": "Multi-Tenant Spaces",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Multi-Tenant Spaces\n\nSpaces let you scope files per customer in a B2B SaaS application. Each space is an isolated namespace -- files, search results, and Q&A answers are all scoped to a space. Combine spaces with portal tokens to give each customer their own searchable document workspace.\n\nIf you're not building a multi-tenant application, you can skip this page. All files default to the \"default\" space."
+      },
+      {
+        "heading": "The Pattern",
+        "id": "the-pattern",
+        "content": "``\nYour Customer A --> Space \"acme\"    --> Files, Search, Q&A scoped to Acme\nYour Customer B --> Space \"globex\"  --> Files, Search, Q&A scoped to Globex\n`\n\n1. Assign a space when uploading files for each customer\n2. Scope search and Q&A to that customer's space\n3. Issue portal tokens for each customer's space to power embeddable UIs"
+      },
+      {
+        "heading": "Upload Files to a Space",
+        "id": "upload-files-to-a-space",
+        "content": "Pass the space parameter when uploading to scope files to a customer.\n\n`python\n\nfrom roset import Client\n\nclient = Client(api_key=os.getenv(\"ROSET_API_KEY\"))\n\n# Upload a file scoped to the \"acme\" customer space\nfile = client.files.upload(\n    filename=\"acme-contract.pdf\",\n    content_type=\"application/pdf\",\n    size_bytes=85000,\n    space=\"acme\",\n)\nprint(f\"File {file['id']} uploaded to space: {file['space']}\")\n\n# Upload a file scoped to the \"globex\" customer space\nfile2 = client.files.upload(\n  "
+      },
+      {
+        "heading": "Search Within a Space",
+        "id": "search-within-a-space",
+        "content": "Scope search to a specific customer's files by passing the space parameter.\n\n`python\n# Search only within the \"acme\" space\nresults = client.search.query(\n    query=\"payment terms\",\n    space=\"acme\",\n)\nprint(f\"Found {results['total']} results in acme's space\")\n`\n\n`typescript\n// Search only within the \"acme\" space\nconst { results, total } = await client.search.query({\n  query: 'payment terms',\n  space: 'acme',\n});\nconsole.log(Found ${total} results in acme's space);\n`\n\n`bash\ncurl -X POST https://a"
+      },
+      {
+        "heading": "Q&A Within a Space",
+        "id": "qa-within-a-space",
+        "content": "Q&A answers are also scoped to the space -- your customers only see answers from their own documents.\n\n`python\n# Ask a question scoped to Acme's documents\nanswer = client.qa.ask(\n    question=\"What are the payment terms?\",\n    space=\"acme\",\n)\nprint(answer[\"answer\"])\n# Sources will only include files from the \"acme\" space\n`\n\n`typescript\n// Ask a question scoped to Acme's documents\nconst { answer, sources } = await client.qa.ask({\n  question: 'What are the payment terms?',\n  space: 'acme',\n});\ncon"
+      },
+      {
+        "heading": "Portal Tokens",
+        "id": "portal-tokens",
+        "content": "Portal tokens grant temporary, scoped access to a space. Use them to power embedded UIs where your customers can browse, search, and ask questions about their documents.\n\n`python\n# Issue a portal token for a customer's space (valid for 1 hour)\ntoken = client.portal.create_token(\n    space=\"acme\",\n    ttl=3600,\n)\nprint(f\"Portal token: {token['token']}\")\nprint(f\"Expires: {token['expires_at']}\")\n\n# Your frontend uses this token to authenticate portal API calls:\n# Authorization: PortalToken ptk_abc1"
+      },
+      {
+        "heading": "List Spaces",
+        "id": "list-spaces",
+        "content": "View all spaces with file counts and statistics.\n\n`python\n# List all spaces\nresult = client.spaces.list()\nfor s in result[\"spaces\"]:\n    print(f\"  {s['space']}: {s['file_count']} files\")\n`\n\n`typescript\n// List all spaces\nconst { spaces } = await client.spaces.list();\nfor (const s of spaces) {\n  console.log(  ${s.space}: ${s.file_count} files);\n}\n`\n\n`bash\ncurl https://api.roset.dev/v1/spaces \\\n  -H \"Authorization: ApiKey rsk_...\"\n`"
+      },
+      {
+        "heading": "B2B SaaS Integration Pattern",
+        "id": "b2b-saas-integration-pattern",
+        "content": "A typical integration looks like this:\n\n1. On customer signup -- create their space name (e.g., their org slug)\n2. On file upload -- pass space: customerSlug to scope the file\n3. On search/Q&A -- pass space: customerSlug to scope results\n4. On dashboard render -- issue a portal token for the customer's space and pass it to your frontend\n\n`python\n# In your backend route handler\ndef handle_upload(request):\n    customer_space = request.user.org_slug  # e.g., \"acme\"\n\n    file = client.files.upload(\n"
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- Build a Knowledge Base -- upload files and build a searchable knowledge base.\n- Search -- deep dive on search modes and parameters.\n- API Reference -- full spaces endpoint documentation."
+      }
+    ]
+  },
+  {
+    "href": "/docs/workflows/sync-storage",
+    "title": "Sync Cloud Storage",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Sync Cloud Storage\n\nConnect your existing cloud storage bucket to Roset, sync file metadata, and auto-process files through the transformation pipeline. Roset reads your bucket's file listing without copying or proxying bytes -- your data stays in your storage."
+      },
+      {
+        "heading": "The Workflow",
+        "id": "the-workflow",
+        "content": "``\nYour Bucket --> Connect --> Sync Metadata --> Process Files --> Webhook Notification\n`\n\n1. Connect your S3, GCS, Azure, or MinIO bucket\n2. Sync file metadata from the bucket into Roset\n3. Process synced files through the transformation pipeline\n4. Get notified via webhook when transformations complete"
+      },
+      {
+        "heading": "Supported Providers",
+        "id": "supported-providers",
+        "content": "| Provider | Setup Method | Bucket Types |\n|----------|-------------|--------------|\n| AWS | CloudFormation role | S3, S3-compatible |\n| GCP | Service Account | GCS buckets |\n| Azure | Service Principal | Blob containers |\n| MinIO | Access Key | MinIO buckets |\n| Cloudflare R2 | Access Key | R2 buckets |\n| Supabase Storage | Access Key | Supabase buckets |"
+      },
+      {
+        "heading": "Step 1: Create a Connection",
+        "id": "step-1-create-a-connection",
+        "content": "`python\n\nfrom roset import Client\n\nclient = Client(api_key=os.getenv(\"ROSET_API_KEY\"))\n\n# Link an S3 bucket to Roset\nconnection = client.connections.create(\n    provider=\"s3\",\n    name=\"Production Bucket\",\n    bucket=\"my-company-files\",\n    region=\"us-east-1\",\n    prefix=\"uploads/\",    # only sync files under this prefix\n)\nprint(f\"Connection: {connection['id']}\")\n`\n\n`typescript\n\nconst client = new RosetClient({ apiKey: process.env.ROSET_API_KEY! });\n\n// Link an S3 bucket to Roset\nconst connectio"
+      },
+      {
+        "heading": "Step 2: Test the Connection",
+        "id": "step-2-test-the-connection",
+        "content": "Verify that Roset can reach your bucket and has the required permissions.\n\n`python\nresult = client.connections.test(connection[\"id\"])\nprint(result)  # {\"success\": True}\n`\n\n`typescript\nconst result = await client.connections.test(connection.id);\nconsole.log(result); // { success: true }\n`\n\n`bash\ncurl -X POST https://api.roset.dev/v1/connections/conn-abc123/test \\\n  -H \"Authorization: ApiKey rsk_...\"\n`"
+      },
+      {
+        "heading": "Step 3: Sync Files",
+        "id": "step-3-sync-files",
+        "content": "Syncing enumerates files from your bucket and creates node records in Roset. This is a metadata-only operation -- Roset reads the file listing but does not transfer any file bytes.\n\n`python\nsync = client.connections.sync(connection[\"id\"])\nprint(f\"Synced {sync['synced_count']} files\")\n`\n\n`typescript\nconst sync = await client.connections.sync(connection.id);\nconsole.log(Synced ${sync.synced_count} files);\n`\n\n`bash\ncurl -X POST https://api.roset.dev/v1/connections/conn-abc123/sync \\\n  -H \"Authoriza"
+      },
+      {
+        "heading": "Step 4: Browse Synced Files",
+        "id": "step-4-browse-synced-files",
+        "content": "After syncing, browse files through the nodes API. Nodes mirror your bucket's directory structure.\n\n`python\n# List nodes from the synced connection\nresult = client.nodes.list(connection_id=connection[\"id\"])\nfor node in result[\"nodes\"]:\n    print(f\"{node['type']} {node['name']} ({node['size_bytes']} bytes)\")\n\n# Get a signed download URL (direct from your bucket)\ndownload = client.nodes.download(\"node-xyz\")\nprint(download[\"url\"])\n`\n\n`typescript\n// List nodes from the synced connection\nconst { node"
+      },
+      {
+        "heading": "Step 5: Set Up Webhooks",
+        "id": "step-5-set-up-webhooks",
+        "content": "Register a webhook to get notified when syncs complete and files finish processing.\n\n`python\nwebhook = client.webhooks.create(\n    url=\"https://example.com/roset-webhook\",\n    events=[\n        \"connection.synced\",\n        \"file.processing.completed\",\n        \"file.processing.failed\",\n    ],\n)\nprint(f\"Webhook: {webhook['id']}\")\nprint(f\"Secret: {webhook['secret']}\")  # Save this for signature verification\n`\n\n`typescript\nconst webhook = await client.webhooks.create({\n  url: 'https://example.com/ros"
+      },
+      {
+        "heading": "Manage Connections",
+        "id": "manage-connections",
+        "content": "`python\n# List all connections\nresult = client.connections.list()\n\n# Get a specific connection\nconn = client.connections.get(\"conn-abc123\")\n\n# Delete a connection (your bucket is unaffected)\nclient.connections.delete(\"conn-abc123\")\n`\n\n`typescript\n// List all connections\nconst { connections } = await client.connections.list();\n\n// Get a specific connection\nconst conn = await client.connections.get('conn-abc123');\n\n// Delete a connection (your bucket is unaffected)\nawait client.connections.delete("
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- Transform Any File -- understand the transformation pipeline that processes synced files.\n- Webhooks -- deep dive on event types and signature verification.\n- API Reference -- full connection and node endpoint documentation."
+      }
+    ]
+  },
+  {
+    "href": "/docs/workflows/transform",
+    "title": "Transform Any File",
+    "sections": [
+      {
+        "heading": null,
+        "id": null,
+        "content": "# Transform Any File\n\nUpload a single file to Roset and get back every structured representation your app needs: markdown, embeddings, metadata, and a searchable index. This is the core workflow -- one API call triggers the full transformation pipeline."
+      },
+      {
+        "heading": "The Workflow",
+        "id": "the-workflow",
+        "content": "``\nYour File --> Roset --> Route to Provider --> Extract --> Embed --> 4 Variants\n`\n\n1. Upload your file (PDF, image, audio, or document)\n2. Roset routes it to the right extraction provider (Reducto, Gemini, or Whisper)\n3. Extraction produces markdown and metadata\n4. Embedding generates vector embeddings via OpenAI\n5. You retrieve any or all of the 4 variant types"
+      },
+      {
+        "heading": "Complete Example",
+        "id": "complete-example",
+        "content": "`python\n\nfrom roset import Client\n\nclient = Client(api_key=os.getenv(\"ROSET_API_KEY\"))\n\n# 1. Upload a file\nfile = client.files.upload(\n    filename=\"quarterly-report.pdf\",\n    content_type=\"application/pdf\",\n    size_bytes=128000,\n)\nprint(f\"File {file['id']} uploaded, job: {file['job_id']}\")\n\n# 2. Wait for transformation to complete\nwhile True:\n    current = client.files.get(file[\"id\"])\n    status = current[\"status\"]\n    print(f\"Status: {status}\")\n    if status in (\"completed\", \"failed\"):\n      "
+      },
+      {
+        "heading": "What Gets Produced",
+        "id": "what-gets-produced",
+        "content": "Every file transformation produces up to 4 variant types. See Variant Types for details on each.\n\n| Variant | What it contains | Provider |\n|---------|-----------------|----------|\n| markdown | Extracted text in markdown format | Reducto, Gemini, or Whisper |\n| embeddings | Vector embeddings for each chunk | OpenAI |\n| metadata | Page count, language, extraction confidence | Extraction provider |\n| searchable-index | Full-text search index | Roset |"
+      },
+      {
+        "heading": "Provider Routing",
+        "id": "provider-routing",
+        "content": "Roset automatically selects the right extraction provider based on content type:\n\n| Content Type | Provider | File Types |\n|-------------|----------|-----------|\n| Documents | Reducto | PDF, DOCX, PPTX, XLSX |\n| Images | Gemini | PNG, JPG, TIFF, WEBP |\n| Audio | Whisper | MP3, WAV, M4A, OGG |\n\nYou can override the provider per-upload:\n\n`python\n# Force Gemini for a specific PDF (e.g., scanned images)\nfile = client.files.upload(\n    filename=\"scanned-doc.pdf\",\n    content_type=\"application/pdf\",\n "
+      },
+      {
+        "heading": "Selective Variants",
+        "id": "selective-variants",
+        "content": "By default, Roset generates all applicable variants. You can request only specific types:\n\n`python\n# Only generate markdown and embeddings (skip metadata, index)\nfile = client.files.upload(\n    filename=\"notes.pdf\",\n    content_type=\"application/pdf\",\n    size_bytes=12000,\n    variants=[\"markdown\", \"embeddings\"],\n)\n`\n\n`typescript\n// Only generate markdown and embeddings (skip metadata, index)\nconst file = await client.files.upload({\n  filename: 'notes.pdf',\n  content_type: 'application/pdf',\n  s"
+      },
+      {
+        "heading": "Batch Uploads",
+        "id": "batch-uploads",
+        "content": "Process many files at once with batch upload:\n\n`python\n# Upload multiple files in one call\nbatch = client.files.upload_batch([\n    {\"filename\": \"report-q1.pdf\", \"content_type\": \"application/pdf\", \"size_bytes\": 45678},\n    {\"filename\": \"report-q2.pdf\", \"content_type\": \"application/pdf\", \"size_bytes\": 56789},\n    {\"filename\": \"photo.jpg\", \"content_type\": \"image/jpeg\", \"size_bytes\": 234567},\n])\n\nfor f in batch[\"files\"]:\n    print(f\"  {f['filename']}: {f['id']}\")\n`\n\n`typescript\n// Upload multiple fi"
+      },
+      {
+        "heading": "Next Steps",
+        "id": "next-steps",
+        "content": "- Build a Knowledge Base -- search across many transformed files with Q&A.\n- Variant Types -- deep dive on what each variant contains.\n- Webhooks -- get notified instead of polling."
+      }
+    ]
+  }
+]

@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+!core/packages/ui/dist/
+build/
+.next/
+.turbo/
+target/
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Excluded directories
+cli/
+csi/
+fuse/
+deploy/
+
+# Development Workflows
+.github/workflows/csi-ci.yml
+.github/workflows/go-cli-ci.yml
+.github/workflows/rust-ci.yml
+.vercel

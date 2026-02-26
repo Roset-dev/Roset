@@ -1,0 +1,102 @@
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'Installation',
+  description: 'Install the Roset SDK and configure your environment for file processing orchestration.',
+}
+
+# Installation
+
+Roset provides official Python and TypeScript SDKs plus direct REST API access for any HTTP client. The SDKs handle authentication, request formatting, and typed responses so you can focus on your application logic.
+
+## Python SDK
+
+Install the SDK with pip:
+
+```bash
+pip install roset
+```
+
+Requires Python 3.9 or later.
+
+### Verify the Installation
+
+```python
+from roset import Client
+
+client = Client(api_key="rsk_...")
+print("Connected to Roset")
+```
+
+## TypeScript SDK
+
+Install the SDK with npm, pnpm, or yarn:
+
+```bash
+npm install @roset/sdk
+```
+
+Requires Node.js 18 or later. Also works in edge runtimes (Cloudflare Workers, Deno, Bun).
+
+### Verify the Installation
+
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+const client = new RosetClient({ apiKey: 'rsk_...' });
+console.log('Connected to Roset');
+```
+
+## Environment Setup
+
+Store your API key as an environment variable instead of hardcoding it:
+
+```bash
+export ROSET_API_KEY=rsk_your_key_here
+```
+
+Then reference it in your code:
+
+```python
+import os
+from roset import Client
+
+client = Client(api_key=os.getenv("ROSET_API_KEY"))
+```
+
+```typescript
+import { RosetClient } from '@roset/sdk';
+
+const client = new RosetClient({
+  apiKey: process.env.ROSET_API_KEY!,
+});
+```
+
+<Callout type="caution">
+Never commit API keys to version control. Use environment variables or a secrets manager.
+</Callout>
+
+## Provider Keys
+
+Roset uses **managed keys by default** for all extraction providers (Reducto, OpenAI, Gemini, Whisper) -- you can start processing files immediately without any provider configuration.
+
+Optionally, you can bring your own keys (BYOK) to use your own provider accounts instead. Configure them in the console under **Settings > Processing**:
+
+- **Reducto** -- document extraction (PDF, DOCX, PPTX)
+- **OpenAI** -- vector embeddings
+- **Gemini** -- image processing
+- **Whisper** -- audio transcription
+
+You can also manage provider keys through the API. See [PUT /v1/org/provider-keys](/docs/reference/api#put-v1orgprovider-keys) for details.
+
+## Direct API Access
+
+If you prefer not to use an SDK, all endpoints are accessible with any HTTP client. Roset is a standard REST API:
+
+```bash
+# List your files
+curl https://api.roset.dev/v1/files \
+  -H "Authorization: ApiKey rsk_your_key"
+```
+
+See [Authentication](/docs/start/authentication) for details on supported auth methods.

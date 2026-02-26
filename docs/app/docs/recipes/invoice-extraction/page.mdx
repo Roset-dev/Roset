@@ -1,0 +1,31 @@
+export const metadata = {
+  title: 'Invoice Extraction',
+  description: 'Recipe for extracting invoice fields and validating totals from transformed Roset content.',
+}
+
+# Invoice Extraction
+
+Use this recipe to pull normalized invoice data from transformed documents.
+
+## Typical Fields
+
+- Invoice number
+- Vendor name
+- Invoice date
+- Due date
+- Line items
+- Subtotal, tax, total
+
+## Workflow
+
+1. Upload invoice files to Roset
+2. Wait for markdown variant completion
+3. Parse markdown with your extraction logic or template layer
+4. Store structured output alongside source citations
+
+## Validation Rules
+
+- Ensure `subtotal + tax ~= total`
+- Reject missing invoice number/date
+- Keep citation references for auditability
+

@@ -1,0 +1,29 @@
+export const metadata = {
+  title: 'Advanced RAG',
+  description: 'Production-oriented RAG pattern using Roset ingestion with hybrid retrieval and citation-backed answers.',
+}
+
+# Advanced RAG
+
+Use this pattern when you need stronger retrieval quality, strict source traceability, and predictable operations.
+
+## Architecture
+
+1. Upload files to Roset (`/v1/files`)
+2. Wait for processing completion (webhooks recommended)
+3. Use hybrid search (`/v1/search`, mode `hybrid`) for retrieval
+4. Use `/v1/qa` for answer generation with source citations
+5. Apply your own post-processing and policy checks in app logic
+
+## Retrieval Strategy
+
+- Default to hybrid mode for best relevance
+- Restrict by space/tenant for isolation
+- Cache high-value query results at application layer
+
+## Operational Guardrails
+
+- Use idempotency on ingestion mutations
+- Verify webhook signatures before processing callbacks
+- Track zero-result and low-confidence patterns in Insights
+

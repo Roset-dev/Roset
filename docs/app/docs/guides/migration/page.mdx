@@ -1,0 +1,47 @@
+export const metadata = {
+  title: 'Migration Guide',
+  description: 'Migrate from legacy console routes and DIY ingestion stacks to Roset Console V2.',
+}
+
+# Migration Guide
+
+This guide covers two common migrations:
+
+1. Legacy Roset Console URLs -> V2 canonical routes
+2. DIY / framework-only ingestion stacks -> Roset ingestion layer
+
+## Route Migration (Console)
+
+Legacy routes continue to redirect, but update deep links to canonical URLs:
+
+| Legacy | Canonical |
+| --- | --- |
+| `/files` | `/transform` |
+| `/jobs` | `/runs` |
+| `/connections` | `/sources` |
+| `/processing` | `/pipeline` |
+| `/webhooks` | `/events` |
+| `/api-keys` | `/api` |
+| `/billing` | `/usage` |
+| `/analytics` | `/insights` |
+| `/members` | `/team` |
+| `/settings` | `/workspace` |
+
+## API Migration Checklist
+
+If you already use Roset APIs, no endpoint version changes are required for this console redesign wave.
+
+- Keep `/v1/*` endpoints unchanged
+- Update UI links/documentation references to canonical pages
+- Re-run E2E checks for redirects and page-to-endpoint connectivity
+
+## DIY or Framework-Only Ingestion -> Roset
+
+If your stack currently stitches OCR, chunking, embedding, and indexing manually:
+
+1. Keep your orchestration framework (LlamaIndex/LangChain/custom)
+2. Move ingestion to Roset (`files.upload` -> processing -> variants/search/qa)
+3. Use Roset outputs as inputs to your higher-level workflow logic
+
+This reduces infra burden while preserving control at orchestration layer.
+

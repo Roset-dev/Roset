@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://docs.roset.dev
+
+# Sitemaps
+Sitemap: https://docs.roset.dev/sitemap.xml

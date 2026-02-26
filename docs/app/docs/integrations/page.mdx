@@ -1,0 +1,40 @@
+import { Callout } from '@/components/callout'
+
+export const metadata = {
+  title: 'Integrations',
+  description: 'Connect Roset with your storage, app backend, and orchestration stack.',
+}
+
+# Integrations
+
+Roset is designed to plug into your existing stack instead of replacing it.
+
+## Storage Sources
+
+- Amazon S3
+- Google Cloud Storage
+- Azure Blob Storage
+- S3-compatible object stores
+
+Use **[Sync Cloud Storage](/docs/workflows/sync-storage)** to keep external buckets in sync with Roset.
+
+## Application Integrations
+
+- REST API (`/v1/*`) for ingestion, search, Q&A, webhooks, usage, and settings
+- TypeScript SDK and Python SDK for typed client access
+- Webhooks for processing lifecycle events
+
+## AI Stack Integrations
+
+Roset can be used as the ingestion layer for external orchestration frameworks:
+
+- LlamaIndex workflows
+- LangChain pipelines
+- Internal agent runtimes
+
+Roset handles file transformation, chunking, embeddings, and retrieval surfaces. Your orchestrator handles task logic and tool chaining.
+
+<Callout type="note">
+Managed provider keys are the default runtime path. BYOK remains an optional override per provider.
+</Callout>
+
