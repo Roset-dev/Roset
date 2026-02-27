@@ -283,32 +283,6 @@
     ]
   },
   {
-    "href": "/docs/guides/migration",
-    "title": "Migration Guide",
-    "sections": [
-      {
-        "heading": null,
-        "id": null,
-        "content": "# Migration Guide\n\nThis guide covers two common migrations:\n\n1. Legacy Roset Console URLs -> V2 canonical routes\n2. DIY / framework-only ingestion stacks -> Roset ingestion layer"
-      },
-      {
-        "heading": "Route Migration (Console)",
-        "id": "route-migration-console",
-        "content": "Legacy routes continue to redirect, but update deep links to canonical URLs:\n\n| Legacy | Canonical |\n| --- | --- |\n| /files | /transform |\n| /jobs | /runs |\n| /connections | /sources |\n| /processing | /pipeline |\n| /webhooks | /events |\n| /api-keys | /api |\n| /billing | /usage |\n| /analytics | /insights |\n| /members | /team |\n| /settings | /workspace |"
-      },
-      {
-        "heading": "API Migration Checklist",
-        "id": "api-migration-checklist",
-        "content": "If you already use Roset APIs, no endpoint version changes are required for this console redesign wave.\n\n- Keep /v1/* endpoints unchanged\n- Update UI links/documentation references to canonical pages\n- Re-run E2E checks for redirects and page-to-endpoint connectivity"
-      },
-      {
-        "heading": "DIY or Framework-Only Ingestion -> Roset",
-        "id": "diy-or-framework-only-ingestion---roset",
-        "content": "If your stack currently stitches OCR, chunking, embedding, and indexing manually:\n\n1. Keep your orchestration framework (LlamaIndex/LangChain/custom)\n2. Move ingestion to Roset (files.upload -> processing -> variants/search/qa)\n3. Use Roset outputs as inputs to your higher-level workflow logic\n\nThis reduces infra burden while preserving control at orchestration layer."
-      }
-    ]
-  },
-  {
     "href": "/docs/integrations",
     "title": "Integrations",
     "sections": [
@@ -708,14 +682,9 @@
         "content": "# What's New\n\nLatest highlights from recent releases. For full chronological release notes, see the Changelog."
       },
       {
-        "heading": "Console V2 Refresh",
-        "id": "console-v2-refresh",
-        "content": "- Product-first navigation (Transform, Runs, Sources, Pipeline, Events)\n- Capability hub on Home with live + beta cards\n- Improved command palette grouping and route naming consistency\n- Developer Console preserved as on-demand drawer"
-      },
-      {
         "heading": "Docs and Discovery Improvements",
         "id": "docs-and-discovery-improvements",
-        "content": "- Home rail now links to concrete docs destinations instead of generic placeholders\n- New docs sections for cookbooks, recipes, integrations, and migration guidance\n- Topbar What's New now points to this page by default"
+        "content": "- Home rail now links to concrete docs destinations instead of generic placeholders\n- New docs sections for cookbooks, recipes, and integrations\n- Topbar What's New now points to this page by default"
       },
       {
         "heading": "Feedback Workflow",
@@ -725,7 +694,7 @@
       {
         "heading": "Read More",
         "id": "read-more",
-        "content": "- Changelog for full release history\n- Migration Guide for route and naming updates"
+        "content": "- Changelog for full release history"
       }
     ]
   },

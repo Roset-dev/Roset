@@ -55,13 +55,6 @@ export const navigation: NavEntry[] = [
   },
   { label: "Integrations", href: "/docs/integrations" },
   {
-    label: "Guides",
-    defaultOpen: true,
-    items: [
-      { label: "Migration Guide", href: "/docs/guides/migration" },
-    ],
-  },
-  {
     label: "Cookbooks",
     defaultOpen: true,
     items: [
